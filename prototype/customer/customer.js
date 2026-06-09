@@ -256,33 +256,16 @@ function loadAuthState() {
 
 function renderSurvey() {
   const key = determineSegment();
-  const segment = segments[key];
-
-  const name = document.getElementById("segment-name");
-  const description = document.getElementById("segment-description");
-  const chip = document.getElementById("segment-chip");
-
-  if (!name) return;
-
-  name.textContent = segment.name;
-  description.textContent = segment.description;
-  chip.textContent = segment.name;
+  if (!segments[key]) return;
 }
 
 function renderDetails() {
   const key = determineSegment();
   const segment = segments[key];
-  const chip = document.getElementById("details-segment-chip");
-  const name = document.getElementById("details-segment-name");
-  const description = document.getElementById("details-segment-description");
   const sectionList = document.getElementById("detail-section-list");
   const fields = document.getElementById("detail-fields");
 
-  if (!chip) return;
-
-  chip.textContent = segment.name;
-  name.textContent = segment.name;
-  description.textContent = segment.description;
+  if (!sectionList) return;
 
   sectionList.innerHTML = segment.detailSections
     .map(
