@@ -3,7 +3,7 @@ const STORAGE_KEY = "arc-onboarding-customer";
 const segments = {
   corporate: {
     name: "법인 사업자",
-    description: "일반 법인 고객. 대표자와 실제소유자 확인이 핵심이다.",
+    description: "대표자와 실제소유자 관련 정보를 입력한다.",
     questions: [
       "기본 정보: 회사명, 사업자등록번호, 연락처, 업종, 업태, 사업장 주소",
       "법인 정보: 법인 유형, 법인 등록번호, 법인 국적, 본점 주소",
@@ -43,7 +43,7 @@ const segments = {
   },
   individual: {
     name: "개인 사업자",
-    description: "개인사업자 / 개인 엔터티. 대표자와 BO 동일 여부가 분기 기준이다.",
+    description: "대표자와 실제소유자 관련 정보를 입력한다.",
     questions: [
       "기본 정보: 사업체명, 사업자등록번호, 연락처, 업종, 업태, 사업장 주소",
       "대표자 정보: 성명, 생년월일, 성별, 국적",
@@ -78,7 +78,7 @@ const segments = {
   },
   fi: {
     name: "금융기관",
-    description: "금융기관 / 송금대행사 / 환전회사. 가장 긴 인테이크와 높은 수준의 검토가 필요하다.",
+    description: "금융기관 관련 정보를 상세히 입력한다.",
     questions: [
       "섹션 A: 기본 정보, 법적 형태, 등록 국가, 웹사이트, 주소, 지점 수, 라이선스, 대표자",
       "섹션 B: Collection / Payout 선택, 수취 통화, 거래 목적, 발신 국가, 상위 고객 구조, 가상자산 여부",
@@ -126,7 +126,7 @@ const segments = {
   },
   krw: {
     name: "원화 수금",
-    description: "서비스 레벨 세그먼트. 엔터티 레벨 질문 위에 업종별 문서가 추가된다.",
+    description: "업종과 사업 관련 정보를 추가로 입력한다.",
     questions: [
       "업종 / 하위 세그먼트 선택: Trading, Consulting, Development / Design, Advertising / Marketing, Research, IT & Computer, Coupang",
       "엔터티 레벨 세그먼트 질문 재사용",
@@ -150,19 +150,19 @@ const segments = {
       "Coupang 특수 케이스: 판매자 URL / 스크린샷, 정산서, 서비스 계약서",
     ],
     detailSections: [
-      ["서비스 레벨", "업종 / 하위 세그먼트", "어떤 업종인지에 따라 추가 서류가 달라진다."],
-      ["엔터티 레벨", "기본 정보 재사용", "법인 / 개인 / FI 상세 정보 입력 구조를 그대로 따른다."],
+      ["항목 1", "업종 / 하위 분류", "업종에 따라 필요한 정보가 달라진다."],
+      ["항목 2", "기본 정보", "사업 기본 정보를 이어서 입력한다."],
     ],
     detailFields: [
       "업종 / 하위 세그먼트",
-      "엔터티 레벨 기본 정보",
-      "엔터티 레벨 실제 소유자 정보",
-      "엔터티 레벨 추가 확인사항",
+      "기본 정보",
+      "실제 소유자 정보",
+      "추가 확인사항",
     ],
   },
   vnd: {
     name: "베트남 동 수금",
-    description: "현재 CN / HK 기업 우선 범위. 조건부 서류가 많다.",
+    description: "사업과 거래 관련 정보를 추가로 입력한다.",
     questions: [
       "법인명, 사업자 번호, 등록 사업장 주소, 설립지",
       "웹사이트, 담당자 이름, 연락처, 담당자 이메일",
@@ -216,11 +216,11 @@ const segments = {
   },
   id: {
     name: "인도네시아 수금",
-    description: "현재는 자리표시자다. 질문 구조와 제출 서류가 아직 정의되지 않았다.",
+    description: "현재 준비 중인 입력 흐름이다.",
     questions: ["추후 정의 예정"],
     documents: ["추후 정의 예정"],
     extraDocuments: ["없음"],
-    detailSections: [["미정", "자리표시자", "세그먼트 정의와 입력 항목이 아직 없다."]],
+    detailSections: [["안내", "준비 중", "입력 항목을 준비 중이다."]],
     detailFields: ["추후 정의 예정"],
   },
 };
@@ -307,9 +307,9 @@ function renderDetails() {
     .map(
       (field, index) => `
         <article class="detail-field-card">
-          <span>필드 ${index + 1}</span>
+          <span>항목 ${index + 1}</span>
           <strong>${field}</strong>
-          <p>현재 세그먼트에서 고객이 입력해야 하는 항목이다.</p>
+          <p>이 단계에서 입력해야 하는 정보입니다.</p>
         </article>`
     )
     .join("");
@@ -341,7 +341,7 @@ if (document.getElementById("segment-name")) {
   }
 }
 
-if (document.getElementById("details-segment-name")) {
+if (document.getElementById("detail-section-list")) {
   const authState = loadAuthState();
   if (!authState.signedIn) {
     window.location.href = "./login.html";
