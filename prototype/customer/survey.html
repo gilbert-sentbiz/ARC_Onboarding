@@ -21,8 +21,8 @@
               <p class="eyebrow">페이지 02</p>
               <h1>최초 설문</h1>
               <p class="survey-panel__copy">
-                기준 문서 `3. Segmentation Matrix`에 있는 필드만 남겼다. 문의 페이지 입력값과 포털
-                인테이크 입력값을 한 번에 입력하는 형태로 본다.
+                고객이 처음 입력해야 하는 필드를 한 화면에 모았다. 입력값에 따라 이후 상세 정보와
+                제출 서류가 달라진다.
               </p>
             </div>
             <a class="button button--secondary" href="./login.html">이전</a>
@@ -31,10 +31,42 @@
           <form class="survey-form">
             <section class="survey-card">
               <div class="card-header-inline">
-                <h2>최초 설문 문항</h2>
-                <span class="status-chip">세그먼트 분류 기준</span>
+                <h2>기본 정보 입력</h2>
+                <span class="status-chip">최초 설문</span>
               </div>
               <div class="survey-fields-grid">
+                <label class="field">
+                  <span>서비스 유형</span>
+                  <select id="service-type">
+                    <option value="collection">수금</option>
+                    <option value="payout">지급</option>
+                  </select>
+                </label>
+                <label class="field">
+                  <span id="country-label">수금 국가</span>
+                  <select id="service-country">
+                    <option value="KR">한국 (KRW)</option>
+                    <option value="VN">베트남 (VND)</option>
+                    <option value="ID">인도네시아 (IDR)</option>
+                  </select>
+                </label>
+                <label class="field">
+                  <span>엔터티 유형</span>
+                  <select id="entity-type">
+                    <option value="corporate">법인</option>
+                    <option value="individual">개인사업자</option>
+                    <option value="fi">금융기관</option>
+                  </select>
+                </label>
+                <label class="field">
+                  <span>설립 국가</span>
+                  <select id="incorporation-country">
+                    <option value="KR">KR</option>
+                    <option value="CN">CN</option>
+                    <option value="HK">HK</option>
+                    <option value="VN">VN</option>
+                  </select>
+                </label>
                 <label class="field">
                   <span>회사명</span>
                   <input type="text" placeholder="회사명을 입력하세요" />
@@ -82,38 +114,6 @@
                 <label class="field field--checkbox field--full">
                   <input type="checkbox" checked />
                   <span>개인정보 수집 및 이용 동의</span>
-                </label>
-                <label class="field">
-                  <span>서비스 유형</span>
-                  <select id="service-type">
-                    <option value="collection">수금</option>
-                    <option value="payout">지급</option>
-                  </select>
-                </label>
-                <label class="field">
-                  <span id="country-label">수금 국가</span>
-                  <select id="service-country">
-                    <option value="KR">한국 (KRW)</option>
-                    <option value="VN">베트남 (VND)</option>
-                    <option value="ID">인도네시아 (IDR)</option>
-                  </select>
-                </label>
-                <label class="field">
-                  <span>엔터티 유형</span>
-                  <select id="entity-type">
-                    <option value="corporate">법인</option>
-                    <option value="individual">개인사업자</option>
-                    <option value="fi">금융기관</option>
-                  </select>
-                </label>
-                <label class="field">
-                  <span>설립 국가</span>
-                  <select id="incorporation-country">
-                    <option value="KR">KR</option>
-                    <option value="CN">CN</option>
-                    <option value="HK">HK</option>
-                    <option value="VN">VN</option>
-                  </select>
                 </label>
               </div>
             </section>
