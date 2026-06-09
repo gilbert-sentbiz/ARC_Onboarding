@@ -31,8 +31,8 @@
           <form class="survey-form">
             <section class="survey-card">
               <div class="card-header-inline">
-                <h2>문의 페이지 입력값</h2>
-                <span class="status-chip">3.1</span>
+                <h2>최초 설문 문항</h2>
+                <span class="status-chip">세그먼트 분류 기준</span>
               </div>
               <div class="survey-fields-grid">
                 <label class="field">
@@ -60,22 +60,6 @@
                   <input type="text" placeholder="유입 경로" />
                 </label>
                 <label class="field">
-                  <span>송금 국가</span>
-                  <select>
-                    <option>KR</option>
-                    <option>US</option>
-                    <option>VN</option>
-                  </select>
-                </label>
-                <label class="field">
-                  <span>수취 국가</span>
-                  <select>
-                    <option>US</option>
-                    <option>KR</option>
-                    <option>VN</option>
-                  </select>
-                </label>
-                <label class="field">
                   <span>예상 거래 규모</span>
                   <select>
                     <option>월 1억원 미만</option>
@@ -99,15 +83,6 @@
                   <input type="checkbox" checked />
                   <span>개인정보 수집 및 이용 동의</span>
                 </label>
-              </div>
-            </section>
-
-            <section class="survey-card">
-              <div class="card-header-inline">
-                <h2>포털 인테이크 입력값</h2>
-                <span class="status-chip">3.2</span>
-              </div>
-              <div class="survey-fields-grid">
                 <label class="field">
                   <span>서비스 유형</span>
                   <select id="service-type">
@@ -116,19 +91,11 @@
                   </select>
                 </label>
                 <label class="field">
-                  <span>수금 국가 (Collections 선택 시)</span>
-                  <select id="collection-country">
+                  <span id="country-label">수금 국가</span>
+                  <select id="service-country">
                     <option value="KR">한국 (KRW)</option>
                     <option value="VN">베트남 (VND)</option>
                     <option value="ID">인도네시아 (IDR)</option>
-                  </select>
-                </label>
-                <label class="field">
-                  <span>지급 국가 (Payouts 선택 시)</span>
-                  <select id="payout-country">
-                    <option value="KR">KR</option>
-                    <option value="US">US</option>
-                    <option value="VN">VN</option>
                   </select>
                 </label>
                 <label class="field">

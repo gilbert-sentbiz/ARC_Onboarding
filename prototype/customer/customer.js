@@ -227,15 +227,40 @@ const segments = {
 
 function determineSegment() {
   const serviceType = document.getElementById("service-type")?.value;
-  const collectionCountry = document.getElementById("collection-country")?.value;
+  const serviceCountry = document.getElementById("service-country")?.value;
   const entityType = document.getElementById("entity-type")?.value;
 
-  if (serviceType === "collection" && collectionCountry === "KR") return "krw";
-  if (serviceType === "collection" && collectionCountry === "VN") return "vnd";
-  if (serviceType === "collection" && collectionCountry === "ID") return "id";
+  if (serviceType === "collection" && serviceCountry === "KR") return "krw";
+  if (serviceType === "collection" && serviceCountry === "VN") return "vnd";
+  if (serviceType === "collection" && serviceCountry === "ID") return "id";
   if (entityType === "fi") return "fi";
   if (entityType === "individual") return "individual";
   return "corporate";
+}
+
+function updateServiceCountryField() {
+  const serviceType = document.getElementById("service-type");
+  const countryLabel = document.getElementById("country-label");
+  const serviceCountry = document.getElementById("service-country");
+
+  if (!serviceType || !countryLabel || !serviceCountry) return;
+
+  if (serviceType.value === "collection") {
+    countryLabel.textContent = "수금 국가";
+    serviceCountry.innerHTML = `
+      <option value="KR">한국 (KRW)</option>
+      <option value="VN">베트남 (VND)</option>
+      <option value="ID">인도네시아 (IDR)</option>
+    `;
+  } else {
+    countryLabel.textContent = "지급 국가";
+    serviceCountry.innerHTML = `
+      <option value="KR">한국</option>
+      <option value="US">미국</option>
+      <option value="VN">베트남</option>
+      <option value="SG">싱가포르</option>
+    `;
+  }
 }
 
 function saveAuthState() {
@@ -304,8 +329,13 @@ if (document.getElementById("segment-name")) {
   if (!authState.signedIn) {
     window.location.href = "./login.html";
   } else {
+    updateServiceCountryField();
     document.querySelectorAll("select").forEach((select) => {
       select.addEventListener("change", renderSurvey);
+    });
+    document.getElementById("service-type")?.addEventListener("change", () => {
+      updateServiceCountryField();
+      renderSurvey();
     });
     renderSurvey();
   }
