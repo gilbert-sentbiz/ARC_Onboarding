@@ -191,6 +191,14 @@ body {
   display: block;
 }
 
+.customer-page {
+  display: none;
+}
+
+.customer-page.is-active {
+  display: block;
+}
+
 .panel {
   padding: 22px;
 }
@@ -226,7 +234,10 @@ body {
 .state-stack,
 .timeline-mini,
 .message-list,
-.role-summary {
+.role-summary,
+.customer-steps,
+.form-stack,
+.question-preview {
   display: grid;
   gap: 10px;
 }
@@ -266,6 +277,126 @@ input {
   background: var(--s-bg-normal);
   color: var(--s-label-default);
   border: 1px solid var(--s-line-normal);
+}
+
+.customer-steps {
+  margin-bottom: 18px;
+}
+
+.flow-step {
+  display: grid;
+  grid-template-columns: 36px 1fr;
+  gap: 12px;
+  align-items: start;
+  width: 100%;
+  padding: 14px;
+  border: 1px solid var(--s-line-normal);
+  border-radius: 12px;
+  background: var(--s-bg-normal);
+  text-align: left;
+}
+
+.flow-step span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  background: var(--f-neutral-100);
+  color: var(--s-label-natural);
+  font-weight: 700;
+}
+
+.flow-step strong {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.flow-step p {
+  margin: 0;
+  color: var(--s-label-natural);
+  font-size: 14px;
+}
+
+.flow-step.is-active {
+  border-color: rgba(7, 70, 202, 0.22);
+  background: rgba(7, 70, 202, 0.04);
+}
+
+.flow-step.is-active span {
+  background: var(--f-blue-700);
+  color: var(--f-base-white);
+}
+
+.sidebar-note {
+  padding-top: 6px;
+}
+
+.auth-page,
+.survey-top {
+  display: grid;
+  grid-template-columns: 1.25fr 0.75fr;
+  gap: 20px;
+}
+
+.auth-card,
+.auth-side,
+.survey-form,
+.survey-summary {
+  display: grid;
+  gap: 16px;
+}
+
+.auth-card,
+.survey-form,
+.summary-card,
+.info-card {
+  padding: 20px;
+  border: 1px solid var(--s-line-normal);
+  border-radius: 16px;
+  background: var(--s-bg-normal);
+  box-shadow: var(--arc-shadow);
+}
+
+.auth-copy {
+  margin: 8px 0 0;
+  color: var(--s-label-natural);
+}
+
+.summary-card span,
+.info-card span {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--s-label-natural);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.summary-card strong,
+.info-card strong {
+  display: block;
+  color: var(--s-label-strong);
+  font-size: 22px;
+  line-height: 1.15;
+}
+
+.summary-card p,
+.info-card p {
+  margin: 8px 0 0;
+  color: var(--s-label-natural);
+}
+
+.survey-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.question-preview .message {
+  padding: 12px 14px;
 }
 
 .flow-list {
@@ -460,6 +591,8 @@ input {
   .hero__grid,
   .grid-two,
   .grid-two--wide,
+  .auth-page,
+  .survey-top,
   .hero-card,
   .customer-home__hero,
   .customer-home__stats,

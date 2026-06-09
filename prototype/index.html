@@ -91,100 +91,172 @@
             <aside class="panel sidebar">
               <div class="panel__header">
                 <div>
-                  <p class="panel-label">Scenario</p>
-                  <h2>세그먼트 시뮬레이션</h2>
+                  <p class="panel-label">Customer Flow</p>
+                  <h2>2-Page Prototype</h2>
                 </div>
               </div>
-              <label class="field">
-                <span>세그먼트</span>
-                <select id="segment-select"></select>
-              </label>
-              <div class="field-group" id="intake-fields"></div>
-              <button class="action action--primary" id="simulate-button">질문 / 서류 반영</button>
+              <div class="customer-steps">
+                <button class="flow-step is-active" data-customer-page="auth">
+                  <span>1</span>
+                  <div>
+                    <strong>로그인 / 가입</strong>
+                    <p>이메일과 비밀번호 입력</p>
+                  </div>
+                </button>
+                <button class="flow-step" data-customer-page="survey">
+                  <span>2</span>
+                  <div>
+                    <strong>최초 설문</strong>
+                    <p>질문 분기와 서류 안내</p>
+                  </div>
+                </button>
+              </div>
+
+              <div class="sidebar-note">
+                <h3>설계 기준</h3>
+                <ul class="bullet-list">
+                  <li>계정이 없으면 가입, 있으면 로그인</li>
+                  <li>로그인 직후 최초 설문 진입</li>
+                  <li>설문 입력값으로 세그먼트 자동 판단</li>
+                  <li>질문과 서류는 세그먼트별로 분기</li>
+                </ul>
+              </div>
             </aside>
 
             <div class="customer-layout">
-              <section class="panel">
+              <section class="panel customer-page is-active" id="customer-page-auth">
                 <div class="panel__header">
                   <div>
-                    <p class="panel-label">Customer Product / Home</p>
-                    <h2>온보딩 진행 홈</h2>
+                    <p class="panel-label">Page 01</p>
+                    <h2>로그인 / 가입</h2>
+                  </div>
+                </div>
+                <div class="auth-page">
+                  <div class="auth-card">
+                    <div>
+                      <p class="hero-card__label">Customer Entry</p>
+                      <h3>이메일 주소와 비밀번호를 입력하세요</h3>
+                      <p class="auth-copy">
+                        계정이 이미 있으면 로그인되고, 없으면 동일한 흐름 안에서 가입 후 최초 설문으로
+                        넘어간다.
+                      </p>
+                    </div>
+                    <div class="auth-form">
+                      <label class="field">
+                        <span>이메일 주소</span>
+                        <input type="email" value="merchant@sample.com" />
+                      </label>
+                      <label class="field">
+                        <span>비밀번호</span>
+                        <input type="password" value="password" />
+                      </label>
+                      <button class="action action--primary" id="go-to-survey">로그인 후 설문 시작</button>
+                    </div>
+                  </div>
+
+                  <div class="auth-side">
+                    <article class="info-card">
+                      <span>가입</span>
+                      <strong>계정이 없으면 자동 가입</strong>
+                      <p>이메일 인증 이후 바로 최초 설문으로 이어진다.</p>
+                    </article>
+                    <article class="info-card">
+                      <span>로그인</span>
+                      <strong>기존 계정이면 이어서 진행</strong>
+                      <p>기존 케이스 상태와 저장된 설문 진행 상태를 바로 불러온다.</p>
+                    </article>
+                  </div>
+                </div>
+              </section>
+
+              <section class="panel customer-page" id="customer-page-survey">
+                <div class="panel__header">
+                  <div>
+                    <p class="panel-label">Page 02</p>
+                    <h2>최초 설문</h2>
                   </div>
                   <span class="status-pill" id="customer-case-status"></span>
                 </div>
 
-                <div class="customer-home">
-                  <div class="customer-home__hero">
-                    <div>
-                      <p class="hero-card__label">현재 상태</p>
-                      <h3 id="customer-next-title"></h3>
+                <div class="survey-top">
+                  <div class="survey-form">
+                    <div class="section-columns">
+                      <div>
+                        <h3 class="section-title">공통 인테이크</h3>
+                        <div class="form-stack">
+                          <label class="field">
+                            <span>서비스 유형</span>
+                            <select id="service-type">
+                              <option value="payout">Payout</option>
+                              <option value="collection">Collection</option>
+                            </select>
+                          </label>
+                          <label class="field">
+                            <span>수금 국가</span>
+                            <select id="collection-country">
+                              <option value="KR">KR</option>
+                              <option value="VN">VN</option>
+                              <option value="ID">ID</option>
+                            </select>
+                          </label>
+                          <label class="field">
+                            <span>지급 국가</span>
+                            <select id="payout-country">
+                              <option value="KR">KR</option>
+                              <option value="US">US</option>
+                              <option value="VN">VN</option>
+                            </select>
+                          </label>
+                          <label class="field">
+                            <span>엔터티 유형</span>
+                            <select id="entity-type">
+                              <option value="corporate">Corporate</option>
+                              <option value="individual">Individual</option>
+                              <option value="fi">FI</option>
+                            </select>
+                          </label>
+                          <label class="field">
+                            <span>설립 국가</span>
+                            <select id="incorporation-country">
+                              <option value="KR">KR</option>
+                              <option value="CN">CN</option>
+                              <option value="HK">HK</option>
+                              <option value="VN">VN</option>
+                            </select>
+                          </label>
+                        </div>
+                      </div>
+
+                      <div>
+                        <h3 class="section-title">추가 질문 미리보기</h3>
+                        <div class="question-preview" id="intake-fields"></div>
+                      </div>
+                    </div>
+
+                    <div class="survey-actions">
+                      <button class="action action--secondary" id="back-to-auth">이전</button>
+                      <button class="action action--primary" id="simulate-button">세그먼트 판정</button>
+                    </div>
+                  </div>
+
+                  <aside class="survey-summary">
+                    <div class="summary-card">
+                      <span>판정 결과</span>
+                      <strong id="customer-next-title"></strong>
                       <p id="customer-next-copy"></p>
                     </div>
-                    <div class="customer-home__actions">
-                      <button class="action action--primary">계속 진행하기</button>
-                      <button class="action action--secondary">문의하기</button>
-                    </div>
-                  </div>
-
-                  <div class="customer-home__stats" id="customer-stats"></div>
+                    <div class="summary-card" id="customer-stats"></div>
+                  </aside>
                 </div>
-              </section>
 
-              <section class="panel">
-                <div class="panel__header">
-                  <div>
-                    <p class="panel-label">Progress</p>
-                    <h2>진행 단계</h2>
-                  </div>
-                </div>
                 <div class="customer-progress" id="customer-timeline"></div>
               </section>
 
-              <section class="panel">
+              <section class="panel customer-page" id="customer-page-survey-docs">
                 <div class="panel__header">
                   <div>
-                    <p class="panel-label">Next Actions</p>
-                    <h2>지금 해야 할 일</h2>
-                  </div>
-                </div>
-                <div class="next-actions">
-                  <article class="next-card next-card--primary">
-                    <span class="next-card__label">Primary</span>
-                    <h3>정보 입력 완료 후 서류 제출</h3>
-                    <p>현재 세그먼트에 필요한 질문과 서류만 표시된다.</p>
-                  </article>
-                  <article class="next-card">
-                    <span class="next-card__label">Support</span>
-                    <h3>보완 요청 확인</h3>
-                    <p>보완이 필요한 문서는 제출 이력에서 다시 제출할 수 있다.</p>
-                  </article>
-                </div>
-              </section>
-
-              <section class="panel">
-                <div class="panel__header">
-                  <div>
-                    <p class="panel-label">C-02</p>
-                    <h2>정보 입력</h2>
-                  </div>
-                </div>
-                <div class="section-columns">
-                  <div>
-                    <h3 class="section-title">공통 인테이크</h3>
-                    <ul class="bullet-list" id="customer-base-fields"></ul>
-                  </div>
-                  <div>
-                    <h3 class="section-title">세그먼트별 질문</h3>
-                    <ul class="bullet-list" id="customer-segment-fields"></ul>
-                  </div>
-                </div>
-              </section>
-
-              <section class="panel">
-                <div class="panel__header">
-                  <div>
-                    <p class="panel-label">C-03 / C-04</p>
-                    <h2>필요 서류 안내 / 서류 제출</h2>
+                    <p class="panel-label">Survey Output</p>
+                    <h2>서류 안내 / 제출 준비</h2>
                   </div>
                 </div>
                 <div class="document-layout">

@@ -209,6 +209,19 @@ const demoCases = [
   ["ARC-2403", "KRW Collection", "계정 생성중", "Operations"],
 ];
 
+function determineSegment() {
+  const serviceType = document.getElementById("service-type")?.value;
+  const collectionCountry = document.getElementById("collection-country")?.value;
+  const entityType = document.getElementById("entity-type")?.value;
+
+  if (serviceType === "collection" && collectionCountry === "KR") return "krw";
+  if (serviceType === "collection" && collectionCountry === "VN") return "vnd";
+  if (serviceType === "collection" && collectionCountry === "ID") return "id";
+  if (entityType === "fi") return "fi";
+  if (entityType === "individual") return "individual";
+  return "corporate";
+}
+
 const topTabs = document.querySelectorAll(".top-tab");
 const views = document.querySelectorAll(".view");
 
@@ -265,9 +278,9 @@ function renderSegmentOptions() {
 function renderCustomerView(segmentKey = "corporate") {
   const segment = segments[segmentKey];
   document.getElementById("customer-case-status").textContent = segment.customerStatus;
-  document.getElementById("customer-next-title").textContent = `${segment.name} 온보딩 진행`;
+  document.getElementById("customer-next-title").textContent = segment.name;
   document.getElementById("customer-next-copy").textContent =
-    "입력 정보에 따라 필요한 질문과 서류만 노출된다. 제출 후에는 같은 화면에서 보완 요청과 검토 이력을 확인할 수 있다.";
+    "공통 인테이크 입력값을 기준으로 이 세그먼트가 판정되었고, 아래 질문과 제출 서류가 고객에게 노출된다.";
 
   document.getElementById("customer-stats").innerHTML = [
     ["현재 세그먼트", segment.name, "고객 유형과 처리 기준이 자동으로 반영된다."],
@@ -305,8 +318,8 @@ function renderCustomerView(segmentKey = "corporate") {
     .join("");
 
   document.getElementById("customer-timeline").innerHTML = [
-    ["1", "접수 완료", "온보딩이 시작되었다.", "is-complete"],
-    ["2", "정보 입력", "분류 기준이 되는 정보를 입력한다.", "is-active"],
+    ["1", "로그인 / 가입", "이메일과 비밀번호를 입력한다.", "is-complete"],
+    ["2", "최초 설문", "분류 기준이 되는 정보를 입력한다.", "is-active"],
     ["3", "서류 제출", "필요한 서류만 업로드한다.", ""],
     ["4", "검토 / 계정 생성", "검토 완료 후 계정 안내를 받는다.", ""],
   ]
@@ -373,12 +386,40 @@ renderSegmentOptions();
 renderCustomerView();
 renderInternalView();
 
+function switchCustomerPage(page) {
+  document.querySelectorAll(".customer-page").forEach((node) => {
+    const shouldShow =
+      (page === "auth" && node.id === "customer-page-auth") ||
+      (page === "survey" && (node.id === "customer-page-survey" || node.id === "customer-page-survey-docs"));
+    node.classList.toggle("is-active", shouldShow);
+  });
+
+  document.querySelectorAll("[data-customer-page]").forEach((node) => {
+    node.classList.toggle("is-active", node.dataset.customerPage === page);
+  });
+}
+
 document.getElementById("simulate-button").addEventListener("click", () => {
-  const segmentKey = document.getElementById("segment-select").value;
+  const segmentKey = determineSegment();
   renderCustomerView(segmentKey);
   renderInternalView(document.getElementById("role-select").value, segmentKey);
 });
 
 document.getElementById("role-select").addEventListener("change", (event) => {
-  renderInternalView(event.target.value, document.getElementById("segment-select").value);
+  renderInternalView(event.target.value, determineSegment());
+});
+
+document.getElementById("go-to-survey").addEventListener("click", () => {
+  switchCustomerPage("survey");
+  renderCustomerView(determineSegment());
+});
+
+document.getElementById("back-to-auth").addEventListener("click", () => {
+  switchCustomerPage("auth");
+});
+
+document.querySelectorAll("[data-customer-page]").forEach((node) => {
+  node.addEventListener("click", () => {
+    switchCustomerPage(node.dataset.customerPage);
+  });
 });
