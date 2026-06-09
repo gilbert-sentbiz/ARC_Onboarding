@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html,body { margin:0; padding:0; background:#fff; }
+  body { font-family: var(--font-sans); color: var(--fg-1); -webkit-font-smoothing:antialiased; }
+  .card { padding: 20px 24px; display:flex; flex-direction:column; gap:20px; }
+  .section-lbl { font: 600 11px/1.2 var(--font-sans); color: var(--fg-3); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:10px; }
+  .tiny { font: 400 11px/1.3 var(--font-sans); color: var(--fg-3); letter-spacing: 0.3px; margin-bottom:8px; }
+  .col { display:flex; flex-direction:column; gap:12px; }
+  .hr { height:1px; background:#F1F5F9; }
+
+  /* Segment group */
+  .seg {
+    display: inline-flex;
+    align-items: stretch;
+    height: 40px;
+    padding: 4px;
+    gap: 2px;
+    background: #F8FAFC;
+    border-radius: 6px;
+    box-sizing: border-box;
+  }
+
+  /* Segment item */
+  .seg-item {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 16px;
+    border-radius: 4px;
+    font: 600 14px/16px var(--font-sans);
+    letter-spacing: 0.175px;
+    color: #64748B;
+    white-space: nowrap;
+    min-width: 36px;
+    cursor: pointer;
+    transition: background 120ms, box-shadow 120ms, color 120ms;
+  }
+
+  /* Selected */
+  .seg-item.active {
+    background: #fff;
+    box-shadow: 0 2px 8px 0 rgba(15,23,42,0.08);
+    color: #0F172A;
+  }
+
+  /* Disabled */
+  .seg-item.disabled {
+    color: #CBD5E1;
+    cursor: not-allowed;
+  }
+  .seg-item.active.disabled {
+    background: #fff;
+    box-shadow: 0 2px 8px 0 rgba(15,23,42,0.08);
+    color: #CBD5E1;
+  }
+</style></head>
+<body><div class="card">
+
+  <!-- SELECTION POSITION -->
+  <div>
+    <div class="section-lbl">Segment Button — h40 · r6 · p4 · 14px/600</div>
+    <div class="col">
+
+      <div>
+        <div class="tiny">First selected</div>
+        <div class="seg">
+          <div class="seg-item active">Option 1</div>
+          <div class="seg-item">Option 2</div>
+          <div class="seg-item">Option 3</div>
+        </div>
+      </div>
+
+      <div>
+        <div class="tiny">Middle selected</div>
+        <div class="seg">
+          <div class="seg-item">Option 1</div>
+          <div class="seg-item active">Option 2</div>
+          <div class="seg-item">Option 3</div>
+        </div>
+      </div>
+
+      <div>
+        <div class="tiny">Last selected</div>
+        <div class="seg">
+          <div class="seg-item">Option 1</div>
+          <div class="seg-item">Option 2</div>
+          <div class="seg-item active">Option 3</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="hr"></div>
+
+  <!-- ITEM COUNT -->
+  <div>
+    <div class="section-lbl">Item Count</div>
+    <div class="col">
+
+      <div>
+        <div class="tiny">2 items</div>
+        <div class="seg">
+          <div class="seg-item active">Monthly</div>
+          <div class="seg-item">Annual</div>
+        </div>
+      </div>
+
+      <div>
+        <div class="tiny">3 items</div>
+        <div class="seg">
+          <div class="seg-item">7D</div>
+          <div class="seg-item active">30D</div>
+          <div class="seg-item">90D</div>
+        </div>
+      </div>
+
+      <div>
+        <div class="tiny">4 items</div>
+        <div class="seg">
+          <div class="seg-item active">All</div>
+          <div class="seg-item">Inbound</div>
+          <div class="seg-item">Outbound</div>
+          <div class="seg-item">Internal</div>
+        </div>
+      </div>
+
+      <div>
+        <div class="tiny">5 items</div>
+        <div class="seg">
+          <div class="seg-item">1D</div>
+          <div class="seg-item">7D</div>
+          <div class="seg-item active">1M</div>
+          <div class="seg-item">3M</div>
+          <div class="seg-item">1Y</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="hr"></div>
+
+  <!-- DISABLED -->
+  <div>
+    <div class="section-lbl">Disabled</div>
+    <div class="col">
+
+      <div>
+        <div class="tiny">All disabled</div>
+        <div class="seg" style="opacity:0.5;pointer-events:none">
+          <div class="seg-item active disabled">Option 1</div>
+          <div class="seg-item disabled">Option 2</div>
+          <div class="seg-item disabled">Option 3</div>
+        </div>
+      </div>
+
+      <div>
+        <div class="tiny">Single item disabled</div>
+        <div class="seg">
+          <div class="seg-item active">Option 1</div>
+          <div class="seg-item">Option 2</div>
+          <div class="seg-item disabled">Option 3</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="hr"></div>
+
+  <!-- REAL-WORLD LABELS -->
+  <div>
+    <div class="section-lbl">Real-world examples</div>
+    <div class="col">
+
+      <div>
+        <div class="tiny">날짜 범위</div>
+        <div class="seg">
+          <div class="seg-item">오늘</div>
+          <div class="seg-item active">이번 주</div>
+          <div class="seg-item">이번 달</div>
+          <div class="seg-item">직접 입력</div>
+        </div>
+      </div>
+
+      <div>
+        <div class="tiny">거래 유형</div>
+        <div class="seg">
+          <div class="seg-item active">전체</div>
+          <div class="seg-item">입금</div>
+          <div class="seg-item">출금</div>
+        </div>
+      </div>
+
+      <div>
+        <div class="tiny">요금제</div>
+        <div class="seg">
+          <div class="seg-item active">월간 결제</div>
+          <div class="seg-item">연간 결제</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div></body></html>

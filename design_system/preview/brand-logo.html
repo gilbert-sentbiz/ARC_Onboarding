@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html,body { margin:0; padding:0; background:#fff; }
+  body { font-family: var(--font-sans); color: var(--fg-1); -webkit-font-smoothing:antialiased; }
+  .card { padding: 20px 24px; }
+  .col { display:flex; flex-direction:column; gap:10px; }
+  .row { display:flex; align-items:center; gap:16px; }
+  .tiny { font: 400 11px/1.3 var(--font-sans); color: var(--fg-3); letter-spacing: 0.3px; }
+  .divider { width:1px; height:26px; }
+</style></head>
+<body><div class="card">
+<div class="col">
+
+  <!-- On light -->
+  <div class="row" style="background:#fff;border:1px solid #E2E8F0;padding:14px 18px;border-radius:10px">
+    <img src="../assets/logos/logo-mark-light.svg" width="32" height="32" alt="logo mark light">
+    <img src="../assets/logos/wordmark-dark.svg" width="104" height="22" alt="wordmark dark">
+    <div class="divider" style="background:#E2E8F0"></div>
+    <div class="tiny">On light</div>
+  </div>
+
+  <!-- On dark -->
+  <div class="row" style="background:#0F172A;padding:14px 18px;border-radius:10px">
+    <img src="../assets/logos/logo-mark-dark.svg" width="32" height="32" alt="logo mark dark">
+    <img src="../assets/logos/wordmark-white.svg" width="104" height="22" alt="wordmark white">
+    <div class="divider" style="background:rgba(255,255,255,0.2)"></div>
+    <div class="tiny" style="color:#94A3B8">On dark</div>
+  </div>
+
+  <!-- On navy (brand primary) — light-navy mark -->
+  <div class="row" style="background:#122666;padding:14px 18px;border-radius:10px">
+    <img src="../assets/logos/logo-mark-light-navy.svg" width="32" height="32" alt="logo mark light navy">
+    <img src="../assets/logos/wordmark-white.svg" width="104" height="22" alt="wordmark white">
+    <div class="divider" style="background:rgba(255,255,255,0.2)"></div>
+    <div class="tiny" style="color:rgba(255,255,255,0.5)">On navy · light-navy mark</div>
+  </div>
+
+  <!-- On navy (brand primary) — dark-navy mark -->
+  <div class="row" style="background:#fff;border:1px solid #E2E8F0;padding:14px 18px;border-radius:10px">
+    <img src="../assets/logos/logo-mark-dark-navy.svg" width="32" height="32" alt="logo mark dark navy">
+    <img src="../assets/logos/wordmark-navy.svg" width="104" height="22" alt="wordmark navy">
+    <div class="divider" style="background:#E2E8F0"></div>
+    <div class="tiny">On light · dark-navy mark</div>
+  </div>
+
+</div></div></body></html>

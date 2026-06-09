@@ -1,0 +1,14 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
+    "module": "nodenext",
+    "moduleResolution": "nodenext"
+  },
+  "include": ["**/*.ts", "**/*.tsx", ".storybook/**/*.tsx"],
+  "exclude": ["node_modules"]
+}

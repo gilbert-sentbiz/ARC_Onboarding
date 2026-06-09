@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html,body { margin:0; padding:0; background:#fff; }
+  body { font-family: var(--font-sans); color: var(--fg-1); -webkit-font-smoothing:antialiased; }
+  .card { padding: 20px 24px; display:flex; flex-direction:column; gap:20px; }
+  .section-lbl { font: 600 11px/1.2 var(--font-sans); color: var(--fg-3); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px; }
+  .tiny { font: 400 11px/1.3 var(--font-sans); color: var(--fg-3); letter-spacing: 0.3px; margin-bottom:6px; }
+  .field-col { display:flex; flex-direction:column; gap:6px; }
+  .field-label { font: 400 14px/20px var(--font-sans); color: #64748B; letter-spacing:0.07px; }
+  .field-helper { font: 400 11px/16px var(--font-sans); letter-spacing:0.055px; }
+  .hr { height:1px; background:#F1F5F9; }
+  .row { display:flex; gap:12px; flex-wrap:wrap; align-items:flex-start; }
+
+  /* Select trigger */
+  .sel { display:flex; align-items:center; height:40px; padding:0 8px 0 16px; border-radius:6px; background:#fff; cursor:pointer; }
+  .sel-text { flex:1; font:400 14px/20px var(--font-sans); letter-spacing:0.07px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0; }
+  .sel-caret { display:inline-flex; align-items:center; justify-content:center; width:20px; height:20px; flex-shrink:0; }
+
+  /* Dropdown */
+  .dropdown { position:absolute; top:44px; left:0; right:0; z-index:10; background:#fff; border:1px solid rgba(112,115,124,0.22); border-radius:6px; box-shadow:0 2px 8px 0 rgba(15,23,42,0.08); padding:8px; display:flex; flex-direction:column; gap:8px; }
+  .search-wrap { display:flex; align-items:center; gap:8px; height:40px; padding:0 8px; background:#F8FAFC; border-radius:4px; flex-shrink:0; }
+  .search-wrap input { flex:1; border:0; outline:0; background:transparent; font:400 12px/18px var(--font-sans); color:#0F172A; letter-spacing:0.06px; min-width:0; }
+  .opt { display:flex; align-items:center; gap:8px; height:40px; padding:0 8px 0 16px; border-radius:4px; cursor:pointer; }
+  .opt-label { flex:1; font:400 14px/20px var(--font-sans); color:#0F172A; letter-spacing:0.07px; }
+  .opt:hover { background:#F2F6FF; }
+  .opt.selected { background:#F2F6FF; }
+  .opt-check { display:inline-flex; align-items:center; justify-content:center; width:20px; height:20px; flex-shrink:0; }
+</style></head>
+<body><div class="card">
+
+  <!-- STATES -->
+  <div>
+    <div class="section-lbl">States — h40 · r6 · 14px/400</div>
+    <div class="row">
+
+      <!-- Default -->
+      <div class="field-col" style="min-width:160px;flex:1">
+        <div class="tiny">Default</div>
+        <div class="sel" style="border:1px solid rgba(112,115,124,0.22)">
+          <span class="sel-text" style="color:#CBD5E1">선택하세요</span>
+          <span class="sel-caret">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 6L8 10L12 6" stroke="#293548" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </span>
+        </div>
+      </div>
+
+      <!-- Filled -->
+      <div class="field-col" style="min-width:160px;flex:1">
+        <div class="tiny">Filled</div>
+        <div class="sel" style="border:1px solid rgba(112,115,124,0.22)">
+          <span class="sel-text" style="color:#0F172A">USD · 미국 달러</span>
+          <span class="sel-caret">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 6L8 10L12 6" stroke="#293548" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </span>
+        </div>
+      </div>
+
+      <!-- Open / Focus -->
+      <div class="field-col" style="min-width:160px;flex:1">
+        <div class="tiny">Open</div>
+        <div class="sel" style="border:1px solid #122666">
+          <span class="sel-text" style="color:#0F172A">USD · 미국 달러</span>
+          <span class="sel-caret">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 10L8 6L12 10" stroke="#293548" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </span>
+        </div>
+      </div>
+
+      <!-- Error -->
+      <div class="field-col" style="min-width:160px;flex:1">
+        <div class="tiny">Error</div>
+        <div class="sel" style="border:1px solid #F91C1C">
+          <span class="sel-text" style="color:#0F172A">USD · 미국 달러</span>
+          <span class="sel-caret">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 6L8 10L12 6" stroke="#293548" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </span>
+        </div>
+        <div class="field-helper" style="color:#F91C1C">통화를 선택해주세요</div>
+      </div>
+
+      <!-- Disabled -->
+      <div class="field-col" style="min-width:160px;flex:1">
+        <div class="tiny">Disabled</div>
+        <div class="sel" style="border:1px solid #CBD5E1;background:#EAEFF5;cursor:not-allowed">
+          <span class="sel-text" style="color:#CBD5E1">선택하세요</span>
+          <span class="sel-caret">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 6L8 10L12 6" stroke="#CBD5E1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="hr"></div>
+
+  <!-- LABEL + HELPER -->
+  <div>
+    <div class="section-lbl">Label + Helper</div>
+    <div class="row">
+
+      <!-- Label + focused -->
+      <div class="field-col" style="min-width:200px;flex:1">
+        <div class="field-label">수취 통화</div>
+        <div class="sel" style="border:1px solid #122666">
+          <span class="sel-text" style="color:#0F172A">USD · 미국 달러</span>
+          <span class="sel-caret">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 10L8 6L12 10" stroke="#293548" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </span>
+        </div>
+        <div class="field-helper" style="color:#64748B">수취인의 계좌 통화를 선택하세요</div>
+      </div>
+
+      <!-- Label + error -->
+      <div class="field-col" style="min-width:200px;flex:1">
+        <div class="field-label">송금 국가</div>
+        <div class="sel" style="border:1px solid #F91C1C">
+          <span class="sel-text" style="color:#CBD5E1">선택하세요</span>
+          <span class="sel-caret">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 6L8 10L12 6" stroke="#293548" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </span>
+        </div>
+        <div class="field-helper" style="color:#F91C1C">국가를 선택해주세요</div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="hr"></div>
+
+  <!-- DROPDOWN OPEN — with search -->
+  <div>
+    <div class="section-lbl">Dropdown open — searchable</div>
+    <div style="display:flex;gap:24px;flex-wrap:wrap;align-items:flex-start">
+
+      <div style="position:relative;width:260px;padding-bottom:212px">
+        <div class="tiny" style="margin-bottom:6px">With search · option selected</div>
+        <div class="sel" style="border:1px solid #122666">
+          <span class="sel-text" style="color:#0F172A">USD · 미국 달러</span>
+          <span class="sel-caret">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 10L8 6L12 10" stroke="#293548" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </span>
+        </div>
+        <div class="dropdown">
+          <div class="search-wrap">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="4.5" stroke="#94A3B8" stroke-width="1.5"/><path d="M10.5 10.5L13 13" stroke="#94A3B8" stroke-width="1.5" stroke-linecap="round"/></svg>
+            <input placeholder="검색어를 입력하세요.">
+          </div>
+          <div>
+            <div class="opt selected">
+              <span class="opt-label">USD · 미국 달러</span>
+              <span class="opt-check"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3.5 8L6.5 11L12.5 5" stroke="#293548" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+            </div>
+            <div class="opt"><span class="opt-label">KRW · 한국 원</span></div>
+            <div class="opt"><span class="opt-label">JPY · 일본 엔</span></div>
+            <div class="opt"><span class="opt-label">EUR · 유로</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div style="position:relative;width:260px;padding-bottom:172px">
+        <div class="tiny" style="margin-bottom:6px">Without search · no selection</div>
+        <div class="sel" style="border:1px solid #122666">
+          <span class="sel-text" style="color:#CBD5E1">선택하세요</span>
+          <span class="sel-caret">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 10L8 6L12 10" stroke="#293548" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </span>
+        </div>
+        <div class="dropdown" style="gap:0">
+          <div class="opt"><span class="opt-label">USD · 미국 달러</span></div>
+          <div class="opt"><span class="opt-label">KRW · 한국 원</span></div>
+          <div class="opt"><span class="opt-label">JPY · 일본 엔</span></div>
+          <div class="opt"><span class="opt-label">EUR · 유로</span></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div></body></html>

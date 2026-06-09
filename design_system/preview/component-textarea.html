@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html,body { margin:0; padding:0; background:#fff; }
+  body { font-family: var(--font-sans); color: var(--fg-1); -webkit-font-smoothing:antialiased; }
+  .card { padding: 20px 24px; display:flex; flex-direction:column; gap:20px; }
+  .section-lbl { font: 600 11px/1.2 var(--font-sans); color: var(--fg-3); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px; }
+  .tiny { font: 400 11px/1.3 var(--font-sans); color: var(--fg-3); letter-spacing: 0.3px; margin-bottom:6px; }
+  .field-label { font: 400 14px/20px var(--font-sans); color: #64748B; letter-spacing:0.07px; margin-bottom:6px; }
+  .field-helper { font: 400 12px/1.5 var(--font-sans); color: #F91C1C; letter-spacing:0.012px; margin-top:6px; }
+  .hr { height:1px; background:#F1F5F9; }
+  .row { display:flex; gap:12px; flex-wrap:wrap; align-items:flex-start; }
+
+  /* Textarea wrapper */
+  .ta-wrap {
+    display: flex;
+    flex-direction: column;
+    height: 112px;
+    padding: 8px 16px;
+    border-radius: 6px;
+    border: 1px solid;
+    box-sizing: border-box;
+    background: #fff;
+  }
+  .ta-inner {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    gap: 4px;
+  }
+  textarea {
+    flex: 1;
+    border: 0;
+    outline: 0;
+    resize: none;
+    background: transparent;
+    font: 400 14px/20px var(--font-sans);
+    letter-spacing: 0.035px;
+    color: #0F172A;
+    min-height: 0;
+    padding: 0;
+    min-width: 0;
+  }
+  textarea::placeholder { color: #CBD5E1; }
+  textarea:disabled { cursor: not-allowed; color: #CBD5E1; }
+  .ta-counter {
+    font: 400 11px/16px var(--font-sans);
+    letter-spacing: 0.044px;
+    text-align: right;
+    flex-shrink: 0;
+  }
+  .ta-counter .cur { color: #0F172A; }
+  .ta-counter .max { color: #CBD5E1; }
+  .ta-counter.error .cur,
+  .ta-counter.error .max { color: #F91C1C; }
+  .ta-counter.disabled .cur,
+  .ta-counter.disabled .max { color: #CBD5E1; }
+</style></head>
+<body><div class="card">
+
+  <!-- STATES -->
+  <div>
+    <div class="section-lbl">States — h112 · r6 · 14px/400 · counter 11px</div>
+    <div class="row">
+
+      <!-- Default -->
+      <div style="min-width:200px;flex:1">
+        <div class="tiny">Default</div>
+        <div class="ta-wrap" style="border-color:#E2E8F0">
+          <div class="ta-inner">
+            <textarea placeholder="Field text" rows="3"></textarea>
+            <div class="ta-counter"><span class="cur">0</span><span class="max">/500</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Hover -->
+      <div style="min-width:200px;flex:1">
+        <div class="tiny">Hover</div>
+        <div class="ta-wrap" style="border-color:#64748B">
+          <div class="ta-inner">
+            <textarea placeholder="Field text" rows="3"></textarea>
+            <div class="ta-counter"><span class="cur">0</span><span class="max">/500</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Filled -->
+      <div style="min-width:200px;flex:1">
+        <div class="tiny">Filled</div>
+        <div class="ta-wrap" style="border-color:#E2E8F0">
+          <div class="ta-inner">
+            <textarea rows="3">작성중입니다.</textarea>
+            <div class="ta-counter"><span class="cur">7</span><span class="max">/500</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Focus -->
+      <div style="min-width:200px;flex:1">
+        <div class="tiny">Focus</div>
+        <div class="ta-wrap" style="border-color:#122666">
+          <div class="ta-inner">
+            <textarea rows="3">작성중입니다.</textarea>
+            <div class="ta-counter"><span class="cur">7</span><span class="max">/500</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Error -->
+      <div style="min-width:200px;flex:1">
+        <div class="tiny">Error</div>
+        <div class="ta-wrap" style="border-color:#F91C1C;background:#FFEFEF">
+          <div class="ta-inner">
+            <textarea rows="3" style="background:transparent">Field text</textarea>
+            <div class="ta-counter error"><span class="cur">10</span><span class="max">/500</span></div>
+          </div>
+        </div>
+        <div class="field-helper">Error text</div>
+      </div>
+
+      <!-- Disabled -->
+      <div style="min-width:200px;flex:1">
+        <div class="tiny">Disabled</div>
+        <div class="ta-wrap" style="border-color:#E2E8F0;background:#EAEFF5">
+          <div class="ta-inner">
+            <textarea rows="3" disabled>작성중입니다.</textarea>
+            <div class="ta-counter disabled"><span class="cur">7</span><span class="max">/500</span></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="hr"></div>
+
+  <!-- LABEL + HELPER -->
+  <div>
+    <div class="section-lbl">Label + Helper</div>
+    <div class="row">
+
+      <!-- With label -->
+      <div style="min-width:220px;flex:1">
+        <div class="field-label">메모</div>
+        <div class="ta-wrap" style="border-color:#122666">
+          <div class="ta-inner">
+            <textarea rows="3">송금 목적: 서비스 대금 결제</textarea>
+            <div class="ta-counter"><span class="cur">15</span><span class="max">/200</span></div>
+          </div>
+        </div>
+        <div style="font:400 11px/16px var(--font-sans);color:#64748B;letter-spacing:0.055px;margin-top:6px">최대 200자까지 입력 가능합니다</div>
+      </div>
+
+      <!-- With label + error -->
+      <div style="min-width:220px;flex:1">
+        <div class="field-label">송금 사유</div>
+        <div class="ta-wrap" style="border-color:#F91C1C;background:#FFEFEF">
+          <div class="ta-inner">
+            <textarea rows="3" style="background:transparent">aaaaaaaaaaaaaaaaaaaa</textarea>
+            <div class="ta-counter error"><span class="cur">200</span><span class="max">/200</span></div>
+          </div>
+        </div>
+        <div class="field-helper">최대 글자 수를 초과했습니다</div>
+      </div>
+
+    </div>
+  </div>
+
+</div></body></html>

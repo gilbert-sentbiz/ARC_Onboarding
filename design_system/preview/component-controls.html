@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html,body { margin:0; padding:0; background:#fff; }
+  body { font-family: var(--font-sans); color: var(--fg-1); -webkit-font-smoothing:antialiased; }
+  .card { padding: 20px 24px; display:flex; flex-direction:column; gap:24px; }
+  .section { display:flex; flex-direction:column; gap:10px; }
+  .section-title { font: 400 11px/1.3 var(--font-sans); color: var(--fg-3); letter-spacing: 0.3px; }
+  .row { display:flex; align-items:center; gap:24px; flex-wrap:wrap; }
+  .item { display:flex; flex-direction:column; gap:6px; align-items:center; }
+  .label-row { display:flex; align-items:center; gap:8px; }
+  .ctrl-label { font: 400 14px/20px var(--font-sans); color: #0F172A; }
+  .state-tag { font: 500 10px/1 var(--font-mono); color: var(--fg-3); letter-spacing: 0.02em; }
+  .hr { height:1px; background:#F1F5F9; }
+
+  /* Toggle */
+  .toggle { position:relative; width:44px; height:24px; border-radius:999px; flex-shrink:0; }
+  .toggle-thumb { position:absolute; top:2px; width:20px; height:20px; border-radius:999px; background:#fff; }
+  .toggle.on { background:#122666; }
+  .toggle.on .toggle-thumb { right:2px; }
+  .toggle.off { background:#CBD5E1; }
+  .toggle.off .toggle-thumb { left:2px; }
+  .toggle.indeterminate { background:#94A3B8; }
+  .toggle.indeterminate .toggle-thumb { right:2px; }
+  .toggle.disabled { background:#E2E8F0; }
+  .toggle.disabled .toggle-thumb { left:2px; }
+
+  /* Checkbox */
+  .checkbox { width:16px; height:16px; border-radius:4px; flex-shrink:0; display:flex; align-items:center; justify-content:center; box-sizing:border-box; }
+  .checkbox.checked { background:#122666; border:none; }
+  .checkbox.unchecked { background:#fff; border:1px solid #E2E8F0; }
+  .checkbox.indeterminate { background:#EAEFF5; border:1px solid #E2E8F0; }
+  .checkbox.disabled-checked { background:#EAEFF5; border:1px solid #E2E8F0; }
+  .checkbox.disabled-unchecked { background:#EAEFF5; border:1px solid #E2E8F0; }
+  .checkbox.hover { background:#fff; border:1px solid #94A3B8; }
+
+  /* Radio */
+  .radio { width:16px; height:16px; border-radius:999px; flex-shrink:0; box-sizing:border-box; }
+  .radio.selected { background:#fff; border:5px solid #122666; }
+  .radio.unselected { background:#fff; border:1px solid #E2E8F0; }
+  .radio.indeterminate { background:#EAEFF5; border:4px solid #E2E8F0; }
+  .radio.disabled { background:#EAEFF5; border:1px solid #E2E8F0; }
+  .radio.hover { background:#fff; border:1px solid #94A3B8; }
+</style></head>
+<body><div class="card">
+
+  <!-- Toggle / Switch -->
+  <div class="section">
+    <div class="section-title">Toggle — 44×24 · r-999</div>
+    <div class="row">
+
+      <div class="item">
+        <div class="label-row">
+          <div class="toggle on"><div class="toggle-thumb"></div></div>
+          <div class="ctrl-label">Label</div>
+        </div>
+        <div class="state-tag">ON</div>
+      </div>
+
+      <div class="item">
+        <div class="label-row">
+          <div class="toggle off"><div class="toggle-thumb"></div></div>
+          <div class="ctrl-label">Label</div>
+        </div>
+        <div class="state-tag">OFF</div>
+      </div>
+
+      <div class="item">
+        <div class="label-row">
+          <div class="toggle indeterminate"><div class="toggle-thumb"></div></div>
+          <div class="ctrl-label">Label</div>
+        </div>
+        <div class="state-tag">Indeterminate</div>
+      </div>
+
+      <div class="item">
+        <div class="label-row">
+          <div class="toggle disabled"><div class="toggle-thumb"></div></div>
+          <div class="ctrl-label" style="color:#CBD5E1">Label</div>
+        </div>
+        <div class="state-tag">Disabled</div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="hr"></div>
+
+  <!-- Checkbox -->
+  <div class="section">
+    <div class="section-title">Checkbox — 16×16 · r-4</div>
+    <div class="row">
+
+      <div class="item">
+        <div class="label-row">
+          <div class="checkbox checked">
+            <!-- White checkmark -->
+            <svg width="10" height="8" viewBox="0 0 10 8" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M1 3.5L3.8 6.5L9 1" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div class="ctrl-label">Label</div>
+        </div>
+        <div class="state-tag">Checked</div>
+      </div>
+
+      <div class="item">
+        <div class="label-row">
+          <div class="checkbox unchecked"></div>
+          <div class="ctrl-label">Label</div>
+        </div>
+        <div class="state-tag">Unchecked</div>
+      </div>
+
+      <div class="item">
+        <div class="label-row">
+          <div class="checkbox indeterminate">
+            <!-- Faded dash for indeterminate -->
+            <svg width="8" height="2" viewBox="0 0 8 2" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M1 1H7" stroke="#94A3B8" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <div class="ctrl-label">Label</div>
+        </div>
+        <div class="state-tag">Indeterminate</div>
+      </div>
+
+      <div class="item">
+        <div class="label-row">
+          <div class="checkbox disabled-checked">
+            <svg width="10" height="8" viewBox="0 0 10 8" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M1 3.5L3.8 6.5L9 1" stroke="#CBD5E1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div class="ctrl-label" style="color:#CBD5E1">Label</div>
+        </div>
+        <div class="state-tag">Disabled · checked</div>
+      </div>
+
+      <div class="item">
+        <div class="label-row">
+          <div class="checkbox disabled-unchecked"></div>
+          <div class="ctrl-label" style="color:#CBD5E1">Label</div>
+        </div>
+        <div class="state-tag">Disabled · unchecked</div>
+      </div>
+
+      <div class="item">
+        <div class="label-row">
+          <div class="checkbox hover"></div>
+          <div class="ctrl-label">Label</div>
+        </div>
+        <div class="state-tag">Hover</div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="hr"></div>
+
+  <!-- Radio -->
+  <div class="section">
+    <div class="section-title">Radio — 16×16 · r-999</div>
+    <div class="row">
+
+      <div class="item">
+        <div class="label-row">
+          <div class="radio selected"></div>
+          <div class="ctrl-label">Label</div>
+        </div>
+        <div class="state-tag">Selected</div>
+      </div>
+
+      <div class="item">
+        <div class="label-row">
+          <div class="radio unselected"></div>
+          <div class="ctrl-label">Label</div>
+        </div>
+        <div class="state-tag">Unselected</div>
+      </div>
+
+      <div class="item">
+        <div class="label-row">
+          <div class="radio indeterminate"></div>
+          <div class="ctrl-label">Label</div>
+        </div>
+        <div class="state-tag">Indeterminate</div>
+      </div>
+
+      <div class="item">
+        <div class="label-row">
+          <div class="radio disabled"></div>
+          <div class="ctrl-label" style="color:#CBD5E1">Label</div>
+        </div>
+        <div class="state-tag">Disabled</div>
+      </div>
+
+      <div class="item">
+        <div class="label-row">
+          <div class="radio hover"></div>
+          <div class="ctrl-label">Label</div>
+        </div>
+        <div class="state-tag">Hover</div>
+      </div>
+
+    </div>
+  </div>
+
+</div></body></html>

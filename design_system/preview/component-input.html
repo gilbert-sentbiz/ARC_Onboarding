@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html,body { margin:0; padding:0; background:#fff; }
+  body { font-family: var(--font-sans); color: var(--fg-1); -webkit-font-smoothing:antialiased; }
+  .card { padding: 20px 24px; display:flex; flex-direction:column; gap:20px; }
+  .section-lbl { font: 600 11px/1.2 var(--font-sans); color: var(--fg-3); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:2px; }
+  .tiny { font: 400 11px/1.3 var(--font-sans); color: var(--fg-3); letter-spacing: 0.3px; }
+  .field-col { display:flex; flex-direction:column; gap:6px; }
+  .field-label { font: 400 14px/20px var(--font-sans); color: #64748B; letter-spacing:0.07px; }
+  .field-wrap { display:flex; align-items:center; height:40px; padding:0 16px; border-radius:6px; background:#fff; }
+  .field-wrap input { flex:1; border:0; outline:0; font:400 14px/20px var(--font-sans); color:#0F172A; background:transparent; letter-spacing:0.07px; min-width:0; }
+  .field-helper { font: 400 11px/16px var(--font-sans); letter-spacing:0.055px; }
+  .hr { height:1px; background:#F1F5F9; }
+  .row { display:flex; gap:12px; flex-wrap:wrap; align-items:flex-start; }
+  /* icon mask util */
+  .icon { display:inline-flex; align-items:center; justify-content:center; width:16px; height:16px; flex-shrink:0; }
+</style></head>
+<body><div class="card">
+
+  <!-- STATES -->
+  <div>
+    <div class="section-lbl">States</div>
+    <div class="row" style="align-items:flex-end">
+
+      <!-- Default -->
+      <div class="field-col" style="min-width:160px;flex:1">
+        <div class="tiny">Default</div>
+        <div class="field-wrap" style="border:1px solid #E2E8F0">
+          <input placeholder="Placeholder">
+        </div>
+      </div>
+
+      <!-- Filled -->
+      <div class="field-col" style="min-width:160px;flex:1">
+        <div class="tiny">Filled</div>
+        <div class="field-wrap" style="border:1px solid #E2E8F0">
+          <input value="Acme Corp">
+        </div>
+      </div>
+
+      <!-- Focus -->
+      <div class="field-col" style="min-width:160px;flex:1">
+        <div class="tiny">Focus</div>
+        <div class="field-wrap" style="border:1px solid #122666">
+          <input value="Acme Corp">
+        </div>
+      </div>
+
+      <!-- Error -->
+      <div class="field-col" style="min-width:160px;flex:1">
+        <div class="tiny">Error</div>
+        <div class="field-wrap" style="border:1px solid #F91C1C">
+          <input value="invalid@">
+        </div>
+        <div class="field-helper" style="color:#F91C1C">올바른 이메일 주소를 입력하세요</div>
+      </div>
+
+      <!-- Disabled -->
+      <div class="field-col" style="min-width:160px;flex:1">
+        <div class="tiny">Disabled</div>
+        <div class="field-wrap" style="border:1px solid #CBD5E1;background:#EAEFF5">
+          <input disabled placeholder="Disabled" style="flex:1;border:0;outline:0;font:400 14px/20px var(--font-sans);color:#CBD5E1;background:transparent;cursor:not-allowed;letter-spacing:0.07px">
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="hr"></div>
+
+  <!-- LABEL + HELPER -->
+  <div>
+    <div class="section-lbl">Label + Helper</div>
+    <div class="row">
+
+      <!-- With label + helper (normal) -->
+      <div class="field-col" style="min-width:200px;flex:1">
+        <div class="field-label">Recipient name</div>
+        <div class="field-wrap" style="border:1px solid #122666">
+          <input value="Kim Hyunjin">
+        </div>
+        <div class="field-helper" style="color:#64748B">Enter the full legal name</div>
+      </div>
+
+      <!-- With label + helper (error) -->
+      <div class="field-col" style="min-width:200px;flex:1">
+        <div class="field-label">Amount</div>
+        <div class="field-wrap" style="border:1px solid #F91C1C">
+          <input value="0">
+        </div>
+        <div class="field-helper" style="color:#F91C1C">Amount must be greater than 0</div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="hr"></div>
+
+  <!-- VARIANTS -->
+  <div>
+    <div class="section-lbl">Variants</div>
+    <div class="row">
+
+      <!-- Left icon -->
+      <div class="field-col" style="min-width:180px;flex:1">
+        <div class="tiny">iconLeft</div>
+        <div class="field-wrap" style="border:1px solid #E2E8F0;gap:8px">
+          <span class="icon" style="margin-right:0">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <circle cx="7" cy="7" r="4.5" stroke="#94A3B8" stroke-width="1.5"/>
+              <path d="M10.5 10.5L13 13" stroke="#94A3B8" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+          </span>
+          <input placeholder="Search counterparty" style="flex:1;border:0;outline:0;font:400 14px/20px var(--font-sans);color:#0F172A;background:transparent;letter-spacing:0.07px;min-width:0">
+        </div>
+      </div>
+
+      <!-- Unit suffix -->
+      <div class="field-col" style="min-width:180px;flex:1">
+        <div class="tiny">unit</div>
+        <div class="field-wrap" style="border:1px solid #E2E8F0;gap:8px">
+          <input value="1,500,000" style="flex:1;border:0;outline:0;font:400 14px/20px var(--font-sans);color:#0F172A;background:transparent;letter-spacing:0.07px;min-width:0">
+          <span style="font:400 14px/20px var(--font-sans);color:#64748B;flex-shrink:0">KRW</span>
+        </div>
+      </div>
+
+      <!-- Clear button -->
+      <div class="field-col" style="min-width:180px;flex:1">
+        <div class="tiny">onClear (XCircle)</div>
+        <div class="field-wrap" style="border:1px solid #E2E8F0;gap:4px">
+          <input value="Acme Corp" style="flex:1;border:0;outline:0;font:400 14px/20px var(--font-sans);color:#0F172A;background:transparent;letter-spacing:0.07px;min-width:0">
+          <span style="display:inline-flex;align-items:center;cursor:pointer;flex-shrink:0">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <circle cx="8" cy="8" r="7" stroke="#94A3B8" stroke-width="1.5"/>
+              <path d="M5.5 5.5l5 5M10.5 5.5l-5 5" stroke="#94A3B8" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+          </span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div></body></html>

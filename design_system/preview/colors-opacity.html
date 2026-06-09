@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html,body{margin:0;padding:0;background:#fff;}
+  body{font-family:var(--font-sans);color:var(--fg-1);-webkit-font-smoothing:antialiased;}
+  .card{padding:20px 24px;}
+  .row{display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap;}
+  .col{display:flex;flex-direction:column;gap:4px;}
+  .tiny{font:400 11px/1.3 var(--font-sans);color:var(--fg-3);letter-spacing:0.3px;margin-bottom:6px;}
+  .lbl{font:600 11px/1.2 var(--font-sans);color:var(--fg-2);}
+  .hex{font:500 10px/1.3 var(--font-mono);color:var(--fg-3);}
+  .var{font:400 9px/1.2 var(--font-mono);color:var(--fg-4);}
+  .checker{
+    width:80px;height:64px;border-radius:8px;
+    position:relative;overflow:hidden;
+    box-shadow:inset 0 0 0 1px rgba(15,23,42,0.08);
+    background-color:#d4d4d4;
+    background-image:
+      linear-gradient(45deg,#bbb 25%,transparent 25%),
+      linear-gradient(-45deg,#bbb 25%,transparent 25%),
+      linear-gradient(45deg,transparent 75%,#bbb 75%),
+      linear-gradient(-45deg,transparent 75%,#bbb 75%);
+    background-size:10px 10px;
+    background-position:0 0,0 5px,5px -5px,-5px 0px;
+  }
+  .overlay{position:absolute;inset:0;border-radius:8px;}
+</style></head>
+<body><div class="card">
+<div class="tiny">Opacity — overlay tokens (shown on checkerboard background)</div>
+<div class="row">
+  <div class="col">
+    <div class="checker"><div class="overlay" style="background:rgba(0,0,0,0.30)"></div></div>
+    <div class="lbl">dim</div>
+    <div class="hex">rgba(0,0,0, .30)</div>
+    <div class="var">--f-opacity-dim</div>
+  </div>
+  <div class="col">
+    <div class="checker"><div class="overlay" style="background:rgba(0,0,0,0.50)"></div></div>
+    <div class="lbl">dim-strong</div>
+    <div class="hex">rgba(0,0,0, .50)</div>
+    <div class="var">--f-opacity-dim-strong</div>
+  </div>
+  <div class="col">
+    <div class="checker"><div class="overlay" style="background:rgba(203,213,225,0.10)"></div></div>
+    <div class="lbl">normal</div>
+    <div class="hex">rgba(203,213,225, .10)</div>
+    <div class="var">--f-opacity-normal</div>
+  </div>
+  <div class="col">
+    <div class="checker"><div class="overlay" style="background:rgba(203,213,225,0.20)"></div></div>
+    <div class="lbl">strong</div>
+    <div class="hex">rgba(203,213,225, .20)</div>
+    <div class="var">--f-opacity-strong</div>
+  </div>
+  <div class="col">
+    <div class="checker"><div class="overlay" style="background:rgba(203,213,225,0.30)"></div></div>
+    <div class="lbl">heavy</div>
+    <div class="hex">rgba(203,213,225, .30)</div>
+    <div class="var">--f-opacity-heavy</div>
+  </div>
+</div>
+</div></body></html>

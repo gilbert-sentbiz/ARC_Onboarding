@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html,body{margin:0;padding:0;background:#fff;}
+  body{font-family:var(--font-sans);color:var(--fg-1);-webkit-font-smoothing:antialiased;}
+  .card{padding:20px 24px;}
+  .row{display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap;}
+  .col{display:flex;flex-direction:column;gap:4px;}
+  .tiny{font:400 11px/1.3 var(--font-sans);color:var(--fg-3);letter-spacing:0.3px;margin-bottom:6px;}
+  .swatch{width:64px;height:64px;border-radius:8px;display:flex;align-items:flex-end;padding:8px;font:600 10px/1.1 var(--font-sans);color:var(--fg-3);box-shadow:inset 0 0 0 1px rgba(15,23,42,0.10);}
+  .lbl{font:600 11px/1.2 var(--font-sans);color:var(--fg-2);}
+  .hex{font:500 10px/1 var(--font-mono);color:var(--fg-3);}
+  .var{font:400 9px/1.2 var(--font-mono);color:var(--fg-4);}
+</style></head>
+<body><div class="card">
+<div class="tiny">Background / Surface — layered app shell (lightest → darkest)</div>
+<div class="row">
+  <div class="col">
+    <div class="swatch" style="background:#FFFFFF"><span>Default</span></div>
+    <div class="lbl">Default</div>
+    <div class="hex">#FFFFFF</div>
+    <div class="var">--s-bg-normal</div>
+  </div>
+  <div class="col">
+    <div class="swatch" style="background:#F8FAFC"><span>Normal</span></div>
+    <div class="lbl">Normal</div>
+    <div class="hex">#F8FAFC</div>
+    <div class="var">--s-surface-normal</div>
+  </div>
+  <div class="col">
+    <div class="swatch" style="background:#EAEFF5"><span>Strong</span></div>
+    <div class="lbl">Strong</div>
+    <div class="hex">#EAEFF5</div>
+    <div class="var">--s-surface-strong</div>
+  </div>
+  <div class="col">
+    <div class="swatch" style="background:#E2E8F0"><span>Heavy</span></div>
+    <div class="lbl">Heavy</div>
+    <div class="hex">#E2E8F0</div>
+    <div class="var">--s-surface-heavy</div>
+  </div>
+  <div class="col">
+    <div class="swatch" style="background:#EEEEEE"><span>Disable</span></div>
+    <div class="lbl">Disable</div>
+    <div class="hex">#EEEEEE</div>
+    <div class="var">--s-bg-disable</div>
+  </div>
+</div>
+</div></body></html>

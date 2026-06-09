@@ -1,0 +1,772 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>SentBiz Dashboard — UI kit</title>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<link rel="stylesheet" href="../../colors_and_type.css"/>
+<style>
+  html, body { margin:0; padding:0; background:#F8FAFC; color:#0F172A; font-family:'Pretendard', system-ui, sans-serif; height:100%; }
+  *, *::before, *::after { box-sizing:border-box; }
+  button { font-family:inherit; }
+  @keyframes sbFade    { from { opacity:0 } to { opacity:1 } }
+  @keyframes sbSlideIn { from { transform:translateX(20px); opacity:0 } to { transform:translateX(0); opacity:1 } }
+  @keyframes sbPop     { from { transform:translate(-50%,-50%) scale(0.96); opacity:0 } to { transform:translate(-50%,-50%) scale(1); opacity:1 } }
+  #root { height:100vh; display:flex; }
+  ::-webkit-scrollbar { width:10px; height:10px; }
+  ::-webkit-scrollbar-thumb { background:#CBD5E1; border-radius:999px; border:2px solid #F8FAFC; }
+  ::-webkit-scrollbar-track { background:transparent; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<!-- ── Primitives ──────────────────────────────────────────────────────────── -->
+<script type="text/babel">
+const T = {
+  primary:'#0746CA', primaryStrong:'#0C3698', primaryHeavy:'#122666',
+  fg1:'#0F172A', fg2:'#293548', fg3:'#64748B', fg4:'#94A3B8', fgDisable:'#CBD5E1',
+  bg:'#FFFFFF', surfaceNormal:'#F8FAFC', surfaceStrong:'#EAEFF5', surfaceHeavy:'#E2E8F0',
+  positive:'#00C592', positiveLight:'#DFFBED',
+  warning:'#FF6200',  warningLight:'#FFEFD3',
+  negative:'#F91C1C', negativeLight:'#FFEFEF',
+  progress:'#1890FF', progressLight:'#E6F7FF',
+  informative:'#3176FD', informativeLight:'#F2F6FF',
+  neutralFg:'#293548', neutralBg:'#F1F5F9', neutralBr:'#CBD5E1',
+  borderSubtle:'rgba(112,115,124,0.22)', borderDefault:'#CBD5E1',
+};
+
+// Button — type: 'solid'|'line'|'text'  /  usage: 'primary'|'secondary'|'tertiary'
+const Button = ({ type='solid', usage='primary', size='md', children, onClick, disabled, style, ...rest }) => {
+  const base = {
+    all:'unset', boxSizing:'border-box', display:'inline-flex',
+    alignItems:'center', justifyContent:'center', gap:6,
+    borderRadius:6, cursor:disabled?'not-allowed':'pointer',
+    transition:'background 150ms cubic-bezier(0.2,0,0,1)',
+    fontFamily:'Pretendard, -apple-system, sans-serif', fontWeight:600, whiteSpace:'nowrap',
+  };
+  const sizes = {
+    lg:{ minHeight:48, padding:'16px',      fontSize:14, lineHeight:'16px', letterSpacing:'0.175px' },
+    md:{ minHeight:40, padding:'12px 16px', fontSize:14, lineHeight:'16px', letterSpacing:'0.175px' },
+    sm:{ minHeight:36, padding:'8px 14px',  fontSize:12, lineHeight:'14px', letterSpacing:'0.15px' },
+    xs:{ minHeight:28, padding:'6px 12px',  fontSize:11, lineHeight:'14px', letterSpacing:'0.138px' },
+  };
+  const D = '#122666'; // Semantic/Primary/Heavy — Figma V.2 confirmed
+  const matrix = {
+    'solid-primary':   disabled?{background:T.surfaceStrong,color:T.fgDisable}:{background:D,color:'#FFFFFF'},
+    'solid-secondary': disabled?{background:T.surfaceHeavy,color:T.fgDisable}:{background:T.surfaceStrong,color:D},
+    'line-tertiary':   disabled?{background:T.bg,color:T.fgDisable,boxShadow:`inset 0 0 0 1px ${T.surfaceStrong}`}:{background:T.bg,color:D,boxShadow:`inset 0 0 0 1px ${T.surfaceStrong}`},
+    'text-primary':    disabled?{background:'transparent',color:T.fgDisable,padding:'12px'}:{background:'transparent',color:D,padding:'12px'},
+  };
+  const vs = matrix[`${type}-${usage}`] || matrix['solid-primary'];
+  return <button {...rest} disabled={disabled} onClick={onClick} style={{...base,...sizes[size],...vs,...style}}>{children}</button>;
+};
+
+const Badge = ({ variant='neutral', children }) => {
+  const map = {
+    positive:{c:T.positive,bg:T.positiveLight}, negative:{c:T.negative,bg:T.negativeLight},
+    waiting:{c:T.warning,bg:T.warningLight},    informative:{c:T.informative,bg:T.informativeLight},
+    neutral:{c:T.neutralFg,bg:T.neutralBg},     progress:{c:T.progress,bg:T.progressLight},
+  };
+  const s = map[variant];
+  return <span style={{display:'inline-flex',alignItems:'center',height:22,padding:'0 10px',borderRadius:999,color:s.c,background:s.bg,fontFamily:'Pretendard, -apple-system, sans-serif',fontSize:12,fontWeight:600,lineHeight:'18px',letterSpacing:'0.06px',whiteSpace:'nowrap'}}>{children}</span>;
+};
+
+const Icon = ({ name, size=20, color=T.fg2 }) => (
+  <span style={{display:'inline-block',width:size,height:size,WebkitMask:`url(../../assets/icons/${name}.svg) center/contain no-repeat`,mask:`url(../../assets/icons/${name}.svg) center/contain no-repeat`,background:color,flexShrink:0}}/>
+);
+
+const IconBtn = ({ name, onClick, active, ariaLabel }) => (
+  <button aria-label={ariaLabel} onClick={onClick} style={{all:'unset',boxSizing:'border-box',display:'inline-flex',alignItems:'center',justifyContent:'center',width:36,height:36,borderRadius:8,background:active?T.surfaceStrong:'transparent',cursor:'pointer',transition:'background 120ms cubic-bezier(0.2,0,0,1)'}}
+    onMouseEnter={e=>{ if(!active) e.currentTarget.style.background=T.surfaceNormal; }}
+    onMouseLeave={e=>{ if(!active) e.currentTarget.style.background='transparent'; }}>
+    <Icon name={name} size={20} color={T.fg2}/>
+  </button>
+);
+
+const Avatar = ({ name='SB', size=32, bg=T.primary }) => (
+  <div style={{width:size,height:size,borderRadius:999,background:bg,display:'inline-flex',alignItems:'center',justifyContent:'center',color:'#fff',fontFamily:'Pretendard, -apple-system, sans-serif',fontWeight:700,fontSize:Math.round(size*0.38),letterSpacing:'0.02em',flexShrink:0}}>{name}</div>
+);
+
+// Input — V.2: h-40, r-6, enabled border #E2E8F0, focus #122666, no focus ring
+const Input = ({ placeholder, value, onChange, iconLeft, iconRight, onClear, unit, label, helperText, width='100%', isError, disabled }) => {
+  const [focus, setFocus] = React.useState(false);
+  const border = disabled?T.borderDefault:isError?T.negative:focus?'#122666':T.borderSubtle;
+  const bg = disabled?T.surfaceStrong:T.bg;
+  const helperColor = disabled?T.fgDisable:isError?T.negative:T.fg3;
+  const showClear = onClear && value && !disabled;
+  const iconColor = disabled?T.fgDisable:T.fg4;
+  return (
+    <div style={{display:'inline-flex',flexDirection:'column',width,gap:6}}>
+      {label && <span style={{fontFamily:'Pretendard, -apple-system, sans-serif',fontSize:14,lineHeight:'20px',color:T.fg3,letterSpacing:'0.07px'}}>{label}</span>}
+      <div style={{display:'flex',alignItems:'center',height:40,padding:'0 16px',border:`1px solid ${border}`,background:bg,borderRadius:6,transition:'border 120ms cubic-bezier(0.2,0,0,1)'}}>
+        {iconLeft && <span style={{marginRight:8,display:'inline-flex',flexShrink:0}}><Icon name={iconLeft} size={16} color={iconColor}/></span>}
+        <input value={value} onChange={onChange} placeholder={placeholder}
+          onFocus={()=>{ if(!disabled) setFocus(true); }} onBlur={()=>setFocus(false)}
+          disabled={disabled}
+          style={{flex:1,border:0,outline:0,background:'transparent',fontFamily:'Pretendard, -apple-system, sans-serif',fontSize:14,lineHeight:'20px',color:disabled?T.fgDisable:T.fg1,letterSpacing:'0.07px',minWidth:0,cursor:disabled?'not-allowed':'text'}}/>
+        {unit && <span style={{fontFamily:'Pretendard, -apple-system, sans-serif',fontSize:14,color:disabled?T.fgDisable:T.fg3,marginLeft:8,whiteSpace:'nowrap',flexShrink:0}}>{unit}</span>}
+        {showClear && <button onClick={onClear} style={{all:'unset',display:'inline-flex',cursor:'pointer',marginLeft:4,flexShrink:0}}><Icon name="XCircle" size={16} color={T.fg4}/></button>}
+        {iconRight && !showClear && <span style={{marginLeft:8,display:'inline-flex',flexShrink:0}}><Icon name={iconRight} size={16} color={iconColor}/></span>}
+      </div>
+      {helperText && <span style={{fontFamily:'Pretendard, -apple-system, sans-serif',fontSize:11,lineHeight:'16px',letterSpacing:'0.055px',color:helperColor}}>{helperText}</span>}
+    </div>
+  );
+};
+
+const SelectOption = ({ label, isSelected, onSelect }) => {
+  const [hovered, setHovered] = React.useState(false);
+  return (
+    <button onClick={onSelect} onMouseEnter={()=>setHovered(true)} onMouseLeave={()=>setHovered(false)}
+      style={{all:'unset',boxSizing:'border-box',display:'flex',alignItems:'center',gap:8,height:40,paddingLeft:16,paddingRight:8,background:hovered?T.informativeLight:T.bg,borderRadius:4,cursor:'pointer',width:'100%',transition:'background 100ms cubic-bezier(0.2,0,0,1)'}}>
+      <span style={{flex:1,fontFamily:'Pretendard, -apple-system, sans-serif',fontSize:14,lineHeight:'20px',color:T.fg1,letterSpacing:'0.07px',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',minWidth:0}}>{label}</span>
+      {isSelected && <span style={{display:'inline-flex',alignItems:'center',justifyContent:'center',width:20,height:20,flexShrink:0}}><Icon name="Check" size={16} color={T.fg2}/></span>}
+    </button>
+  );
+};
+
+// Select — V.2: h-40, r-6, open border #122666, dropdown Shadow100
+const Select = ({ value, onChange, options=[], placeholder='선택하세요', label, helperText, isError, disabled, searchable=true, width='100%' }) => {
+  const [open, setOpen] = React.useState(false);
+  const [search, setSearch] = React.useState('');
+  const ref = React.useRef(null);
+  React.useEffect(() => {
+    if (!open) return;
+    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) { setOpen(false); setSearch(''); } };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+  const selected = options.find(o => o.value === value);
+  const filtered = searchable && search ? options.filter(o => o.label.toLowerCase().includes(search.toLowerCase())) : options;
+  const fieldBorder = disabled?T.borderDefault:isError?T.negative:open?'#122666':T.borderSubtle;
+  const helperColor = disabled?T.fgDisable:isError?T.negative:T.fg3;
+  return (
+    <div ref={ref} style={{display:'inline-flex',flexDirection:'column',width,gap:4,position:'relative'}}>
+      {label && <span style={{fontFamily:'Pretendard, -apple-system, sans-serif',fontSize:14,lineHeight:'20px',color:T.fg3,letterSpacing:'0.07px'}}>{label}</span>}
+      <button disabled={disabled} onClick={()=>{ if(!disabled){setOpen(o=>!o);setSearch('');} }}
+        style={{all:'unset',boxSizing:'border-box',display:'flex',alignItems:'center',height:40,paddingLeft:16,paddingRight:8,border:`1px solid ${fieldBorder}`,background:disabled?T.surfaceStrong:T.bg,borderRadius:6,cursor:disabled?'not-allowed':'pointer',transition:'border 120ms cubic-bezier(0.2,0,0,1)'}}>
+        <span style={{flex:1,fontFamily:'Pretendard, -apple-system, sans-serif',fontSize:14,lineHeight:'20px',color:(!selected||disabled)?T.fgDisable:T.fg1,letterSpacing:'0.07px',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',minWidth:0}}>
+          {selected ? selected.label : placeholder}
+        </span>
+        <span style={{display:'inline-flex',alignItems:'center',justifyContent:'center',width:20,height:20,flexShrink:0}}>
+          <Icon name={open?'CaretUp':'CaretDown'} size={16} color={disabled?T.fgDisable:T.fg2}/>
+        </span>
+      </button>
+      {open && (
+        <div style={{position:'absolute',top:44,left:0,right:0,zIndex:100,background:T.bg,border:`1px solid ${T.borderSubtle}`,borderRadius:6,boxShadow:'0 2px 8px 0 rgba(15,23,42,0.08)',padding:8,display:'flex',flexDirection:'column',gap:8}}>
+          {searchable && (
+            <div style={{display:'flex',alignItems:'center',gap:8,height:40,padding:8,background:T.surfaceNormal,borderRadius:4,flexShrink:0}}>
+              <Icon name="MagnifyingGlass" size={16} color={T.fg4}/>
+              <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="검색어를 입력하세요." autoFocus
+                style={{flex:1,border:0,outline:0,background:'transparent',fontFamily:'Pretendard, -apple-system, sans-serif',fontSize:12,lineHeight:'18px',color:T.fg1,letterSpacing:'0.06px',minWidth:0}}/>
+            </div>
+          )}
+          <div style={{display:'flex',flexDirection:'column'}}>
+            {filtered.map(o => <SelectOption key={o.value} label={o.label} isSelected={o.value===value} onSelect={()=>{ onChange&&onChange(o.value); setOpen(false); setSearch(''); }}/>)}
+            {filtered.length===0 && <div style={{height:40,display:'flex',alignItems:'center',paddingLeft:16,fontFamily:'Pretendard, -apple-system, sans-serif',fontSize:14,color:T.fg4}}>결과 없음</div>}
+          </div>
+        </div>
+      )}
+      {helperText && <span style={{fontFamily:'Pretendard, -apple-system, sans-serif',fontSize:11,lineHeight:'16px',letterSpacing:'0.055px',color:helperColor}}>{helperText}</span>}
+    </div>
+  );
+};
+
+const Modal = ({ open, onClose, onConfirm, title, body, confirmLabel='Confirm', cancelLabel='Cancel' }) => {
+  if (!open) return null;
+  return <>
+    <div onClick={onClose} style={{position:'fixed',inset:0,background:'rgba(15,23,42,0.35)',backdropFilter:'blur(4px)',zIndex:60,animation:'sbFade 150ms cubic-bezier(0.2,0,0,1)'}}/>
+    <div role="dialog" aria-modal="true" style={{position:'fixed',top:'50%',left:'50%',transform:'translate(-50%,-50%)',width:440,maxWidth:'calc(100vw - 32px)',background:T.bg,borderRadius:16,boxShadow:'0 0 1px 0 rgba(15,23,42,0.08), 0 6px 24px 6px rgba(15,23,42,0.16)',padding:24,zIndex:61,animation:'sbPop 180ms cubic-bezier(0.2,0,0,1)'}}>
+      <div style={{fontFamily:'Pretendard, -apple-system, sans-serif',fontSize:20,fontWeight:700,color:T.fg1,letterSpacing:'-0.005em'}}>{title}</div>
+      <div style={{fontFamily:'Pretendard, -apple-system, sans-serif',fontSize:14,lineHeight:'22px',color:T.fg3,marginTop:10}}>{body}</div>
+      <div style={{display:'flex',justifyContent:'flex-end',gap:8,marginTop:24}}>
+        <Button type="solid" usage="secondary" onClick={onClose}>{cancelLabel}</Button>
+        <Button type="solid" usage="primary" onClick={onConfirm}>{confirmLabel}</Button>
+      </div>
+    </div>
+  </>;
+};
+
+Object.assign(window, { T, Button, Badge, Icon, IconBtn, Avatar, Input, Select, Modal });
+</script>
+
+<!-- ── Sidebar ────────────────────────────────────────────────────────────── -->
+<script type="text/babel">
+const NAV_ITEMS = [
+  { key:'dashboard',      icon:'SquaresFour',     label:'Dashboard' },
+  { key:'transactions',   icon:'ArrowsLeftRight', label:'Transactions' },
+  { key:'settlements',    icon:'ClipboardText',   label:'Settlements' },
+  { key:'counterparties', icon:'List',            label:'Counterparties' },
+  { key:'fx',             icon:'Coins',           label:'FX rates' },
+];
+const FOOTER_ITEMS = [
+  { key:'settings', icon:'Gear',     label:'Settings' },
+  { key:'help',     icon:'Question', label:'Help' },
+];
+
+const Sidebar = ({ active, onNavigate, folded, onToggleFold }) => {
+  const W = folded ? 64 : 240;
+
+  const Item = ({ icon, label, k }) => {
+    const isActive = active === k;
+    return (
+      <button onClick={()=>onNavigate(k)}
+        style={{
+          all:'unset', boxSizing:'border-box',
+          display:'flex', alignItems:'center', gap:12,
+          height:40, padding:folded?'0':'0 12px', margin:'0 8px',
+          justifyContent:folded?'center':'flex-start',
+          borderRadius:8, cursor:'pointer',
+          background:isActive?T.informativeLight:'transparent',
+          color:isActive?T.primary:T.fg2,
+          fontFamily:'Pretendard,sans-serif', fontWeight:isActive?600:500,
+          fontSize:14, lineHeight:'20px', letterSpacing:'0.07px',
+          transition:'background 0.15s',
+        }}
+        onMouseEnter={e=>{ if(!isActive) e.currentTarget.style.background=T.surfaceNormal; }}
+        onMouseLeave={e=>{ if(!isActive) e.currentTarget.style.background='transparent'; }}>
+        <Icon name={icon} size={20} color={isActive?T.primary:T.fg3}/>
+        {!folded && <span>{label}</span>}
+      </button>
+    );
+  };
+
+  return (
+    <aside style={{
+      width:W, flexShrink:0, height:'100%',
+      background:T.bg, borderRight:`1px solid ${T.borderSubtle}`,
+      display:'flex', flexDirection:'column',
+      transition:'width 0.2s ease-in-out', overflow:'hidden',
+    }}>
+      <div style={{
+        height:64, flexShrink:0, display:'flex', alignItems:'center',
+        padding:folded?0:'0 20px', justifyContent:folded?'center':'flex-start',
+        borderBottom:`1px solid ${T.neutralBg}`,
+      }}>
+        {folded
+          ? <img src="../../assets/logos/logo-mark-dark-navy.svg" width="28" height="28" alt="SentBiz"/>
+          : <img src="../../assets/logos/wordmark-navy.svg" width="92" height="20" alt="sentbiz"/>
+        }
+      </div>
+      <nav style={{padding:'12px 0', display:'flex', flexDirection:'column', gap:2, flex:1}}>
+        {NAV_ITEMS.map(it => <Item key={it.key} icon={it.icon} label={it.label} k={it.key}/>)}
+      </nav>
+      <div style={{padding:'12px 0', display:'flex', flexDirection:'column', gap:2, borderTop:`1px solid ${T.neutralBg}`}}>
+        {FOOTER_ITEMS.map(it => <Item key={it.key} icon={it.icon} label={it.label} k={it.key}/>)}
+        <div style={{padding:folded?0:'8px 20px', display:'flex', justifyContent:folded?'center':'flex-end', marginTop:4}}>
+          <button onClick={onToggleFold} aria-label="Toggle sidebar"
+            style={{all:'unset', cursor:'pointer', width:28, height:28, display:'flex', alignItems:'center', justifyContent:'center'}}>
+            <Icon name="SidebarSimple" size={20} color={T.fg4}/>
+          </button>
+        </div>
+      </div>
+    </aside>
+  );
+};
+window.Sidebar = Sidebar;
+</script>
+
+<!-- ── TopBar ─────────────────────────────────────────────────────────────── -->
+<script type="text/babel">
+const TopBar = ({ screenLabel }) => {
+  const [q, setQ] = React.useState('');
+  return <header style={{height:64,flexShrink:0,background:'#fff',borderBottom:'1px solid #E2E8F0',display:'flex',alignItems:'center',padding:'0 24px',gap:16}}>
+    <div style={{display:'flex',alignItems:'center',gap:8}}>
+      <span style={{fontFamily:'Pretendard,sans-serif',fontSize:13,color:'#94A3B8',fontWeight:500}}>Workspace</span>
+      <span style={{color:'#CBD5E1',fontSize:13,fontWeight:400,lineHeight:1}}>/</span>
+      <span style={{fontFamily:'Pretendard,sans-serif',fontSize:13,color:'#293548',fontWeight:600}}>{screenLabel}</span>
+    </div>
+    <div style={{flex:1,display:'flex',justifyContent:'center'}}>
+      <div style={{width:420,maxWidth:'100%'}}>
+        <Input placeholder="Search transactions, counterparties…" iconLeft="MagnifyingGlass" value={q} onChange={e=>setQ(e.target.value)} width="100%"/>
+      </div>
+    </div>
+    <div style={{display:'flex',alignItems:'center',gap:4}}>
+      <IconBtn name="Question" ariaLabel="Help"/>
+      <div style={{position:'relative'}}>
+        <IconBtn name="Bell" ariaLabel="Notifications"/>
+        <span style={{position:'absolute',top:7,right:7,width:8,height:8,borderRadius:999,background:'#F91C1C',border:'2px solid #fff'}}/>
+      </div>
+      <div style={{width:1,height:24,background:'#E2E8F0',margin:'0 8px'}}/>
+      <div style={{display:'flex',alignItems:'center',gap:10,paddingRight:4}}>
+        <Avatar name="DL" size={32} bg="#0746CA"/>
+        <div style={{display:'flex',flexDirection:'column',lineHeight:1.2}}>
+          <span style={{fontFamily:'Pretendard,sans-serif',fontSize:13,fontWeight:600,color:'#0F172A'}}>Delphine Lee</span>
+          <span style={{fontFamily:'Pretendard,sans-serif',fontSize:11,color:'#64748B',letterSpacing:'0.3px'}}>SENTBE · Admin</span>
+        </div>
+      </div>
+    </div>
+  </header>;
+};
+window.TopBar = TopBar;
+</script>
+
+<!-- ── PageHeader + Filters ───────────────────────────────────────────────── -->
+<script type="text/babel">
+const PageHeader = ({ title, subtitle, actions }) => (
+  <div style={{display:'flex',alignItems:'flex-end',justifyContent:'space-between',gap:16,padding:'28px 32px 16px'}}>
+    <div>
+      <h1 style={{margin:0,fontFamily:'Pretendard,sans-serif',fontSize:26,lineHeight:'40px',fontWeight:700,color:'#0F172A',letterSpacing:'-0.005em'}}>{title}</h1>
+      {subtitle && <div style={{fontFamily:'Pretendard,sans-serif',fontSize:14,lineHeight:'20px',color:'#64748B',marginTop:2}}>{subtitle}</div>}
+    </div>
+    <div style={{display:'flex',gap:8}}>{actions}</div>
+  </div>
+);
+
+const Filters = ({ value, onChange, options }) => (
+  <div style={{display:'flex',alignItems:'center',gap:16,padding:'4px 32px 20px',flexWrap:'wrap'}}>
+    <div style={{display:'flex',gap:6}}>
+      {options.map(o => {
+        const isActive = value === o.key;
+        return <button key={o.key} onClick={()=>onChange(o.key)} style={{
+          all:'unset',boxSizing:'border-box',display:'inline-flex',alignItems:'center',
+          height:32,padding:'0 12px',borderRadius:6,cursor:'pointer',
+          background:isActive?'#1462FC':'#fff',
+          color:isActive?'#fff':'#293548',
+          border:isActive?'1px solid #1462FC':'1px solid #E2E8F0',
+          fontFamily:'Pretendard,sans-serif',fontWeight:isActive?600:500,fontSize:13,lineHeight:'16px',
+          transition:'all 0.15s',
+        }}>{o.label}{o.count!=null && <span style={{marginLeft:6,opacity:0.8}}>{o.count}</span>}</button>;
+      })}
+    </div>
+    <div style={{flex:1}}/>
+    <div style={{display:'inline-flex',alignItems:'center',gap:8,height:32,padding:'0 12px',border:'1px solid #E2E8F0',borderRadius:6,background:'#fff',color:'#293548',fontFamily:'Pretendard,sans-serif',fontSize:13,fontWeight:500}}>
+      <Icon name="Calendar" size={16} color="#64748B"/>
+      Mar 1 – Mar 31, 2026
+      <Icon name="CaretDown" size={14} color="#94A3B8"/>
+    </div>
+    <Button type="solid" usage="secondary" size="sm"><Icon name="DownloadSimple" size={14} color="#293548"/>Export</Button>
+  </div>
+);
+
+Object.assign(window, { PageHeader, Filters });
+</script>
+
+<!-- ── DataTable ──────────────────────────────────────────────────────────── -->
+<script type="text/babel">
+const DataTable = ({ rows, onRowClick }) => {
+  const cols = [
+    {key:'id',    label:'Ref',          width:130},
+    {key:'date',  label:'Date',         width:120},
+    {key:'party', label:'Counterparty', width:200},
+    {key:'route', label:'Route',        width:110},
+    {key:'amount',label:'Amount',       width:150, align:'right'},
+    {key:'status',label:'Status',       width:120},
+    {key:'act',   label:'',             width:44},
+  ];
+  return <div style={{background:'#fff',border:'1px solid #E2E8F0',borderRadius:12,overflow:'hidden',margin:'0 32px'}}>
+    <div style={{display:'flex',background:T.surfaceStrong,borderBottom:'1px solid #E2E8F0',padding:'0 20px',height:44,alignItems:'center'}}>
+      {cols.map(c => (
+        <div key={c.key} style={{width:c.width,flex:c.key==='party'?1:'none',fontFamily:'Pretendard,sans-serif',fontSize:12,fontWeight:600,color:'#64748B',letterSpacing:'0.06px',textAlign:c.align||'left',paddingRight:12,textTransform:'uppercase'}}>{c.label}</div>
+      ))}
+    </div>
+    {rows.map((r,i) => (
+      <div key={r.id} onClick={()=>onRowClick(r)} style={{display:'flex',alignItems:'center',padding:'0 20px',height:56,borderBottom:i<rows.length-1?'1px solid #F1F5F9':'none',cursor:'pointer',transition:'background 0.12s'}}
+        onMouseEnter={e=>e.currentTarget.style.background='#F8FAFC'}
+        onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
+        <div style={{width:130,fontFamily:'ui-monospace,monospace',fontSize:12,color:'#64748B',paddingRight:12}}>{r.id}</div>
+        <div style={{width:120,fontFamily:'Pretendard,sans-serif',fontSize:13,color:'#293548',paddingRight:12}}>{r.date}</div>
+        <div style={{flex:1,display:'flex',alignItems:'center',gap:10,paddingRight:12}}>
+          <Avatar name={r.initials} size={28} bg={r.color||'#64748B'}/>
+          <div style={{display:'flex',flexDirection:'column',lineHeight:1.2,minWidth:0}}>
+            <span style={{fontFamily:'Pretendard,sans-serif',fontSize:14,fontWeight:600,color:'#0F172A',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{r.party}</span>
+            <span style={{fontFamily:'Pretendard,sans-serif',fontSize:11,color:'#94A3B8',letterSpacing:'0.3px'}}>{r.partySub}</span>
+          </div>
+        </div>
+        <div style={{width:110,fontFamily:'Pretendard,sans-serif',fontSize:13,color:'#293548',paddingRight:12}}>{r.route}</div>
+        <div style={{width:150,textAlign:'right',paddingRight:12}}>
+          <div style={{fontFamily:'Pretendard,sans-serif',fontSize:14,fontWeight:600,color:'#0F172A',fontVariantNumeric:'tabular-nums'}}>{r.amount}</div>
+          <div style={{fontFamily:'Pretendard,sans-serif',fontSize:11,color:'#94A3B8',fontVariantNumeric:'tabular-nums'}}>{r.amountKrw}</div>
+        </div>
+        <div style={{width:120,paddingRight:12}}><Badge variant={r.statusVariant}>{r.status}</Badge></div>
+        <div style={{width:44,display:'flex',justifyContent:'flex-end'}}><IconBtn name="DotsThreeVertical" ariaLabel="Row actions"/></div>
+      </div>
+    ))}
+    <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'14px 20px',borderTop:'1px solid #F1F5F9'}}>
+      <span style={{fontFamily:'Pretendard,sans-serif',fontSize:12,color:'#64748B'}}>Showing 1–{rows.length} of 248</span>
+      <div style={{display:'flex',gap:4}}>
+        <IconBtn name="ArrowLeft" ariaLabel="Previous"/>
+        <div style={{display:'flex',alignItems:'center',padding:'0 8px',fontFamily:'Pretendard,sans-serif',fontSize:13,color:'#293548'}}>1 of 10</div>
+        <IconBtn name="ArrowRight" ariaLabel="Next"/>
+      </div>
+    </div>
+  </div>;
+};
+window.DataTable = DataTable;
+</script>
+
+<!-- ── Drawer ─────────────────────────────────────────────────────────────── -->
+<script type="text/babel">
+const Drawer = ({ row, open, onClose, onApprove, onReject }) => {
+  if (!open || !row) return null;
+  return <>
+    <div onClick={onClose} style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.3)',animation:'sbFade 200ms ease',zIndex:50}}/>
+    <aside style={{position:'fixed',top:0,right:0,bottom:0,width:440,background:'#fff',boxShadow:'0 0 1px 0 rgba(15,23,42,0.08), 0 6px 24px 6px rgba(15,23,42,0.16)',zIndex:51,display:'flex',flexDirection:'column',animation:'sbSlideIn 200ms ease'}}>
+      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'20px 24px',borderBottom:'1px solid #F1F5F9'}}>
+        <div>
+          <div style={{fontFamily:'Pretendard,sans-serif',fontSize:22,fontWeight:700,color:'#0F172A',lineHeight:'34px'}}>{row.party}</div>
+          <div style={{fontFamily:'ui-monospace,monospace',fontSize:12,color:'#64748B'}}>{row.id}</div>
+        </div>
+        <IconBtn name="X" onClick={onClose} ariaLabel="Close"/>
+      </div>
+      <div style={{flex:1,overflowY:'auto',padding:'20px 24px',display:'flex',flexDirection:'column',gap:20}}>
+        <div>
+          <div style={{fontFamily:'Pretendard,sans-serif',fontSize:11,fontWeight:600,color:'#64748B',letterSpacing:'0.55px',textTransform:'uppercase',marginBottom:6}}>Status</div>
+          <Badge variant={row.statusVariant}>{row.status}</Badge>
+        </div>
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16}}>
+          {[['Amount',row.amount],['Amount (KRW)',row.amountKrw],['Route',row.route],['Initiated',row.date+' · 14:32 KST'],['Reference',row.id],['Method','Wire · SWIFT']].map(([k,v])=>(
+            <div key={k}>
+              <div style={{fontFamily:'Pretendard,sans-serif',fontSize:11,fontWeight:600,color:'#64748B',letterSpacing:'0.55px',textTransform:'uppercase',marginBottom:4}}>{k}</div>
+              <div style={{fontFamily:'Pretendard,sans-serif',fontSize:14,fontWeight:500,color:'#0F172A',lineHeight:'20px'}}>{v}</div>
+            </div>
+          ))}
+        </div>
+        <div style={{background:'#F8FAFC',border:'1px solid #E2E8F0',borderRadius:12,padding:16}}>
+          <div style={{fontFamily:'Pretendard,sans-serif',fontSize:14,fontWeight:600,color:'#293548',marginBottom:10}}>Timeline</div>
+          {[['Created',row.date,'positive'],['FX locked',row.date,'progress'],['Pending review','Awaiting approval','waiting']].map(([t,d,v],i)=>(
+            <div key={i} style={{display:'flex',alignItems:'center',gap:10,padding:'6px 0'}}>
+              <div style={{width:8,height:8,borderRadius:999,background:v==='positive'?T.positive:v==='progress'?T.progress:T.warning}}/>
+              <div style={{flex:1,fontFamily:'Pretendard,sans-serif',fontSize:13,color:'#0F172A',fontWeight:500}}>{t}</div>
+              <div style={{fontFamily:'Pretendard,sans-serif',fontSize:12,color:'#64748B'}}>{d}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div style={{display:'flex',gap:8,padding:'16px 24px',borderTop:'1px solid #F1F5F9',background:'#fff'}}>
+        <Button type="solid" usage="secondary" size="md" onClick={onReject}>Reject</Button>
+        <div style={{flex:1}}/>
+        <Button type="solid" usage="secondary" size="md" onClick={onClose}>Close</Button>
+        <Button type="solid" usage="primary" size="md" onClick={onApprove}>Approve</Button>
+      </div>
+    </aside>
+  </>;
+};
+window.Drawer = Drawer;
+</script>
+
+<!-- ── App ────────────────────────────────────────────────────────────────── -->
+<script type="text/babel">
+const SCREEN_LABELS = {
+  dashboard:'Dashboard', transactions:'Transactions', settlements:'Settlements',
+  counterparties:'Counterparties', fx:'FX rates',
+  components:'Components', settings:'Settings', help:'Help',
+};
+
+const ROWS = [
+  { id:'TXN-20260401-0128', date:'Apr 1, 2026',  party:'Global Supply Ltd.',  partySub:'HSBC · Hong Kong',          initials:'GS', color:'#915FFF', route:'KRW → HKD', amount:'HK$ 48,250.00',   amountKrw:'₩ 8,134,250',  status:'Pending review', statusVariant:'waiting' },
+  { id:'TXN-20260401-0127', date:'Apr 1, 2026',  party:'Kazoku Import Co.',   partySub:'MUFG · Tokyo',              initials:'KI', color:'#0746CA', route:'KRW → JPY', amount:'¥ 1,200,000',     amountKrw:'₩ 10,680,000', status:'Settled',        statusVariant:'positive' },
+  { id:'TXN-20260331-0098', date:'Mar 31, 2026', party:'Atlas Freight GmbH',  partySub:'Commerzbank · Hamburg',     initials:'AF', color:'#28E1E5', route:'KRW → EUR', amount:'€ 12,840.00',     amountKrw:'₩ 18,412,300', status:'Processing',     statusVariant:'progress' },
+  { id:'TXN-20260331-0097', date:'Mar 31, 2026', party:'Northlake Partners',  partySub:'Chase · New York',          initials:'NP', color:'#FF9A32', route:'KRW → USD', amount:'$ 24,900.00',     amountKrw:'₩ 33,615,000', status:'Settled',        statusVariant:'positive' },
+  { id:'TXN-20260330-0064', date:'Mar 30, 2026', party:'Mekong Textiles',     partySub:'Vietcombank · Hanoi',       initials:'MT', color:'#5AEDA4', route:'KRW → VND', amount:'₫ 420,000,000',   amountKrw:'₩ 22,480,000', status:'Action needed',  statusVariant:'negative' },
+  { id:'TXN-20260330-0061', date:'Mar 30, 2026', party:'Cerulean Logistics',  partySub:'ANZ · Sydney',              initials:'CL', color:'#3176FD', route:'KRW → AUD', amount:'A$ 8,412.40',     amountKrw:'₩ 7,239,456',  status:'Settled',        statusVariant:'positive' },
+  { id:'TXN-20260329-0031', date:'Mar 29, 2026', party:'Pampas Agro SA',      partySub:'Santander · Buenos Aires',  initials:'PA', color:'#FFD452', route:'KRW → USD', amount:'$ 5,500.00',      amountKrw:'₩ 7,425,000',  status:'Processing',     statusVariant:'progress' },
+  { id:'TXN-20260329-0029', date:'Mar 29, 2026', party:'Beacon Industries',   partySub:'Barclays · London',         initials:'BI', color:'#122666', route:'KRW → GBP', amount:'£ 3,240.00',      amountKrw:'₩ 5,508,000',  status:'Settled',        statusVariant:'positive' },
+];
+
+const KPIS = [
+  { k:'Volume (MTD)', v:'₩ 184.2M', delta:'+12.4%', good:true, sub:'vs. Mar 1–31, 2026' },
+  { k:'Transactions', v:'248',       delta:'+18',    good:true, sub:'42 pending review' },
+  { k:'Avg. settlement',v:'6h 12m',  delta:'−42m',   good:true, sub:'Target ≤ 8h' },
+];
+
+function KpiCard({ k, v, delta, good, sub }) {
+  return <div style={{background:'#fff',border:'1px solid #E2E8F0',borderRadius:12,padding:20,flex:1,minWidth:0}}>
+    <div style={{fontFamily:'Pretendard',fontSize:12,fontWeight:600,color:'#64748B',letterSpacing:'0.55px',textTransform:'uppercase'}}>{k}</div>
+    <div style={{display:'flex',alignItems:'baseline',gap:12,marginTop:8}}>
+      <div style={{fontFamily:'Pretendard',fontSize:32,lineHeight:'40px',fontWeight:800,color:'#0F172A',letterSpacing:'-0.01em',fontVariantNumeric:'tabular-nums'}}>{v}</div>
+      <div style={{fontFamily:'Pretendard',fontSize:12,fontWeight:600,color:good?T.positive:T.negative,background:good?T.positiveLight:T.negativeLight,padding:'2px 8px',borderRadius:999,letterSpacing:'0.06px'}}>{delta}</div>
+    </div>
+    <div style={{fontFamily:'Pretendard',fontSize:13,color:'#64748B',marginTop:4}}>{sub}</div>
+  </div>;
+}
+
+function DashboardScreen({ onJump }) {
+  return <div style={{padding:'0 0 40px'}}>
+    <PageHeader title="Dashboard" subtitle="Here's what's moving across your accounts today."
+      actions={<>
+        <Button type="solid" usage="secondary"><Icon name="DownloadSimple" size={14} color="#293548"/>Export</Button>
+        <Button type="solid" usage="primary"><Icon name="Plus" size={14} color="#fff"/>New transfer</Button>
+      </>}/>
+    <div style={{display:'flex',gap:16,padding:'0 32px 24px'}}>
+      {KPIS.map(kp => <KpiCard key={kp.k} {...kp}/>)}
+    </div>
+    <div style={{padding:'0 32px 20px',display:'grid',gridTemplateColumns:'2fr 1fr',gap:16}}>
+      <div style={{background:'#fff',border:'1px solid #E2E8F0',borderRadius:12,padding:20,minHeight:280,display:'flex',flexDirection:'column'}}>
+        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+          <div style={{fontFamily:'Pretendard',fontSize:16,fontWeight:600,color:'#0F172A'}}>Settlement volume</div>
+          <div style={{display:'flex',gap:6}}>
+            {['7D','30D','90D'].map((l,i) => (
+              <span key={l} style={{padding:'4px 10px',borderRadius:6,fontFamily:'Pretendard',fontSize:12,fontWeight:600,background:i===1?'var(--f-blue-100)':'transparent',color:i===1?'var(--sb-secondary-heavy)':'#64748B',cursor:'pointer'}}>{l}</span>
+            ))}
+          </div>
+        </div>
+        <div style={{flex:1,marginTop:16,position:'relative',minHeight:220}}>
+          <svg viewBox="0 0 600 200" preserveAspectRatio="none" style={{width:'100%',height:'100%'}}>
+            <defs><linearGradient id="gr" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="var(--sb-secondary-heavy)" stopOpacity="0.2"/><stop offset="100%" stopColor="var(--sb-secondary-heavy)" stopOpacity="0"/></linearGradient></defs>
+            <path d="M0 160 L50 140 L100 150 L150 110 L200 120 L250 80 L300 95 L350 60 L400 70 L450 40 L500 55 L550 30 L600 45 L600 200 L0 200 Z" fill="url(#gr)"/>
+            <path d="M0 160 L50 140 L100 150 L150 110 L200 120 L250 80 L300 95 L350 60 L400 70 L450 40 L500 55 L550 30 L600 45" fill="none" stroke="var(--sb-secondary-heavy)" strokeWidth="2"/>
+          </svg>
+        </div>
+      </div>
+      <div style={{background:'#fff',border:'1px solid #E2E8F0',borderRadius:12,padding:20}}>
+        <div style={{fontFamily:'Pretendard',fontSize:16,fontWeight:600,color:'#0F172A',marginBottom:14}}>Needs your attention</div>
+        {[
+          {t:'3 transfers pending review',d:'Action by EOD',v:'waiting'},
+          {t:'FX rate refreshed',d:'KRW/USD now 1,350.22',v:'informative'},
+          {t:'Atlas Freight: settlement delayed',d:'SWIFT ack missing',v:'negative'},
+        ].map((it,i) => (
+          <div key={i} onClick={()=>onJump('transactions')} style={{display:'flex',gap:12,padding:'10px 0',borderTop:i===0?'none':'1px solid #F1F5F9',cursor:'pointer'}}>
+            <div style={{width:4,alignSelf:'stretch',borderRadius:2,background:it.v==='waiting'?T.warning:it.v==='negative'?T.negative:T.informative}}/>
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{fontFamily:'Pretendard',fontSize:14,fontWeight:600,color:'#0F172A'}}>{it.t}</div>
+              <div style={{fontFamily:'Pretendard',fontSize:12,color:'#64748B'}}>{it.d}</div>
+            </div>
+            <Icon name="ArrowRight" size={16} color="#94A3B8"/>
+          </div>
+        ))}
+      </div>
+    </div>
+    <div style={{padding:'0 32px'}}>
+      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:12}}>
+        <div style={{fontFamily:'Pretendard',fontSize:20,fontWeight:700,color:'#0F172A'}}>Recent transactions</div>
+        <Button type="text" usage="primary" size="sm" onClick={()=>onJump('transactions')}>View all <Icon name="ArrowRight" size={14} color="#293548"/></Button>
+      </div>
+    </div>
+    <TransactionsBare limit={4}/>
+  </div>;
+}
+
+function TransactionsBare({ limit }) {
+  const [row, setRow] = React.useState(null);
+  return <>
+    <DataTable rows={ROWS.slice(0, limit||ROWS.length)} onRowClick={setRow}/>
+    <Drawer row={row} open={!!row} onClose={()=>setRow(null)} onApprove={()=>setRow(null)} onReject={()=>setRow(null)}/>
+  </>;
+}
+
+function TransactionsScreen() {
+  const [filter, setFilter] = React.useState('all');
+  const [row, setRow] = React.useState(null);
+  const filtered = ROWS.filter(r => {
+    if (filter==='all') return true;
+    if (filter==='pending')    return r.statusVariant==='waiting';
+    if (filter==='processing') return r.statusVariant==='progress';
+    if (filter==='settled')    return r.statusVariant==='positive';
+    if (filter==='action')     return r.statusVariant==='negative';
+    return true;
+  });
+  const count = (v) => ROWS.filter(r => v==='all'?true:r.statusVariant===v).length;
+  return <div style={{padding:'0 0 40px'}}>
+    <PageHeader title="Transactions" subtitle="Every inbound and outbound payment across your workspace."
+      actions={<>
+        <Button type="solid" usage="secondary"><Icon name="UploadSimple" size={14} color="#293548"/>Import CSV</Button>
+        <Button type="solid" usage="primary"><Icon name="Plus" size={14} color="#fff"/>New transfer</Button>
+      </>}/>
+    <Filters value={filter} onChange={setFilter} options={[
+      {key:'all',label:'All',count:count('all')},
+      {key:'pending',label:'Pending',count:count('waiting')},
+      {key:'processing',label:'Processing',count:count('progress')},
+      {key:'settled',label:'Settled',count:count('positive')},
+      {key:'action',label:'Action needed',count:count('negative')},
+    ]}/>
+    <DataTable rows={filtered} onRowClick={setRow}/>
+    <Drawer row={row} open={!!row} onClose={()=>setRow(null)} onApprove={()=>setRow(null)} onReject={()=>setRow(null)}/>
+  </div>;
+}
+
+function SettlementsScreen() {
+  const [row, setRow] = React.useState(null);
+  const [modal, setModal] = React.useState(false);
+  return <div style={{padding:'0 0 40px'}}>
+    <PageHeader title="Settlements" subtitle="Batch-settle approved transfers by counterparty."
+      actions={<>
+        <Button type="solid" usage="secondary">Review queue</Button>
+        <Button type="solid" usage="primary" onClick={()=>setModal(true)}><Icon name="Check" size={14} color="#fff"/>Settle 4 items</Button>
+      </>}/>
+    <Filters value="all" onChange={()=>{}} options={[
+      {key:'all',label:'Ready to settle',count:4},
+      {key:'queued',label:'Queued',count:2},
+      {key:'history',label:'History',count:128},
+    ]}/>
+    <DataTable rows={ROWS.filter(r=>r.statusVariant==='positive'||r.statusVariant==='waiting')} onRowClick={setRow}/>
+    <Drawer row={row} open={!!row} onClose={()=>setRow(null)} onApprove={()=>{ setRow(null); setModal(true); }} onReject={()=>setRow(null)}/>
+    <Modal open={modal} onClose={()=>setModal(false)} onConfirm={()=>setModal(false)}
+      title="Settle 4 transfers?" confirmLabel="Settle now"
+      body={<>You're about to release <b>₩ 49,957,456</b> across 4 approved transfers. This can't be undone once SWIFT confirms.</>}/>
+  </div>;
+}
+
+// ── Components showcase ──────────────────────────────────────────────────────
+function ComponentsScreen() {
+  const [sel1, setSel1] = React.useState('');
+  const [sel2, setSel2] = React.useState('kr');
+  const [inp1, setInp1] = React.useState('');
+  const [inp2, setInp2] = React.useState('Filled value');
+
+  const OPTS = [
+    {value:'kr',label:'대한민국'},{value:'us',label:'미국'},{value:'jp',label:'일본'},
+    {value:'de',label:'독일'},{value:'gb',label:'영국'},{value:'fr',label:'프랑스'},
+  ];
+  const ALL_ICONS = [
+    'SquaresFour','ArrowsLeftRight','ClipboardText','Coins','MagnifyingGlass','Bell',
+    'CaretDown','CaretUp','Check','X','XCircle','ArrowRight','ArrowLeft','Plus',
+    'DownloadSimple','UploadSimple','SidebarSimple','Gear','Question','File',
+    'DotsThreeVertical','Calendar','List','ClockCounterClockwise',
+  ];
+
+  const Sec = ({title, children}) => (
+    <div style={{marginBottom:48}}>
+      <div style={{fontFamily:'Pretendard',fontSize:11,fontWeight:700,color:'#94A3B8',letterSpacing:'0.8px',textTransform:'uppercase',marginBottom:20,paddingBottom:10,borderBottom:'1px solid #E2E8F0'}}>{title}</div>
+      {children}
+    </div>
+  );
+  const Row = ({label, children, align='center'}) => (
+    <div style={{display:'flex',alignItems:align,gap:12,marginBottom:16}}>
+      <div style={{width:200,fontFamily:'ui-monospace,monospace',fontSize:11,color:'#94A3B8',flexShrink:0,paddingTop:align==='flex-start'?3:0}}>{label}</div>
+      <div style={{display:'flex',alignItems:'center',gap:10,flexWrap:'wrap'}}>{children}</div>
+    </div>
+  );
+
+  return <div style={{padding:'0 32px 60px'}}>
+    <PageHeader title="Components" subtitle="V.2 디자인 토큰 적용 현황 — Button · Badge · Input · Select · Icon"/>
+
+    <Sec title="Button — type × usage × size">
+      <Row label="solid / primary">
+        <Button type="solid" usage="primary" size="lg">Large</Button>
+        <Button type="solid" usage="primary" size="md">Medium</Button>
+        <Button type="solid" usage="primary" size="sm">Small</Button>
+        <Button type="solid" usage="primary" size="xs">XSmall</Button>
+        <Button type="solid" usage="primary" disabled>Disabled</Button>
+      </Row>
+      <Row label="solid / secondary">
+        <Button type="solid" usage="secondary" size="lg">Large</Button>
+        <Button type="solid" usage="secondary" size="md">Medium</Button>
+        <Button type="solid" usage="secondary" size="sm">Small</Button>
+        <Button type="solid" usage="secondary" size="xs">XSmall</Button>
+        <Button type="solid" usage="secondary" disabled>Disabled</Button>
+      </Row>
+      <Row label="line / tertiary">
+        <Button type="line" usage="tertiary" size="lg">Large</Button>
+        <Button type="line" usage="tertiary" size="md">Medium</Button>
+        <Button type="line" usage="tertiary" size="sm">Small</Button>
+        <Button type="line" usage="tertiary" size="xs">XSmall</Button>
+        <Button type="line" usage="tertiary" disabled>Disabled</Button>
+      </Row>
+      <Row label="text / primary">
+        <Button type="text" usage="primary" size="md">Medium</Button>
+        <Button type="text" usage="primary" size="sm">Small</Button>
+        <Button type="text" usage="primary" disabled>Disabled</Button>
+      </Row>
+      <Row label="with icon">
+        <Button type="solid" usage="primary"><Icon name="Plus" size={14} color="#fff"/>New transfer</Button>
+        <Button type="solid" usage="secondary"><Icon name="DownloadSimple" size={14} color="#293548"/>Export</Button>
+        <Button type="text" usage="primary" size="sm">View all <Icon name="ArrowRight" size={14} color="#293548"/></Button>
+      </Row>
+    </Sec>
+
+    <Sec title="Badge — variant">
+      <Row label="status">
+        <Badge variant="positive">Settled</Badge>
+        <Badge variant="waiting">Pending</Badge>
+        <Badge variant="negative">Action needed</Badge>
+        <Badge variant="progress">Processing</Badge>
+        <Badge variant="informative">Informative</Badge>
+        <Badge variant="neutral">Neutral</Badge>
+      </Row>
+    </Sec>
+
+    <Sec title="Input — states">
+      <Row label="enabled" align="flex-start">
+        <Input placeholder="값을 입력하세요" value={inp1} onChange={e=>setInp1(e.target.value)} width={280}/>
+      </Row>
+      <Row label="filled + clear (×)" align="flex-start">
+        <Input placeholder="값을 입력하세요" value={inp2} onChange={e=>setInp2(e.target.value)} onClear={()=>setInp2('')} width={280}/>
+      </Row>
+      <Row label="label + helperText" align="flex-start">
+        <Input placeholder="0.00" value="" onChange={()=>{}} label="송금 금액" helperText="최소 ₩10,000 이상 입력하세요" width={280}/>
+      </Row>
+      <Row label="iconLeft + unit" align="flex-start">
+        <Input placeholder="검색어 입력" value="" onChange={()=>{}} iconLeft="MagnifyingGlass" width={240}/>
+        <Input placeholder="0.00" value="" onChange={()=>{}} unit="KRW" width={180}/>
+      </Row>
+      <Row label="error" align="flex-start">
+        <Input placeholder="값을 입력하세요" value="" onChange={()=>{}} isError helperText="필수 입력 항목입니다" width={280}/>
+      </Row>
+      <Row label="disabled" align="flex-start">
+        <Input placeholder="비활성 상태" value="" onChange={()=>{}} disabled helperText="수정 불가" width={280}/>
+      </Row>
+    </Sec>
+
+    <Sec title="Select — states">
+      <Row label="enabled (searchable)" align="flex-start">
+        <Select value={sel1} onChange={setSel1} options={OPTS} placeholder="국가 선택" width={280}/>
+      </Row>
+      <Row label="filled + label + helper" align="flex-start">
+        <Select value={sel2} onChange={setSel2} options={OPTS} label="수취국가" helperText="송금 가능한 국가를 선택하세요" width={280}/>
+      </Row>
+      <Row label="no search" align="flex-start">
+        <Select value="" onChange={()=>{}} options={OPTS} placeholder="국가 선택" searchable={false} width={280}/>
+      </Row>
+      <Row label="error" align="flex-start">
+        <Select value="" onChange={()=>{}} options={OPTS} placeholder="국가 선택" isError helperText="필수 항목입니다" width={280}/>
+      </Row>
+      <Row label="disabled" align="flex-start">
+        <Select value="" onChange={()=>{}} options={OPTS} placeholder="국가 선택" disabled width={280}/>
+      </Row>
+    </Sec>
+
+    <Sec title={`Icon — Phosphor PascalCase (${ALL_ICONS.length}개 로컬 SVG)`}>
+      <div style={{display:'flex',flexWrap:'wrap',gap:8}}>
+        {ALL_ICONS.map(n => (
+          <div key={n} title={n} style={{display:'flex',flexDirection:'column',alignItems:'center',gap:6,padding:'12px 8px',background:'#fff',borderRadius:8,border:'1px solid #E2E8F0',width:84}}>
+            <Icon name={n} size={20} color="#293548"/>
+            <span style={{fontFamily:'ui-monospace,monospace',fontSize:9,color:'#94A3B8',textAlign:'center',lineHeight:'12px',wordBreak:'break-all'}}>{n}</span>
+          </div>
+        ))}
+      </div>
+    </Sec>
+  </div>;
+}
+
+function EmptyScreen({ label }) {
+  return <div style={{padding:'0 0 40px'}}>
+    <PageHeader title={label} subtitle="This surface is out of scope for the UI kit."/>
+    <div style={{margin:'0 32px',padding:'80px 24px',textAlign:'center',background:'#fff',border:'1px dashed #CBD5E1',borderRadius:12}}>
+      <div style={{fontFamily:'Pretendard',fontSize:16,fontWeight:600,color:'#293548'}}>{label} — coming soon</div>
+    </div>
+  </div>;
+}
+
+function App() {
+  const [active, setActive] = React.useState('dashboard');
+  const [folded, setFolded] = React.useState(false);
+
+  const Screen = {
+    dashboard:      <DashboardScreen onJump={setActive}/>,
+    transactions:   <TransactionsScreen/>,
+    settlements:    <SettlementsScreen/>,
+    counterparties: <EmptyScreen label="Counterparties"/>,
+    fx:             <EmptyScreen label="FX rates"/>,
+    components:     <ComponentsScreen/>,
+    settings:       <EmptyScreen label="Settings"/>,
+    help:           <EmptyScreen label="Help"/>,
+  }[active];
+
+  return <>
+    <Sidebar active={active} onNavigate={setActive} folded={folded} onToggleFold={()=>setFolded(f=>!f)}/>
+    <div style={{flex:1,display:'flex',flexDirection:'column',minWidth:0,overflow:'hidden'}}>
+      <TopBar screenLabel={SCREEN_LABELS[active]}/>
+      <main style={{flex:1,overflowY:'auto'}}>{Screen}</main>
+    </div>
+  </>;
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>

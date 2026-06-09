@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html,body{margin:0;padding:0;background:#fff;}
+  body{font-family:var(--font-sans);color:var(--fg-1);-webkit-font-smoothing:antialiased;}
+  .card{padding:20px 24px;}
+  .row{display:flex;align-items:flex-start;gap:16px;flex-wrap:wrap;}
+  .col{display:flex;flex-direction:column;gap:4px;}
+  .tiny{font:400 11px/1.3 var(--font-sans);color:var(--fg-3);letter-spacing:0.3px;margin-bottom:6px;}
+  .pair{display:flex;gap:3px;}
+  .sw{width:44px;height:44px;border-radius:8px;box-shadow:inset 0 0 0 1px rgba(15,23,42,0.06);}
+  .lbl{font:600 11px/1.2 var(--font-sans);color:var(--fg-2);}
+  .hex{font:500 10px/1.3 var(--font-mono);color:var(--fg-3);}
+  .var{font:400 9px/1.2 var(--font-mono);color:var(--fg-4);}
+</style></head>
+<body><div class="card">
+<div class="tiny">Status — solid + light pairs</div>
+<div class="row">
+  <div class="col">
+    <div class="pair">
+      <div class="sw" style="background:#00C592"></div>
+      <div class="sw" style="background:#DFFBED"></div>
+    </div>
+    <div class="lbl">Positive</div>
+    <div class="hex">#00C592 · #DFFBED</div>
+    <div class="var">--s-status-positive</div>
+    <div class="var">--s-status-positive-light</div>
+  </div>
+  <div class="col">
+    <div class="pair">
+      <div class="sw" style="background:#FF6200"></div>
+      <div class="sw" style="background:#FFEFD3"></div>
+    </div>
+    <div class="lbl">Warning</div>
+    <div class="hex">#FF6200 · #FFEFD3</div>
+    <div class="var">--s-status-warning</div>
+    <div class="var">--s-status-warning-light</div>
+  </div>
+  <div class="col">
+    <div class="pair">
+      <div class="sw" style="background:#F91C1C"></div>
+      <div class="sw" style="background:#FFEFEF"></div>
+    </div>
+    <div class="lbl">Negative</div>
+    <div class="hex">#F91C1C · #FFEFEF</div>
+    <div class="var">--s-status-negative</div>
+    <div class="var">--s-status-negative-light</div>
+  </div>
+  <div class="col">
+    <div class="pair">
+      <div class="sw" style="background:#1890FF"></div>
+      <div class="sw" style="background:#E6F7FF"></div>
+    </div>
+    <div class="lbl">Progress</div>
+    <div class="hex">#1890FF · #E6F7FF</div>
+    <div class="var">--s-status-progress</div>
+    <div class="var">--s-status-progress-light</div>
+  </div>
+</div>
+</div></body></html>

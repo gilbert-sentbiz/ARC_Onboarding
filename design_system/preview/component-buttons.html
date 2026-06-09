@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html,body { margin:0; padding:0; background:#fff; }
+  body { font-family: var(--font-sans); color: var(--fg-1); -webkit-font-smoothing:antialiased; }
+  .card { padding: 20px 24px; }
+  .row { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  .col { display:flex; flex-direction:column; gap:12px; }
+  .tiny { font: 400 11px/1.3 var(--font-sans); color: var(--fg-3); letter-spacing: 0.3px; }
+  .hr { height:1px; background:#F1F5F9; margin:4px 0; }
+  button { font-family: var(--font-sans); }
+</style></head>
+<body><div class="card">
+<div class="col">
+
+  <!-- ── Section 1 : Current ── -->
+  <div class="tiny">Buttons — radius 6px · primary bg #122666 (Heavy)</div>
+
+  <!-- Type variants -->
+  <div class="row">
+    <button style="all:unset;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;gap:6px;height:40px;padding:0 16px;border-radius:6px;background:#122666;color:#fff;font:600 14px/16px var(--font-sans);letter-spacing:0.175px;cursor:pointer;white-space:nowrap">SolidPrimary</button>
+    <button style="all:unset;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;gap:6px;height:40px;padding:0 16px;border-radius:6px;background:#EAEFF5;color:#122666;font:600 14px/16px var(--font-sans);letter-spacing:0.175px;cursor:pointer;white-space:nowrap">SolidSecondary</button>
+    <button style="all:unset;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;gap:6px;height:40px;padding:0 16px;border-radius:6px;background:#fff;color:#122666;box-shadow:inset 0 0 0 1px #EAEFF5;font:600 14px/16px var(--font-sans);letter-spacing:0.175px;cursor:pointer;white-space:nowrap">LineTertiary</button>
+    <button style="all:unset;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;gap:6px;height:40px;padding:0 12px;border-radius:6px;background:transparent;color:#122666;font:600 14px/16px var(--font-sans);letter-spacing:0.175px;cursor:pointer;white-space:nowrap">TextPrimary</button>
+  </div>
+
+  <!-- Size scale (solid-primary) -->
+  <div class="row" style="align-items:center">
+    <button style="all:unset;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;gap:6px;height:40px;padding:0 16px;border-radius:6px;background:#122666;color:#fff;font:600 14px/16px var(--font-sans);cursor:pointer;white-space:nowrap">lg · 48</button>
+    <button style="all:unset;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;height:40px;padding:0 16px;border-radius:6px;background:#122666;color:#fff;font:600 14px/16px var(--font-sans);cursor:pointer;white-space:nowrap">md · 40</button>
+    <button style="all:unset;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;height:36px;padding:0 14px;border-radius:6px;background:#122666;color:#fff;font:600 12px/14px var(--font-sans);cursor:pointer;white-space:nowrap">sm · 36</button>
+    <button style="all:unset;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;height:28px;padding:0 12px;border-radius:6px;background:#122666;color:#fff;font:600 11px/14px var(--font-sans);cursor:pointer;white-space:nowrap">xs · 28</button>
+  </div>
+
+  <!-- Disabled -->
+  <div class="row">
+    <button disabled style="all:unset;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;height:40px;padding:0 16px;border-radius:6px;background:#64748B;color:#94A3B8;font:600 14px/16px var(--font-sans);cursor:not-allowed;white-space:nowrap">Disabled</button>
+    <button disabled style="all:unset;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;height:40px;padding:0 16px;border-radius:6px;background:#E2E8F0;color:#94A3B8;font:600 14px/16px var(--font-sans);cursor:not-allowed;white-space:nowrap">DisabledSecondary</button>
+  </div>
+
+  <div class="hr"></div>
+
+  <!-- ── Section 2 : Danger · Outline · IconBtn ── -->
+  <div class="tiny">Danger · Outline · IconBtn — h40 · r6 · 14/600 · 0.175px</div>
+
+  <!-- Solid: Default -->
+  <div class="tiny">Solid — Default</div>
+  <div class="row">
+    <button style="all:unset;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;gap:6px;height:40px;padding:0 16px;border-radius:6px;background:#1462FC;color:#fff;font:600 14px/16px var(--font-sans);letter-spacing:0.175px;cursor:pointer;white-space:nowrap">SolidBlue</button>
+    <button style="all:unset;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;gap:6px;height:40px;padding:0 16px;border-radius:6px;background:#F2F6FF;color:#1462FC;font:600 14px/16px var(--font-sans);letter-spacing:0.175px;cursor:pointer;white-space:nowrap">SolidBlueLight</button>
+    <button style="all:unset;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;gap:6px;height:40px;padding:0 16px;border-radius:6px;background:#F91C1C;color:#fff;font:600 14px/16px var(--font-sans);letter-spacing:0.175px;cursor:pointer;white-space:nowrap">SolidDanger</button>
+    <button style="all:unset;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;gap:6px;height:40px;padding:0 16px;border-radius:6px;background:#FFEFEF;color:#F91C1C;font:600 14px/16px var(--font-sans);letter-spacing:0.175px;cursor:pointer;white-space:nowrap">SolidDangerLight</button>
+    <button style="all:unset;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;gap:6px;height:40px;padding:0 16px;border-radius:6px;background:#FF6200;color:#fff;font:600 14px/16px var(--font-sans);letter-spacing:0.175px;cursor:pointer;white-space:nowrap">SolidTertiary</button>
+  </div>
+
+  <!-- Solid: Hover -->
+  <div class="tiny">Solid — Hover</div>
+  <div class="row">
+    <button style="all:unset;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;gap:6px;height:40px;padding:0 16px;border-radius:6px;background:linear-gradient(rgba(0,0,0,0.3),rgba(0,0,0,0.3)) #1462FC;color:#fff;font:600 14px/16px var(--font-sans);letter-spacing:0.175px;cursor:pointer;white-space:nowrap">SolidBlue</button>
+    <button style="all:unset;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;gap:6px;height:40px;padding:0 16px;border-radius:6px;background:#CBDBFC;color:#1462FC;font:600 14px/16px var(--font-sans);letter-spacing:0.175px;cursor:pointer;white-space:nowrap">SolidBlueLight</button>
+    <button style="all:unset;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;gap:6px;height:40px;padding:0 16px;border-radius:6px;background:linear-gradient(rgba(203,213,225,0.3),rgba(203,213,225,0.3)) #F91C1C;color:#fff;font:600 14px/16px var(--font-sans);letter-spacing:0.175px;cursor:pointer;white-space:nowrap">SolidDanger</button>
+    <button style="all:unset;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;gap:6px;height:40px;padding:0 16px;border-radius:6px;background:#FDBDBD;color:#F91C1C;font:600 14px/16px var(--font-sans);letter-spacing:0.175px;cursor:pointer;white-space:nowrap">SolidDangerLight</button>
+    <button style="all:unset;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;gap:6px;height:40px;padding:0 16px;border-radius:6px;background:linear-gradient(rgba(203,213,225,0.3),rgba(203,213,225,0.3)) #FF6200;color:#fff;font:600 14px/16px var(--font-sans);letter-spacing:0.175px;cursor:pointer;white-space:nowrap">SolidTertiary</button>
+  </div>
+
+  <!-- Solid: Disabled -->
+  <div class="tiny">Solid — Disabled</div>
+  <div class="row">
+    <button disabled style="all:unset;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;gap:6px;height:40px;padding:0 16px;border-radius:6px;background:#EAEFF5;color:#CBD5E1;font:600 14px/16px var(--font-sans);letter-spacing:0.175px;cursor:not-allowed;white-space:nowrap">SolidBlue</button>
+    <button disabled style="all:unset;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;gap:6px;height:40px;padding:0 16px;border-radius:6px;background:#EAEFF5;color:#CBD5E1;font:600 14px/16px var(--font-sans);letter-spacing:0.175px;cursor:not-allowed;white-space:nowrap">SolidBlueLight</button>
+    <button disabled style="all:unset;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;gap:6px;height:40px;padding:0 16px;border-radius:6px;background:#EAEFF5;color:#CBD5E1;font:600 14px/16px var(--font-sans);letter-spacing:0.175px;cursor:not-allowed;white-space:nowrap">SolidDanger</button>
+    <button disabled style="all:unset;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;gap:6px;height:40px;padding:0 16px;border-radius:6px;background:#EAEFF5;color:#CBD5E1;font:600 14px/16px var(--font-sans);letter-spacing:0.175px;cursor:not-allowed;white-space:nowrap">SolidDangerLight</button>
+    <button disabled style="all:unset;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;gap:6px;height:40px;padding:0 16px;border-radius:6px;background:#EAEFF5;color:#CBD5E1;font:600 14px/16px var(--font-sans);letter-spacing:0.175px;cursor:not-allowed;white-space:nowrap">SolidTertiary</button>
+  </div>
+
+  <!-- Outline: Default -->
+  <div class="tiny">Outline — Default</div>
+  <div class="row">
+    <button style="all:unset;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;gap:6px;height:40px;padding:0 16px;border-radius:6px;background:#fff;border:1px solid #6196FD;color:#1462FC;font:600 14px/16px var(--font-sans);letter-spacing:0.175px;cursor:pointer;white-space:nowrap">LinePrimary</button>
+    <button style="all:unset;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;gap:6px;height:40px;padding:0 16px;border-radius:6px;background:#fff;border:1px solid #EAEFF5;color:#1462FC;font:600 14px/16px var(--font-sans);letter-spacing:0.175px;cursor:pointer;white-space:nowrap">LineBlue</button>
+    <button style="all:unset;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;gap:6px;height:40px;padding:0 16px;border-radius:6px;background:#fff;border:1px solid #EAEFF5;color:#64748B;font:600 14px/16px var(--font-sans);letter-spacing:0.175px;cursor:pointer;white-space:nowrap">LineGray</button>
+    <button style="all:unset;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;gap:6px;height:40px;padding:0 16px;border-radius:6px;background:#fff;border:1px solid #F91C1C;color:#FA5F5F;font:600 14px/16px var(--font-sans);letter-spacing:0.175px;cursor:pointer;white-space:nowrap">LineDanger</button>
+  </div>
+
+  <!-- Outline: Hover -->
+  <div class="tiny">Outline — Hover</div>
+  <div class="row">
+    <button style="all:unset;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;gap:6px;height:40px;padding:0 16px;border-radius:6px;background:#F2F6FF;border:1px solid #1462FC;color:#1462FC;font:600 14px/16px var(--font-sans);letter-spacing:0.175px;cursor:pointer;white-space:nowrap">LinePrimary</button>
+    <button style="all:unset;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;gap:6px;height:40px;padding:0 16px;border-radius:6px;background:#FAFAFA;border:1px solid #E2E8F0;color:#1462FC;font:600 14px/16px var(--font-sans);letter-spacing:0.175px;cursor:pointer;white-space:nowrap">LineBlue</button>
+    <button style="all:unset;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;gap:6px;height:40px;padding:0 16px;border-radius:6px;background:#FAFAFA;border:1px solid #E2E8F0;color:#0F172A;font:600 14px/16px var(--font-sans);letter-spacing:0.175px;cursor:pointer;white-space:nowrap">LineGray</button>
+    <button style="all:unset;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;gap:6px;height:40px;padding:0 16px;border-radius:6px;background:#FFEFEF;border:1px solid #F91C1C;color:#FA5F5F;font:600 14px/16px var(--font-sans);letter-spacing:0.175px;cursor:pointer;white-space:nowrap">LineDanger</button>
+  </div>
+
+  <!-- Outline: Disabled -->
+  <div class="tiny">Outline — Disabled</div>
+  <div class="row">
+    <button disabled style="all:unset;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;gap:6px;height:40px;padding:0 16px;border-radius:6px;background:#EAEFF5;border:1px solid #CBD5E1;color:#CBD5E1;font:600 14px/16px var(--font-sans);letter-spacing:0.175px;cursor:not-allowed;white-space:nowrap">LinePrimary</button>
+    <button disabled style="all:unset;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;gap:6px;height:40px;padding:0 16px;border-radius:6px;background:#EAEFF5;border:1px solid #CBD5E1;color:#CBD5E1;font:600 14px/16px var(--font-sans);letter-spacing:0.175px;cursor:not-allowed;white-space:nowrap">LineBlue</button>
+    <button disabled style="all:unset;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;gap:6px;height:40px;padding:0 16px;border-radius:6px;background:#EAEFF5;border:1px solid #CBD5E1;color:#CBD5E1;font:600 14px/16px var(--font-sans);letter-spacing:0.175px;cursor:not-allowed;white-space:nowrap">LineGray</button>
+    <button disabled style="all:unset;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;gap:6px;height:40px;padding:0 16px;border-radius:6px;background:#EAEFF5;border:1px solid #CBD5E1;color:#CBD5E1;font:600 14px/16px var(--font-sans);letter-spacing:0.175px;cursor:not-allowed;white-space:nowrap">LineDanger</button>
+  </div>
+
+  <!-- IconBtn -->
+  <div class="tiny">IconBtn 40×40 — Default · Hover · Disabled</div>
+  <div class="row" style="align-items:center">
+    <button style="all:unset;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:6px;color:#1462FC;cursor:pointer">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M10 2.5V10M6.46 4.88A6.25 6.25 0 1 0 13.54 4.88" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+    </button>
+    <button style="all:unset;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:6px;border:1px solid #CBDBFC;color:#1462FC;cursor:pointer">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M10 2.5V10M6.46 4.88A6.25 6.25 0 1 0 13.54 4.88" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+    </button>
+    <button disabled style="all:unset;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:6px;border:1px solid #CBD5E1;color:#CBD5E1;cursor:not-allowed">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M10 2.5V10M6.46 4.88A6.25 6.25 0 1 0 13.54 4.88" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+    </button>
+    <div style="width:1px;height:24px;background:#E2E8F0"></div>
+    <button style="all:unset;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:6px;color:#64748B;cursor:pointer">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M10 2.5V10M6.46 4.88A6.25 6.25 0 1 0 13.54 4.88" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+    </button>
+    <button style="all:unset;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:6px;border:1px solid #E2E8F0;color:#64748B;cursor:pointer">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M10 2.5V10M6.46 4.88A6.25 6.25 0 1 0 13.54 4.88" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+    </button>
+    <button disabled style="all:unset;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:6px;border:1px solid #CBD5E1;color:#CBD5E1;cursor:not-allowed">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M10 2.5V10M6.46 4.88A6.25 6.25 0 1 0 13.54 4.88" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+    </button>
+  </div>
+
+</div></div></body></html>

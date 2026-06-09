@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html,body { margin:0; padding:0; background:#fff; }
+  body { font-family: var(--font-sans); color: var(--fg-1); -webkit-font-smoothing:antialiased; }
+  .card { padding: 20px 24px; }
+  .row { display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+  .col { display:flex; flex-direction:column; gap:12px; }
+  .tiny { font: 400 11px/1.3 var(--font-sans); color: var(--fg-3); letter-spacing: 0.3px; }
+  .hr { height:1px; background:#F1F5F9; margin:4px 0; }
+</style></head>
+<body><div class="card">
+<div class="col">
+
+  <!-- Tab Chip — r6 -->
+  <div class="tiny">Tab Chip — h32 · r6 · 13px</div>
+  <div class="row">
+    <!-- Selected -->
+    <span style="display:inline-flex;align-items:center;height:32px;padding:0 12px;border-radius:6px;background:#1462FC;color:#fff;font:600 13px/16px var(--font-sans);white-space:nowrap">Selected</span>
+    <!-- Unselected -->
+    <span style="display:inline-flex;align-items:center;height:32px;padding:0 12px;border-radius:6px;background:#F8FAFC;color:#293548;border:1px solid #E2E8F0;font:500 13px/16px var(--font-sans);white-space:nowrap">Unselected</span>
+    <span style="display:inline-flex;align-items:center;height:32px;padding:0 12px;border-radius:6px;background:#F8FAFC;color:#293548;border:1px solid #E2E8F0;font:500 13px/16px var(--font-sans);white-space:nowrap">Unselected</span>
+    <span style="display:inline-flex;align-items:center;height:32px;padding:0 12px;border-radius:6px;background:#F8FAFC;color:#293548;border:1px solid #E2E8F0;font:500 13px/16px var(--font-sans);white-space:nowrap">Unselected</span>
+    <!-- Disabled -->
+    <span style="display:inline-flex;align-items:center;height:32px;padding:0 12px;border-radius:6px;background:#EAEFF5;color:#CBD5E1;border:1px solid #E2E8F0;font:500 13px/16px var(--font-sans);white-space:nowrap">Disabled</span>
+  </div>
+
+  <!-- Tab Chip — real labels -->
+  <div class="row">
+    <span style="display:inline-flex;align-items:center;height:32px;padding:0 12px;border-radius:6px;background:#1462FC;color:#fff;font:600 13px/16px var(--font-sans);white-space:nowrap">All</span>
+    <span style="display:inline-flex;align-items:center;height:32px;padding:0 12px;border-radius:6px;background:#F8FAFC;color:#293548;border:1px solid #E2E8F0;font:500 13px/16px var(--font-sans);white-space:nowrap">Pending</span>
+    <span style="display:inline-flex;align-items:center;height:32px;padding:0 12px;border-radius:6px;background:#F8FAFC;color:#293548;border:1px solid #E2E8F0;font:500 13px/16px var(--font-sans);white-space:nowrap">Settled</span>
+    <span style="display:inline-flex;align-items:center;height:32px;padding:0 12px;border-radius:6px;background:#F8FAFC;color:#293548;border:1px solid #E2E8F0;font:500 13px/16px var(--font-sans);white-space:nowrap">Failed</span>
+  </div>
+
+  <div class="hr"></div>
+
+  <!-- Filter/Pill Chip — r999 -->
+  <div class="tiny">Filter Chip — h32 · r999 · 13px · with X icon (removable)</div>
+  <div class="row">
+    <!-- Active filter (removable) -->
+    <span style="display:inline-flex;align-items:center;gap:4px;height:32px;padding:0 8px 0 12px;border-radius:999px;background:#1462FC;color:#fff;font:600 13px/16px var(--font-sans);white-space:nowrap">
+      USD
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M3.5 3.5L10.5 10.5M10.5 3.5L3.5 10.5" stroke="rgba(255,255,255,0.7)" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+    </span>
+    <!-- Idle filter -->
+    <span style="display:inline-flex;align-items:center;gap:4px;height:32px;padding:0 8px 0 12px;border-radius:999px;background:#F8FAFC;color:#293548;border:1px solid #E2E8F0;font:500 13px/16px var(--font-sans);white-space:nowrap">
+      KRW
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M3.5 3.5L10.5 10.5M10.5 3.5L3.5 10.5" stroke="#94A3B8" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+    </span>
+    <!-- No icon variant -->
+    <span style="display:inline-flex;align-items:center;height:32px;padding:0 12px;border-radius:999px;background:#1462FC;color:#fff;font:600 13px/16px var(--font-sans);white-space:nowrap">Active</span>
+    <span style="display:inline-flex;align-items:center;height:32px;padding:0 12px;border-radius:999px;background:#F8FAFC;color:#293548;border:1px solid #E2E8F0;font:500 13px/16px var(--font-sans);white-space:nowrap">Idle</span>
+    <!-- Disabled -->
+    <span style="display:inline-flex;align-items:center;height:32px;padding:0 12px;border-radius:999px;background:#EAEFF5;color:#CBD5E1;font:500 13px/16px var(--font-sans);white-space:nowrap">Disabled</span>
+  </div>
+
+</div></div></body></html>

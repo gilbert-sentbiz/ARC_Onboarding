@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html,body{margin:0;padding:0;background:#fff;}
+  body{font-family:var(--font-sans);color:var(--fg-1);-webkit-font-smoothing:antialiased;}
+  .card{padding:20px 24px;display:flex;flex-direction:column;gap:16px;}
+  .group{display:flex;flex-direction:column;gap:6px;}
+  .g-hd{display:flex;align-items:baseline;gap:8px;}
+  .lbl{font:600 12px/1.2 var(--font-sans);color:var(--fg-2);}
+  .tiny{font:400 11px/1.3 var(--font-sans);color:var(--fg-3);}
+  .tag{display:inline-block;padding:1px 5px;border-radius:3px;background:#F1F5F9;font:500 9px/1.5 var(--font-sans);color:var(--fg-3);text-transform:uppercase;letter-spacing:0.4px;}
+  .scale{display:flex;gap:3px;}
+  .sw-w{display:flex;flex-direction:column;gap:3px;align-items:center;}
+  .sw{width:36px;height:48px;border-radius:4px;box-shadow:inset 0 0 0 1px rgba(15,23,42,0.06);flex-shrink:0;}
+  .step{font:500 9px/1 var(--font-mono);color:var(--fg-3);text-align:center;}
+  .hr{height:1px;background:#F1F5F9;}
+</style></head>
+<body><div class="card">
+
+<!-- BASE -->
+<div class="group">
+  <div class="lbl">Base</div>
+  <div class="scale">
+    <div class="sw-w"><div class="sw" style="background:#FFFFFF"></div><div class="step">White</div></div>
+    <div class="sw-w"><div class="sw" style="background:#000000"></div><div class="step">Black</div></div>
+  </div>
+</div>
+
+<div class="hr"></div>
+
+<!-- NEUTRAL -->
+<div class="group">
+  <div class="g-hd"><div class="lbl">Neutral</div><div class="tiny">N50–N900 · 15 steps</div></div>
+  <div class="scale">
+    <div class="sw-w"><div class="sw" style="background:#F8FAFC"></div><div class="step">50</div></div>
+    <div class="sw-w"><div class="sw" style="background:#F1F5F9"></div><div class="step">100</div></div>
+    <div class="sw-w"><div class="sw" style="background:#EAEFF5"></div><div class="step">150</div></div>
+    <div class="sw-w"><div class="sw" style="background:#E2E8F0"></div><div class="step">200</div></div>
+    <div class="sw-w"><div class="sw" style="background:#D7DFE9"></div><div class="step">250</div></div>
+    <div class="sw-w"><div class="sw" style="background:#CBD5E1"></div><div class="step">300</div></div>
+    <div class="sw-w"><div class="sw" style="background:#BDC9D7"></div><div class="step">350</div></div>
+    <div class="sw-w"><div class="sw" style="background:#94A3B8"></div><div class="step">400</div></div>
+    <div class="sw-w"><div class="sw" style="background:#7C8CA2"></div><div class="step">450</div></div>
+    <div class="sw-w"><div class="sw" style="background:#64748B"></div><div class="step">500</div></div>
+    <div class="sw-w"><div class="sw" style="background:#475569"></div><div class="step">550</div></div>
+    <div class="sw-w"><div class="sw" style="background:#334155"></div><div class="step">600</div></div>
+    <div class="sw-w"><div class="sw" style="background:#293548"></div><div class="step">700</div></div>
+    <div class="sw-w"><div class="sw" style="background:#1E293B"></div><div class="step">800</div></div>
+    <div class="sw-w"><div class="sw" style="background:#0F172A"></div><div class="step">900</div></div>
+  </div>
+</div>
+
+<!-- SENTBIZ BLUE -->
+<div class="group">
+  <div class="g-hd"><div class="lbl">SentBiz Blue</div><div class="tiny">SBZ50–SBZ900 · 13 steps · brand primary</div></div>
+  <div class="scale">
+    <div class="sw-w"><div class="sw" style="background:#FAFBFD"></div><div class="step">50</div></div>
+    <div class="sw-w"><div class="sw" style="background:#F2F6FF"></div><div class="step">100</div></div>
+    <div class="sw-w"><div class="sw" style="background:#DEEAFF"></div><div class="step">150</div></div>
+    <div class="sw-w"><div class="sw" style="background:#CBDBFC"></div><div class="step">200</div></div>
+    <div class="sw-w"><div class="sw" style="background:#B6CEFF"></div><div class="step">250</div></div>
+    <div class="sw-w"><div class="sw" style="background:#92B6FE"></div><div class="step">300</div></div>
+    <div class="sw-w"><div class="sw" style="background:#6196FD"></div><div class="step">350</div></div>
+    <div class="sw-w"><div class="sw" style="background:#3176FD"></div><div class="step">400</div></div>
+    <div class="sw-w"><div class="sw" style="background:#1462FC"></div><div class="step">500</div></div>
+    <div class="sw-w"><div class="sw" style="background:#0156FC"></div><div class="step">600</div></div>
+    <div class="sw-w"><div class="sw" style="background:#0746CA"></div><div class="step">700</div></div>
+    <div class="sw-w"><div class="sw" style="background:#0C3698"></div><div class="step">800</div></div>
+    <div class="sw-w"><div class="sw" style="background:#122666"></div><div class="step">900</div></div>
+  </div>
+</div>
+
+<div class="hr"></div>
+
+<!-- GRAY (LEGACY) -->
+<div class="group">
+  <div class="g-hd"><div class="lbl">Gray</div><div class="tag">Legacy</div><div class="tiny">G50–G950 · 11 steps · prefer Neutral for new work</div></div>
+  <div class="scale">
+    <div class="sw-w"><div class="sw" style="background:#FAFAFA"></div><div class="step">50</div></div>
+    <div class="sw-w"><div class="sw" style="background:#F5F5F5"></div><div class="step">100</div></div>
+    <div class="sw-w"><div class="sw" style="background:#EEEEEE"></div><div class="step">200</div></div>
+    <div class="sw-w"><div class="sw" style="background:#E0E0E0"></div><div class="step">300</div></div>
+    <div class="sw-w"><div class="sw" style="background:#BDBDBD"></div><div class="step">400</div></div>
+    <div class="sw-w"><div class="sw" style="background:#9E9E9E"></div><div class="step">500</div></div>
+    <div class="sw-w"><div class="sw" style="background:#757575"></div><div class="step">600</div></div>
+    <div class="sw-w"><div class="sw" style="background:#616161"></div><div class="step">700</div></div>
+    <div class="sw-w"><div class="sw" style="background:#424242"></div><div class="step">800</div></div>
+    <div class="sw-w"><div class="sw" style="background:#303030"></div><div class="step">900</div></div>
+    <div class="sw-w"><div class="sw" style="background:#1A1A1A"></div><div class="step">950</div></div>
+  </div>
+</div>
+
+<div class="hr"></div>
+
+<!-- LIGHT BLUE -->
+<div class="group">
+  <div class="g-hd"><div class="lbl">Light Blue</div><div class="tiny">LB50–LB900 · 10 steps</div></div>
+  <div class="scale">
+    <div class="sw-w"><div class="sw" style="background:#E6F7FF"></div><div class="step">50</div></div>
+    <div class="sw-w"><div class="sw" style="background:#BAE7FF"></div><div class="step">100</div></div>
+    <div class="sw-w"><div class="sw" style="background:#91D5FF"></div><div class="step">200</div></div>
+    <div class="sw-w"><div class="sw" style="background:#69C0FF"></div><div class="step">300</div></div>
+    <div class="sw-w"><div class="sw" style="background:#40A9FF"></div><div class="step">400</div></div>
+    <div class="sw-w"><div class="sw" style="background:#1890FF"></div><div class="step">500</div></div>
+    <div class="sw-w"><div class="sw" style="background:#096DD9"></div><div class="step">600</div></div>
+    <div class="sw-w"><div class="sw" style="background:#0050B3"></div><div class="step">700</div></div>
+    <div class="sw-w"><div class="sw" style="background:#003A8C"></div><div class="step">800</div></div>
+    <div class="sw-w"><div class="sw" style="background:#002766"></div><div class="step">900</div></div>
+  </div>
+</div>
+
+<!-- RED -->
+<div class="group">
+  <div class="g-hd"><div class="lbl">Red</div><div class="tiny">R50–R900 · 10 steps</div></div>
+  <div class="scale">
+    <div class="sw-w"><div class="sw" style="background:#FEF8F8"></div><div class="step">50</div></div>
+    <div class="sw-w"><div class="sw" style="background:#FFEFEF"></div><div class="step">100</div></div>
+    <div class="sw-w"><div class="sw" style="background:#FEDEDE"></div><div class="step">200</div></div>
+    <div class="sw-w"><div class="sw" style="background:#FDBDBD"></div><div class="step">300</div></div>
+    <div class="sw-w"><div class="sw" style="background:#F88C8C"></div><div class="step">400</div></div>
+    <div class="sw-w"><div class="sw" style="background:#F86464"></div><div class="step">500</div></div>
+    <div class="sw-w"><div class="sw" style="background:#F91C1C"></div><div class="step">600</div></div>
+    <div class="sw-w"><div class="sw" style="background:#D90B0B"></div><div class="step">700</div></div>
+    <div class="sw-w"><div class="sw" style="background:#AB1111"></div><div class="step">800</div></div>
+    <div class="sw-w"><div class="sw" style="background:#850101"></div><div class="step">900</div></div>
+  </div>
+</div>
+
+<!-- ORANGE -->
+<div class="group">
+  <div class="g-hd"><div class="lbl">Orange</div><div class="tiny">O50–O900 · 10 steps</div></div>
+  <div class="scale">
+    <div class="sw-w"><div class="sw" style="background:#FFF8EC"></div><div class="step">50</div></div>
+    <div class="sw-w"><div class="sw" style="background:#FFEFD3"></div><div class="step">100</div></div>
+    <div class="sw-w"><div class="sw" style="background:#FFDBA5"></div><div class="step">200</div></div>
+    <div class="sw-w"><div class="sw" style="background:#FFC06D"></div><div class="step">300</div></div>
+    <div class="sw-w"><div class="sw" style="background:#FF9A32"></div><div class="step">400</div></div>
+    <div class="sw-w"><div class="sw" style="background:#FF7B0A"></div><div class="step">500</div></div>
+    <div class="sw-w"><div class="sw" style="background:#FF6200"></div><div class="step">600</div></div>
+    <div class="sw-w"><div class="sw" style="background:#CC4502"></div><div class="step">700</div></div>
+    <div class="sw-w"><div class="sw" style="background:#A1360B"></div><div class="step">800</div></div>
+    <div class="sw-w"><div class="sw" style="background:#882F0C"></div><div class="step">900</div></div>
+  </div>
+</div>
+
+<!-- GREEN -->
+<div class="group">
+  <div class="g-hd"><div class="lbl">Green</div><div class="tiny">GR50–GR900 · 10 steps</div></div>
+  <div class="scale">
+    <div class="sw-w"><div class="sw" style="background:#EDFDF5"></div><div class="step">50</div></div>
+    <div class="sw-w"><div class="sw" style="background:#DFFBED"></div><div class="step">100</div></div>
+    <div class="sw-w"><div class="sw" style="background:#BDF9E0"></div><div class="step">200</div></div>
+    <div class="sw-w"><div class="sw" style="background:#9AF4C7"></div><div class="step">300</div></div>
+    <div class="sw-w"><div class="sw" style="background:#5AEDA4"></div><div class="step">400</div></div>
+    <div class="sw-w"><div class="sw" style="background:#2DD99B"></div><div class="step">500</div></div>
+    <div class="sw-w"><div class="sw" style="background:#00C592"></div><div class="step">600</div></div>
+    <div class="sw-w"><div class="sw" style="background:#007557"></div><div class="step">700</div></div>
+    <div class="sw-w"><div class="sw" style="background:#065239"></div><div class="step">800</div></div>
+    <div class="sw-w"><div class="sw" style="background:#003E2A"></div><div class="step">900</div></div>
+  </div>
+</div>
+
+<!-- TURQUOISE -->
+<div class="group">
+  <div class="g-hd"><div class="lbl">Turquoise</div><div class="tiny">T50–T900 · 10 steps</div></div>
+  <div class="scale">
+    <div class="sw-w"><div class="sw" style="background:#F2F9FA"></div><div class="step">50</div></div>
+    <div class="sw-w"><div class="sw" style="background:#E8FCFC"></div><div class="step">100</div></div>
+    <div class="sw-w"><div class="sw" style="background:#C3F2F4"></div><div class="step">200</div></div>
+    <div class="sw-w"><div class="sw" style="background:#76EAED"></div><div class="step">300</div></div>
+    <div class="sw-w"><div class="sw" style="background:#28E1E5"></div><div class="step">400</div></div>
+    <div class="sw-w"><div class="sw" style="background:#14CDDF"></div><div class="step">500</div></div>
+    <div class="sw-w"><div class="sw" style="background:#00B8D9"></div><div class="step">600</div></div>
+    <div class="sw-w"><div class="sw" style="background:#088CA4"></div><div class="step">700</div></div>
+    <div class="sw-w"><div class="sw" style="background:#10606F"></div><div class="step">800</div></div>
+    <div class="sw-w"><div class="sw" style="background:#003C44"></div><div class="step">900</div></div>
+  </div>
+</div>
+
+<!-- PURPLE -->
+<div class="group">
+  <div class="g-hd"><div class="lbl">Purple</div><div class="tiny">P50–P900 · 10 steps</div></div>
+  <div class="scale">
+    <div class="sw-w"><div class="sw" style="background:#F6F3FB"></div><div class="step">50</div></div>
+    <div class="sw-w"><div class="sw" style="background:#EDE7FB"></div><div class="step">100</div></div>
+    <div class="sw-w"><div class="sw" style="background:#E1D7F8"></div><div class="step">200</div></div>
+    <div class="sw-w"><div class="sw" style="background:#D0BAFF"></div><div class="step">300</div></div>
+    <div class="sw-w"><div class="sw" style="background:#B798FA"></div><div class="step">400</div></div>
+    <div class="sw-w"><div class="sw" style="background:#A379FF"></div><div class="step">500</div></div>
+    <div class="sw-w"><div class="sw" style="background:#915FFF"></div><div class="step">600</div></div>
+    <div class="sw-w"><div class="sw" style="background:#6D2EF6"></div><div class="step">700</div></div>
+    <div class="sw-w"><div class="sw" style="background:#4F18C6"></div><div class="step">800</div></div>
+    <div class="sw-w"><div class="sw" style="background:#330B70"></div><div class="step">900</div></div>
+  </div>
+</div>
+
+<!-- YELLOW -->
+<div class="group">
+  <div class="g-hd"><div class="lbl">Yellow</div><div class="tiny">Y50–Y900 · 10 steps</div></div>
+  <div class="scale">
+    <div class="sw-w"><div class="sw" style="background:#FFFEF1"></div><div class="step">50</div></div>
+    <div class="sw-w"><div class="sw" style="background:#FEFBE2"></div><div class="step">100</div></div>
+    <div class="sw-w"><div class="sw" style="background:#FFF9AE"></div><div class="step">200</div></div>
+    <div class="sw-w"><div class="sw" style="background:#FFEF93"></div><div class="step">300</div></div>
+    <div class="sw-w"><div class="sw" style="background:#FFE578"></div><div class="step">400</div></div>
+    <div class="sw-w"><div class="sw" style="background:#FFD452"></div><div class="step">500</div></div>
+    <div class="sw-w"><div class="sw" style="background:#FFC32C"></div><div class="step">600</div></div>
+    <div class="sw-w"><div class="sw" style="background:#BE8820"></div><div class="step">700</div></div>
+    <div class="sw-w"><div class="sw" style="background:#7D4D13"></div><div class="step">800</div></div>
+    <div class="sw-w"><div class="sw" style="background:#51260A"></div><div class="step">900</div></div>
+  </div>
+</div>
+
+</div></body></html>

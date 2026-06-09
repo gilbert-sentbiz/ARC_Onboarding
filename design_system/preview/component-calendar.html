@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html,body { margin:0; padding:0; background:#F8FAFC; }
+  body { font-family: var(--font-sans); color: var(--fg-1); -webkit-font-smoothing:antialiased; }
+  .page { padding: 24px; display:flex; flex-direction:column; gap:24px; align-items:flex-start; }
+  .tiny { font: 400 11px/1.3 var(--font-sans); color: var(--fg-3); letter-spacing:0.3px; margin-bottom:12px; }
+
+  /* ── Date picker card ── */
+  .datepicker {
+    display: inline-flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 32px;
+    border-radius: 8px;
+    background: #fff;
+    box-shadow: 0 0 1px rgba(15,23,42,0.08), 0 4px 20px 2px rgba(15,23,42,0.12);
+  }
+
+  .cal-panels { display:flex; gap:24px; align-items:flex-start; }
+
+  /* ── Single calendar ── */
+  .calendar { display:flex; flex-direction:column; gap:8px; width:252px; }
+
+  .cal-header { display:flex; align-items:center; justify-content:space-between; height:28px; }
+  .cal-nav {
+    all:unset; width:24px; height:24px;
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer;
+  }
+  .cal-title {
+    font: 600 16px/24px var(--font-sans);
+    letter-spacing: 0.024px;
+    color: #0F172A;
+    display:flex; gap:8px;
+  }
+
+  /* Days of week */
+  .cal-dow { display:flex; width:252px; }
+  .dow {
+    flex:1; font:400 10px/1.5 var(--font-sans);
+    text-align:center; color:#293548; letter-spacing:0.01px;
+  }
+  .dow.red { color:#F91C1C; }
+
+  /* Grid */
+  .cal-grid { display:flex; flex-direction:column; }
+  .cal-week { display:flex; width:252px; }
+
+  /* ── Day cell ── */
+  .day {
+    position:relative;
+    width:36px; height:36px;
+    flex-shrink:0;
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer;
+  }
+  .day.empty { cursor:default; pointer-events:none; }
+
+  /* Range background strip */
+  .day.in-range::before,
+  .day.range-start::before,
+  .day.range-end::before {
+    content:'';
+    position:absolute;
+    top:2px; bottom:2px;
+    background:#F8FAFC;
+    z-index:0;
+  }
+  .day.in-range::before   { left:0;   right:0;   }
+  .day.range-start::before{ left:50%; right:0;   }
+  .day.range-end::before  { left:0;   right:50%; }
+
+  /* Selected circle */
+  .day-circle {
+    position:absolute;
+    width:32px; height:32px;
+    border-radius:50%;
+    background:#122666;
+    top:2px; left:2px;
+    z-index:1;
+  }
+
+  /* Day number */
+  .day-num {
+    position:relative; z-index:2;
+    font:600 14px/20px var(--font-sans);
+    letter-spacing:0.014px;
+    color:#0F172A;
+    text-align:center;
+    white-space:nowrap;
+  }
+  .day.sun .day-num          { color:#F91C1C; }
+  .day.sat .day-num          { color:#F91C1C; }
+  .day.in-range.sun .day-num { color:#F91C1C; }
+  .day.in-range.sat .day-num { color:#F91C1C; }
+  .day.range-start .day-num,
+  .day.range-end .day-num    { color:#fff; }
+
+  /* ── Footer ── */
+  .cal-footer {
+    display:flex; align-items:center; justify-content:space-between;
+    padding-top:16px;
+    border-top:1px solid #F1F5F9;
+  }
+
+  /* Segment (inline from component-segment) */
+  .seg {
+    display:inline-flex; align-items:stretch;
+    height:40px; padding:4px; gap:2px;
+    background:#F8FAFC; border-radius:6px; box-sizing:border-box;
+  }
+  .seg-item {
+    display:inline-flex; align-items:center; justify-content:center;
+    padding:0 16px; border-radius:4px;
+    font:600 14px/16px var(--font-sans);
+    letter-spacing:0.175px; color:#64748B;
+    white-space:nowrap; cursor:pointer;
+  }
+  .seg-item.active {
+    background:#fff;
+    box-shadow:0 2px 8px rgba(15,23,42,0.08);
+    color:#0F172A;
+  }
+
+  /* Apply button */
+  .apply-btn {
+    all:unset; box-sizing:border-box;
+    display:inline-flex; align-items:center; justify-content:center;
+    height:40px; padding:0 20px;
+    background:#122666; color:#fff;
+    font:600 14px/16px var(--font-sans);
+    letter-spacing:0.175px; border-radius:6px; cursor:pointer;
+  }
+</style></head>
+<body><div class="page">
+
+  <div class="tiny">Date Picker (Range) — 2×252 · p32 · r8 · Shadow300 · Oct 22–Nov 6 선택 예시</div>
+
+  <div class="datepicker">
+    <div class="cal-panels">
+
+      <!-- ── October 2023 (Oct 1 = WED) ── -->
+      <div class="calendar">
+        <div class="cal-header">
+          <button class="cal-nav">
+            <svg width="8" height="14" viewBox="0 0 8 14" fill="none"><path d="M7 1L1 7L7 13" stroke="#0F172A" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <div class="cal-title"><span>Oct</span><span>2023</span></div>
+          <button class="cal-nav">
+            <svg width="8" height="14" viewBox="0 0 8 14" fill="none"><path d="M1 1L7 7L1 13" stroke="#0F172A" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+        </div>
+        <div class="cal-dow">
+          <span class="dow red">SUN</span><span class="dow">MON</span><span class="dow">TUE</span>
+          <span class="dow">WED</span><span class="dow">THU</span><span class="dow">FRI</span>
+          <span class="dow red">SAT</span>
+        </div>
+        <div class="cal-grid">
+          <!-- Week 1: WED=1 ~ SAT=4 -->
+          <div class="cal-week">
+            <div class="day empty"></div><div class="day empty"></div><div class="day empty"></div>
+            <div class="day"><span class="day-num">1</span></div>
+            <div class="day"><span class="day-num">2</span></div>
+            <div class="day"><span class="day-num">3</span></div>
+            <div class="day sat"><span class="day-num">4</span></div>
+          </div>
+          <!-- Week 2: SUN=5 ~ SAT=11 -->
+          <div class="cal-week">
+            <div class="day sun"><span class="day-num">5</span></div>
+            <div class="day"><span class="day-num">6</span></div>
+            <div class="day"><span class="day-num">7</span></div>
+            <div class="day"><span class="day-num">8</span></div>
+            <div class="day"><span class="day-num">9</span></div>
+            <div class="day"><span class="day-num">10</span></div>
+            <div class="day sat"><span class="day-num">11</span></div>
+          </div>
+          <!-- Week 3: SUN=12 ~ SAT=18 -->
+          <div class="cal-week">
+            <div class="day sun"><span class="day-num">12</span></div>
+            <div class="day"><span class="day-num">13</span></div>
+            <div class="day"><span class="day-num">14</span></div>
+            <div class="day"><span class="day-num">15</span></div>
+            <div class="day"><span class="day-num">16</span></div>
+            <div class="day"><span class="day-num">17</span></div>
+            <div class="day sat"><span class="day-num">18</span></div>
+          </div>
+          <!-- Week 4: SUN=19 ~ SAT=25 | 22=range-start -->
+          <div class="cal-week">
+            <div class="day sun"><span class="day-num">19</span></div>
+            <div class="day"><span class="day-num">20</span></div>
+            <div class="day"><span class="day-num">21</span></div>
+            <div class="day range-start"><div class="day-circle"></div><span class="day-num">22</span></div>
+            <div class="day in-range"><span class="day-num">23</span></div>
+            <div class="day in-range"><span class="day-num">24</span></div>
+            <div class="day in-range sat"><span class="day-num">25</span></div>
+          </div>
+          <!-- Week 5: SUN=26 ~ FRI=31 -->
+          <div class="cal-week">
+            <div class="day in-range sun"><span class="day-num">26</span></div>
+            <div class="day in-range"><span class="day-num">27</span></div>
+            <div class="day in-range"><span class="day-num">28</span></div>
+            <div class="day in-range"><span class="day-num">29</span></div>
+            <div class="day in-range"><span class="day-num">30</span></div>
+            <div class="day in-range"><span class="day-num">31</span></div>
+            <div class="day empty"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── November 2023 (Nov 1 = FRI) ── -->
+      <div class="calendar">
+        <div class="cal-header">
+          <button class="cal-nav">
+            <svg width="8" height="14" viewBox="0 0 8 14" fill="none"><path d="M7 1L1 7L7 13" stroke="#0F172A" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <div class="cal-title"><span>Nov</span><span>2023</span></div>
+          <button class="cal-nav">
+            <svg width="8" height="14" viewBox="0 0 8 14" fill="none"><path d="M1 1L7 7L1 13" stroke="#0F172A" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+        </div>
+        <div class="cal-dow">
+          <span class="dow red">SUN</span><span class="dow">MON</span><span class="dow">TUE</span>
+          <span class="dow">WED</span><span class="dow">THU</span><span class="dow">FRI</span>
+          <span class="dow red">SAT</span>
+        </div>
+        <div class="cal-grid">
+          <!-- Week 1: FRI=1, SAT=2 -->
+          <div class="cal-week">
+            <div class="day empty"></div><div class="day empty"></div>
+            <div class="day empty"></div><div class="day empty"></div><div class="day empty"></div>
+            <div class="day in-range"><span class="day-num">1</span></div>
+            <div class="day in-range sat"><span class="day-num">2</span></div>
+          </div>
+          <!-- Week 2: SUN=3 ~ SAT=9 | 3~5=range, 6=range-end -->
+          <div class="cal-week">
+            <div class="day in-range sun"><span class="day-num">3</span></div>
+            <div class="day in-range"><span class="day-num">4</span></div>
+            <div class="day in-range"><span class="day-num">5</span></div>
+            <div class="day range-end"><div class="day-circle"></div><span class="day-num">6</span></div>
+            <div class="day"><span class="day-num">7</span></div>
+            <div class="day"><span class="day-num">8</span></div>
+            <div class="day sat"><span class="day-num">9</span></div>
+          </div>
+          <!-- Week 3: SUN=10 ~ SAT=16 -->
+          <div class="cal-week">
+            <div class="day sun"><span class="day-num">10</span></div>
+            <div class="day"><span class="day-num">11</span></div>
+            <div class="day"><span class="day-num">12</span></div>
+            <div class="day"><span class="day-num">13</span></div>
+            <div class="day"><span class="day-num">14</span></div>
+            <div class="day"><span class="day-num">15</span></div>
+            <div class="day sat"><span class="day-num">16</span></div>
+          </div>
+          <!-- Week 4: SUN=17 ~ SAT=23 -->
+          <div class="cal-week">
+            <div class="day sun"><span class="day-num">17</span></div>
+            <div class="day"><span class="day-num">18</span></div>
+            <div class="day"><span class="day-num">19</span></div>
+            <div class="day"><span class="day-num">20</span></div>
+            <div class="day"><span class="day-num">21</span></div>
+            <div class="day"><span class="day-num">22</span></div>
+            <div class="day sat"><span class="day-num">23</span></div>
+          </div>
+          <!-- Week 5: SUN=24 ~ SAT=30 -->
+          <div class="cal-week">
+            <div class="day sun"><span class="day-num">24</span></div>
+            <div class="day"><span class="day-num">25</span></div>
+            <div class="day"><span class="day-num">26</span></div>
+            <div class="day"><span class="day-num">27</span></div>
+            <div class="day"><span class="day-num">28</span></div>
+            <div class="day"><span class="day-num">29</span></div>
+            <div class="day sat"><span class="day-num">30</span></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ── Footer ── -->
+    <div class="cal-footer">
+      <div class="seg">
+        <div class="seg-item">오늘</div>
+        <div class="seg-item">일주일</div>
+        <div class="seg-item active">1개월</div>
+      </div>
+      <button class="apply-btn">적용</button>
+    </div>
+  </div>
+
+</div></body></html>

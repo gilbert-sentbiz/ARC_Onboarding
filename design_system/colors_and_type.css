@@ -1,0 +1,510 @@
+/* SentBiz Design System — Colors & Type  (V.2)
+ * Foundation tokens aligned with Figma: Sentbiz Design System V.2
+ * Architecture: Foundation (raw palettes) → Semantic (role aliases) → Legacy (backwards-compat)
+ *
+ * Pretendard is the primary UI font (Korean-first); GmarketSans is a display
+ * font reserved for marketing/hero moments. Pretendard is loaded from local
+ * .otf files in ./fonts (brand-supplied). GmarketSans loads from a public CDN
+ * mirror — falls back to Pretendard 800 if unavailable.
+ */
+
+/* Pretendard — local OTF files, all 9 weights */
+@font-face { font-family:'Pretendard'; font-weight:100; font-style:normal; font-display:swap; src:url('fonts/Pretendard-Thin.otf') format('opentype'); }
+@font-face { font-family:'Pretendard'; font-weight:200; font-style:normal; font-display:swap; src:url('fonts/Pretendard-ExtraLight.otf') format('opentype'); }
+@font-face { font-family:'Pretendard'; font-weight:300; font-style:normal; font-display:swap; src:url('fonts/Pretendard-Light.otf') format('opentype'); }
+@font-face { font-family:'Pretendard'; font-weight:400; font-style:normal; font-display:swap; src:url('fonts/Pretendard-Regular.otf') format('opentype'); }
+@font-face { font-family:'Pretendard'; font-weight:500; font-style:normal; font-display:swap; src:url('fonts/Pretendard-Medium.otf') format('opentype'); }
+@font-face { font-family:'Pretendard'; font-weight:600; font-style:normal; font-display:swap; src:url('fonts/Pretendard-SemiBold.otf') format('opentype'); }
+@font-face { font-family:'Pretendard'; font-weight:700; font-style:normal; font-display:swap; src:url('fonts/Pretendard-Bold.otf') format('opentype'); }
+@font-face { font-family:'Pretendard'; font-weight:800; font-style:normal; font-display:swap; src:url('fonts/Pretendard-ExtraBold.otf') format('opentype'); }
+@font-face { font-family:'Pretendard'; font-weight:900; font-style:normal; font-display:swap; src:url('fonts/Pretendard-Black.otf') format('opentype'); }
+
+
+:root {
+
+  /* ============================================================
+   * FOUNDATION / BASE
+   * ============================================================ */
+  --f-base-white: #FFFFFF;
+  --f-base-black: #000000;
+
+  /* ============================================================
+   * FOUNDATION / GRAY  (legacy warm gray scale, G50–G950)
+   * Retained for dashboard backwards-compat. Prefer Neutral for new work.
+   * ============================================================ */
+  --f-gray-50:  #FAFAFA;
+  --f-gray-100: #F5F5F5;
+  --f-gray-200: #EEEEEE;
+  --f-gray-300: #E0E0E0;
+  --f-gray-400: #BDBDBD;
+  --f-gray-500: #9E9E9E;
+  --f-gray-600: #757575;
+  --f-gray-700: #616161;
+  --f-gray-800: #424242;
+  --f-gray-900: #303030;
+  --f-gray-950: #1A1A1A;
+
+  /* ============================================================
+   * FOUNDATION / NEUTRAL  (slate-based, current direction, N50–N900)
+   * 15-step scale. Use these for all new label, surface, border work.
+   * ============================================================ */
+  --f-neutral-50:  #F8FAFC;
+  --f-neutral-100: #F1F5F9;
+  --f-neutral-150: #EAEFF5;
+  --f-neutral-200: #E2E8F0;
+  --f-neutral-250: #D7DFE9;
+  --f-neutral-300: #CBD5E1;
+  --f-neutral-350: #BDC9D7;
+  --f-neutral-400: #94A3B8;
+  --f-neutral-450: #7C8CA2;
+  --f-neutral-500: #64748B;
+  --f-neutral-550: #475569;
+  --f-neutral-600: #334155;
+  --f-neutral-700: #293548;
+  --f-neutral-800: #1E293B;
+  --f-neutral-900: #0F172A;
+
+  /* ============================================================
+   * FOUNDATION / SENTBIZ BLUE  (brand blue, SBZ50–SBZ900)
+   * SBZ700 (#0746CA) is the primary anchor — use sparingly.
+   * ============================================================ */
+  --f-blue-50:  #FAFBFD;
+  --f-blue-100: #F2F6FF;
+  --f-blue-150: #DEEAFF;
+  --f-blue-200: #CBDBFC;
+  --f-blue-250: #B6CEFF;
+  --f-blue-300: #92B6FE;
+  --f-blue-350: #6196FD;
+  --f-blue-400: #3176FD;
+  --f-blue-500: #1462FC;
+  --f-blue-600: #0156FC;
+  --f-blue-700: #0746CA;
+  --f-blue-800: #0C3698;
+  --f-blue-900: #122666;
+
+  /* ============================================================
+   * FOUNDATION / LIGHT BLUE  (LB50–LB900)
+   * Used for progress/informative status states.
+   * ============================================================ */
+  --f-lb-50:  #E6F7FF;
+  --f-lb-100: #BAE7FF;
+  --f-lb-200: #91D5FF;
+  --f-lb-300: #69C0FF;
+  --f-lb-400: #40A9FF;
+  --f-lb-500: #1890FF;
+  --f-lb-600: #096DD9;
+  --f-lb-700: #0050B3;
+  --f-lb-800: #003A8C;
+  --f-lb-900: #002766;
+
+  /* ============================================================
+   * FOUNDATION / RED  (R50–R900)
+   * ============================================================ */
+  --f-red-50:  #FEF8F8;
+  --f-red-100: #FFEFEF;
+  --f-red-200: #FEDEDE;
+  --f-red-300: #FDBDBD;
+  --f-red-400: #F88C8C;
+  --f-red-500: #F86464;
+  --f-red-600: #F91C1C;
+  --f-red-700: #D90B0B;
+  --f-red-800: #AB1111;
+  --f-red-900: #850101;
+
+  /* ============================================================
+   * FOUNDATION / ORANGE  (O50–O900)
+   * O600 is the warning anchor; O400–O500 are the tertiary brand range.
+   * ============================================================ */
+  --f-orange-50:  #FFF8EC;
+  --f-orange-100: #FFEFD3;
+  --f-orange-200: #FFDBA5;
+  --f-orange-300: #FFC06D;
+  --f-orange-400: #FF9A32;
+  --f-orange-500: #FF7B0A;
+  --f-orange-600: #FF6200;
+  --f-orange-700: #CC4502;
+  --f-orange-800: #A1360B;
+  --f-orange-900: #882F0C;
+
+  /* ============================================================
+   * FOUNDATION / GREEN  (GR50–GR900)
+   * ============================================================ */
+  --f-green-50:  #EDFDF5;
+  --f-green-100: #DFFBED;
+  --f-green-200: #BDF9E0;
+  --f-green-300: #9AF4C7;
+  --f-green-400: #5AEDA4;
+  --f-green-500: #2DD99B;
+  --f-green-600: #00C592;
+  --f-green-700: #007557;
+  --f-green-800: #065239;
+  --f-green-900: #003E2A;
+
+  /* ============================================================
+   * FOUNDATION / TURQUOISE  (T50–T900)
+   * ============================================================ */
+  --f-turquoise-50:  #F2F9FA;
+  --f-turquoise-100: #E8FCFC;
+  --f-turquoise-200: #C3F2F4;
+  --f-turquoise-300: #76EAED;
+  --f-turquoise-400: #28E1E5;
+  --f-turquoise-500: #14CDDF;
+  --f-turquoise-600: #00B8D9;
+  --f-turquoise-700: #088CA4;
+  --f-turquoise-800: #10606F;
+  --f-turquoise-900: #003C44;
+
+  /* ============================================================
+   * FOUNDATION / PURPLE  (P50–P900)
+   * ============================================================ */
+  --f-purple-50:  #F6F3FB;
+  --f-purple-100: #EDE7FB;
+  --f-purple-200: #E1D7F8;
+  --f-purple-300: #D0BAFF;
+  --f-purple-400: #B798FA;
+  --f-purple-500: #A379FF;
+  --f-purple-600: #915FFF;
+  --f-purple-700: #6D2EF6;
+  --f-purple-800: #4F18C6;
+  --f-purple-900: #330B70;
+
+  /* ============================================================
+   * FOUNDATION / YELLOW  (Y50–Y900)
+   * ============================================================ */
+  --f-yellow-50:  #FFFEF1;
+  --f-yellow-100: #FEFBE2;
+  --f-yellow-200: #FFF9AE;
+  --f-yellow-300: #FFEF93;
+  --f-yellow-400: #FFE578;
+  --f-yellow-500: #FFD452;
+  --f-yellow-600: #FFC32C;
+  --f-yellow-700: #BE8820;
+  --f-yellow-800: #7D4D13;
+  --f-yellow-900: #51260A;
+
+  /* ============================================================
+   * FOUNDATION / OPACITY
+   * ============================================================ */
+  --f-opacity-dim:        rgba(0, 0, 0, 0.30);       /* modal/drawer scrim */
+  --f-opacity-dim-strong: rgba(0, 0, 0, 0.50);       /* fullscreen viewer scrim */
+  --f-opacity-normal:     rgba(203, 213, 225, 0.10); /* subtle tint */
+  --f-opacity-strong:     rgba(203, 213, 225, 0.20);
+  --f-opacity-heavy:      rgba(203, 213, 225, 0.30);
+
+  /* ============================================================
+   * SEMANTIC / LABEL  (foreground text roles)
+   * ============================================================ */
+  --s-label-strong:      var(--f-base-black);              /* #000000 — max emphasis */
+  --s-label-default:     var(--f-neutral-900);             /* #0F172A — primary body */
+  --s-label-normal:      var(--f-neutral-700);             /* #293548 — titles */
+  --s-label-natural:     var(--f-neutral-500);             /* #64748B — secondary/helper */
+  --s-label-soft:        var(--f-neutral-400);             /* #94A3B8 — placeholder/tertiary */
+  --s-label-disable:     var(--f-neutral-300);             /* #CBD5E1 — disabled text */
+
+  /* ============================================================
+   * SEMANTIC / LINE  (dividers & borders)
+   * ============================================================ */
+  --s-line-normal: rgba(112, 115, 124, 0.22);  /* subtle divider inside cards */
+  --s-line-strong: rgba(112, 115, 124, 0.52);  /* stronger divider */
+
+  /* ============================================================
+   * SEMANTIC / FILL  (surface tints, non-border)
+   * ============================================================ */
+  --s-fill-strong: rgba(112, 115, 124, 0.16);  /* hovered/pressed surface fill */
+
+  /* ============================================================
+   * SEMANTIC / BACKGROUND  (surface hierarchy)
+   * White (card) → Normal (app shell) → Strong → Heavy
+   * ============================================================ */
+  --s-bg-normal:      var(--f-base-white);    /* #FFFFFF — card surface */
+  --s-bg-disable:     var(--f-neutral-150);   /* #EAEFF5 — disabled surface */
+  --s-surface-normal: var(--f-neutral-50);    /* #F8FAFC — app shell */
+  --s-surface-strong: var(--f-neutral-150);   /* #EAEFF5 — sunken/inset */
+  --s-surface-heavy:  var(--f-neutral-200);   /* #E2E8F0 — deepest bg */
+
+  /* ============================================================
+   * SEMANTIC / STATUS
+   * ============================================================ */
+  --s-status-positive:       var(--f-green-600);   /* #00C592 */
+  --s-status-positive-light: var(--f-green-100);   /* #DFFBED */
+  --s-status-warning:        var(--f-orange-600);  /* #FF6200 */
+  --s-status-warning-light:  var(--f-orange-100);  /* #FFEFD3 */
+  --s-status-negative:       var(--f-red-600);     /* #F91C1C */
+  --s-status-negative-light: var(--f-red-100);     /* #FFEFEF */
+  --s-status-progress:       var(--f-lb-500);      /* #1890FF */
+  --s-status-progress-light: var(--f-lb-50);       /* #E6F7FF */
+
+  /* ============================================================
+   * SEMANTIC / BRAND  (interactive chrome — use sparingly)
+   * ============================================================ */
+  --s-brand-normal: var(--f-blue-700);  /* #0746CA — primary CTA, active nav */
+  --s-brand-strong: var(--f-blue-800);  /* #0C3698 — hover */
+  --s-brand-heavy:  var(--f-blue-900);  /* #122666 — pressed/deepest */
+
+  /* ============================================================
+   * SEMANTIC / STATIC
+   * ============================================================ */
+  --s-static-white: var(--f-base-white);
+  --s-static-black: var(--f-base-black);
+
+  /* ============================================================
+   * SHORTHAND ALIASES  (reach for these in new component work)
+   * ============================================================ */
+  --fg-1:        var(--s-label-default);
+  --fg-2:        var(--s-label-normal);
+  --fg-3:        var(--s-label-natural);
+  --fg-4:        var(--s-label-soft);
+  --fg-disable:  var(--s-label-disable);
+  --fg-on-brand: var(--f-base-white);
+
+  --bg-app:     var(--s-surface-normal);
+  --bg-surface: var(--s-bg-normal);
+  --bg-sunken:  var(--s-surface-strong);
+  --bg-heavy:   var(--s-surface-heavy);
+
+  --border-subtle:      var(--s-line-normal);    /* rgba divider — inside cards */
+  --border-default:     var(--f-neutral-300);     /* #CBD5E1 — standard 1px border */
+  --border-strong:      var(--s-label-disable);
+  --border-focus:       var(--s-brand-normal);
+
+  --accent-brand:       var(--s-brand-normal);
+  --accent-brand-hover: var(--s-brand-strong);
+  --accent-on-brand:    var(--f-base-white);
+
+  /* ============================================================
+   * LEGACY sb- ALIASES  (backwards-compat — do not use for new work)
+   * All values now point to Foundation/Semantic tokens above.
+   * ============================================================ */
+
+  /* Brand */
+  --sb-primary-normal:   var(--s-brand-normal);
+  --sb-primary-strong:   var(--s-brand-strong);
+  --sb-primary-heavy:    var(--s-brand-heavy);
+  --sb-secondary-normal: var(--f-blue-350);
+  --sb-secondary-strong: var(--f-blue-400);
+  --sb-secondary-heavy:  var(--f-blue-500);
+  --sb-tertiary-normal:  var(--f-orange-400);
+  --sb-tertiary-strong:  var(--f-orange-500);
+  --sb-tertiary-heavy:   var(--f-orange-600);
+
+  /* Label */
+  --sb-label-default:  var(--s-label-default);
+  --sb-label-strong:   var(--s-label-strong);
+  --sb-label-normal:   var(--s-label-normal);
+  --sb-label-natural:  var(--s-label-natural);
+  --sb-label-soft:     var(--s-label-soft);
+  --sb-label-disable:  var(--s-label-disable);
+
+  /* Background */
+  --sb-bg-default:     var(--s-bg-normal);
+  --sb-bg-disable:     var(--s-bg-disable);
+  --sb-surface-normal: var(--s-surface-normal);
+  --sb-surface-strong: var(--s-surface-strong);
+  --sb-surface-heavy:  var(--s-surface-heavy);
+
+  /* Status */
+  --sb-status-positive:       var(--s-status-positive);
+  --sb-status-positive-light: var(--s-status-positive-light);
+  --sb-status-warning:        var(--s-status-warning);
+  --sb-status-warning-light:  var(--s-status-warning-light);
+  --sb-status-negative:       var(--s-status-negative);
+  --sb-status-negative-light: var(--s-status-negative-light);
+  --sb-status-progress:       var(--s-status-progress);
+  --sb-status-progress-light: var(--s-status-progress-light);
+
+  /* Accent (chart / illustration only — not for interactive chrome) */
+  --sb-accent-purple:    var(--f-purple-600);
+  --sb-accent-green:     var(--f-green-400);
+  --sb-accent-turquoise: var(--f-turquoise-400);
+  --sb-accent-lightblue: var(--f-lb-400);
+  --sb-accent-yellow:    var(--f-yellow-500);
+
+  /* Opacity */
+  --sb-opacity-dim:        var(--f-opacity-dim);
+  --sb-opacity-strong-dim: var(--f-opacity-dim-strong);
+  --sb-opacity-normal:     var(--f-opacity-normal);
+  --sb-opacity-strong:     var(--f-opacity-strong);
+  --sb-opacity-heavy:      var(--f-opacity-heavy);
+
+  /* Legacy gray scale */
+  --sb-gray-0:   var(--f-base-white);
+  --sb-gray-50:  var(--f-gray-50);
+  --sb-gray-100: var(--f-gray-100);
+  --sb-gray-200: var(--f-gray-200);
+  --sb-gray-300: var(--f-gray-300);
+  --sb-gray-400: var(--f-gray-400);
+  --sb-gray-500: var(--f-gray-500);
+  --sb-gray-600: var(--f-gray-600);
+  --sb-gray-700: var(--f-gray-700);
+  --sb-gray-800: var(--f-gray-800);
+  --sb-gray-900: var(--f-gray-900);
+  --sb-brand:    var(--s-brand-normal);     /* #0746CA — primary brand blue */
+
+  /* Legacy status (old values — differ from new semantic status) */
+  --sb-positive:          #00A523;
+  --sb-positive-light:    #E5F6E9;
+  --sb-warning:           #FF9900;
+  --sb-warning-light:     #FFF5E5;
+  --sb-negative:          #FA5F5F;
+  --sb-negative-light:    #FEEFEF;
+  --sb-negative-dark:     #E45858;
+  --sb-informative:       #3176FD;
+  --sb-informative-light: #F2F6FF;
+
+  /* Legacy strokes */
+  --sb-stroke-100: var(--f-gray-100);
+  --sb-stroke-200: var(--f-gray-200);
+  --sb-stroke-300: var(--f-gray-300);
+
+  /* ============================================================
+   * TYPE — primitive tokens  (Token/Font/*)
+   * ============================================================ */
+  --font-size-11: 11px;
+  --font-size-12: 12px;
+  --font-size-13: 13px;
+  --font-size-14: 14px;
+  --font-size-16: 16px;
+  --font-size-18: 18px;
+  --font-size-20: 20px;
+  --font-size-22: 22px;
+  --font-size-24: 24px;
+  --font-size-26: 26px;
+  --font-size-32: 32px;
+  --font-size-40: 40px;
+
+  --line-height-14: 14px;
+  --line-height-16: 16px;
+  --line-height-18: 18px;
+  --line-height-20: 20px;
+  --line-height-24: 24px;
+  --line-height-28: 28px;
+  --line-height-30: 30px;
+  --line-height-34: 34px;
+  --line-height-36: 36px;
+  --line-height-40: 40px;
+  --line-height-48: 48px;
+
+  --font-weight-regular:   400;
+  --font-weight-medium:    500;
+  --font-weight-semibold:  600;
+  --font-weight-bold:      700;
+  --font-weight-extrabold: 800;
+
+  /* ============================================================
+   * RADII
+   * ============================================================ */
+  --radius-0:    0px;
+  --radius-2:    2px;
+  --radius-4:    4px;   /* button, chip */
+  --radius-6:    6px;
+  --radius-8:    8px;   /* input, small card */
+  --radius-10:   10px;
+  --radius-12:   12px;  /* card */
+  --radius-16:   16px;  /* large card / modal */
+  --radius-20:   20px;
+  --radius-pill: 999px; /* badge, avatar */
+
+  /* ============================================================
+   * SPACING  (4px grid — 2/4/6/8/12/16/20/24/28/32/40/48/56/80)
+   * ============================================================ */
+  --space-2:  2px;
+  --space-4:  4px;
+  --space-6:  6px;
+  --space-8:  8px;
+  --space-12: 12px;
+  --space-16: 16px;
+  --space-20: 20px;
+  --space-24: 24px;
+  --space-28: 28px;
+  --space-32: 32px;
+  --space-40: 40px;
+  --space-48: 48px;
+  --space-56: 56px;  /* legacy — not in V.2 spec */
+  --space-80: 80px;  /* legacy — not in V.2 spec */
+
+  /* ============================================================
+   * SHADOWS  (slate-tinted — never pure black)
+   * 100/150 → card lift  200/250 → panel  300/350 → dropdown  400/450 → modal
+   * ============================================================ */
+  --shadow-100: 0 2px 8px 0 rgba(15, 23, 42, 0.08);
+  --shadow-150: 0 2px 8px 0 rgba(15, 23, 42, 0.16);
+  --shadow-200: 0 2px 16px 0 rgba(15, 23, 42, 0.10);
+  --shadow-250: 0 2px 16px 0 rgba(15, 23, 42, 0.20);
+  --shadow-300: 0 0 1px 0 rgba(15, 23, 42, 0.08), 0 4px 20px 2px rgba(15, 23, 42, 0.12);
+  --shadow-350: 0 0 1px 0 rgba(15, 23, 42, 0.08), 0 4px 20px 2px rgba(15, 23, 42, 0.24);
+  --shadow-400: 0 0 1px 0 rgba(15, 23, 42, 0.08), 0 6px 24px 6px rgba(15, 23, 42, 0.16);
+  --shadow-450: 0 0 1px 0 rgba(15, 23, 42, 0.08), 0 6px 24px 6px rgba(15, 23, 42, 0.40);
+
+  /* ============================================================
+   * BLUR
+   * ============================================================ */
+  --blur-bg: 4px;
+
+  /* ============================================================
+   * TYPE — families
+   * ============================================================ */
+  --font-sans:    'Pretendard', -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo',
+                  'Malgun Gothic', 'Noto Sans KR', sans-serif;
+  --font-display: 'Pretendard', sans-serif;
+  --font-mono:    ui-monospace, SFMono-Regular, 'SF Mono', 'Menlo', 'Consolas', monospace;
+
+  /* Transition */
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --duration-fast: 120ms;
+  --duration-base: 200ms;
+}
+
+/* ===============================================================
+ * TYPE — semantic mixins (class utilities)
+ * Display → marketing only; Heading/Subtitle → app chrome;
+ * Body → tables/forms/cards; Button/Caption → specialty.
+ * =============================================================== */
+
+.sb-display-1 { font-family: var(--font-sans); font-size: 40px; line-height: 48px; font-weight: 800; color: var(--fg-1); }
+.sb-display-2 { font-family: var(--font-sans); font-size: 32px; line-height: 40px; font-weight: 800; color: var(--fg-1); }
+
+.sb-heading-1 { font-family: var(--font-sans); font-size: 26px; line-height: 40px; font-weight: 700; color: var(--fg-1); }
+.sb-heading-2 { font-family: var(--font-sans); font-size: 24px; line-height: 36px; font-weight: 700; color: var(--fg-1); }
+.sb-heading-3 { font-family: var(--font-sans); font-size: 22px; line-height: 34px; font-weight: 700; color: var(--fg-1); }
+
+.sb-subtitle-1 { font-family: var(--font-sans); font-size: 20px; line-height: 30px; font-weight: 600; color: var(--fg-1); }
+.sb-subtitle-2 { font-family: var(--font-sans); font-size: 18px; line-height: 28px; font-weight: 600; color: var(--fg-1); }
+.sb-subtitle-3 { font-family: var(--font-sans); font-size: 16px; line-height: 24px; font-weight: 600; color: var(--fg-1); }
+.sb-subtitle-4 { font-family: var(--font-sans); font-size: 14px; line-height: 20px; font-weight: 600; color: var(--fg-1); }
+
+.sb-body-r1 { font-family: var(--font-sans); font-size: 16px; line-height: 24px; font-weight: 400; letter-spacing: 0.5px; color: var(--fg-1); }
+.sb-body-r2 { font-family: var(--font-sans); font-size: 14px; line-height: 20px; font-weight: 400; letter-spacing: 0.5px; color: var(--fg-1); }
+.sb-body-r3 { font-family: var(--font-sans); font-size: 13px; line-height: 20px; font-weight: 400; letter-spacing: 0.5px; color: var(--fg-1); }
+.sb-body-r4 { font-family: var(--font-sans); font-size: 12px; line-height: 18px; font-weight: 400; letter-spacing: 0.5px; color: var(--fg-1); }
+
+.sb-body-m1 { font-family: var(--font-sans); font-size: 16px; line-height: 24px; font-weight: 500; letter-spacing: 0.5px; color: var(--fg-1); }
+.sb-body-m2 { font-family: var(--font-sans); font-size: 14px; line-height: 20px; font-weight: 500; letter-spacing: 0.5px; color: var(--fg-1); }
+.sb-body-m3 { font-family: var(--font-sans); font-size: 13px; line-height: 20px; font-weight: 500; letter-spacing: 0.5px; color: var(--fg-1); }
+.sb-body-m4 { font-family: var(--font-sans); font-size: 12px; line-height: 18px; font-weight: 500; letter-spacing: 0.5px; color: var(--fg-1); }
+
+.sb-button-1 { font-family: var(--font-sans); font-size: 14px; line-height: 16px; font-weight: 600; letter-spacing: 1.25px; }
+.sb-button-2 { font-family: var(--font-sans); font-size: 12px; line-height: 14px; font-weight: 600; letter-spacing: 1.25px; }
+.sb-button-3 { font-family: var(--font-sans); font-size: 11px; line-height: 14px; font-weight: 600; letter-spacing: 1.25px; }
+
+.sb-caption { font-family: var(--font-sans); font-size: 11px; line-height: 16px; font-weight: 400; letter-spacing: 0.5px; color: var(--fg-3); }
+
+
+/* ===============================================================
+ * GLOBAL DEFAULTS — opt in with `class="sb-root"` on <body>
+ * =============================================================== */
+.sb-root {
+  font-family: var(--font-sans);
+  color: var(--fg-1);
+  background: var(--bg-app);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: 'ss18' on, 'ss19' on;
+}
+.sb-root h1 { font: 700 26px/40px var(--font-sans); letter-spacing: -0.005em; }
+.sb-root h2 { font: 700 24px/36px var(--font-sans); }
+.sb-root h3 { font: 700 22px/34px var(--font-sans); }
+.sb-root h4 { font: 600 18px/28px var(--font-sans); }
+.sb-root h5 { font: 600 16px/24px var(--font-sans); }
+.sb-root p  { font: 400 14px/20px var(--font-sans); color: var(--fg-1); }
+.sb-root small { font: 400 12px/18px var(--font-sans); color: var(--fg-3); }
+.sb-root code { font-family: var(--font-mono); font-size: 13px; background: var(--bg-sunken); padding: 2px 6px; border-radius: var(--radius-4); }

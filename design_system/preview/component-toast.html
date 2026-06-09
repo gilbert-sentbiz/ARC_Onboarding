@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html,body { margin:0; padding:0; background:#F8FAFC; }
+  body { font-family: var(--font-sans); color: var(--fg-1); -webkit-font-smoothing:antialiased; }
+  .card { padding: 20px 24px; display:flex; flex-direction:column; gap:24px; }
+  .section-title { font: 400 11px/1.3 var(--font-sans); color: var(--fg-3); letter-spacing: 0.3px; margin-bottom:2px; }
+  .col { display:flex; flex-direction:column; gap:12px; }
+
+  .toast {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 400px;
+    height: 46px;
+    padding: 0 12px;
+    border-radius: 6px;
+    box-sizing: border-box;
+  }
+  .toast-text {
+    font: 400 16px/24px var(--font-sans);
+    color: #0F172A;
+    letter-spacing: 0.08px;
+    flex: 1;
+  }
+  .toast-icon { flex-shrink: 0; width:24px; height:24px; }
+
+  .toast-neutral  { background:#EAEFF5; }
+  .toast-positive { background:#DFFBED; }
+  .toast-progress { background:#E6F7FF; }
+  .toast-negative { background:#FFEFEF; }
+  .toast-warning  { background:#FFF8EC; }
+
+  .state-tag { font: 500 10px/1 var(--font-mono); color: var(--fg-3); letter-spacing: 0.02em; }
+</style></head>
+<body><div class="card">
+
+  <div class="section-title">Toast — w400 · h46 · r6 · no border</div>
+  <div class="col">
+
+    <!-- Neutral -->
+    <div>
+      <div class="state-tag" style="margin-bottom:6px">Neutral</div>
+      <div class="toast toast-neutral">
+        <svg class="toast-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="12" cy="12" r="9" fill="#64748B"/>
+          <circle cx="12" cy="8.75" r="1" fill="#fff"/>
+          <path d="M12 11.5V15.5" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        <div class="toast-text">Message text</div>
+      </div>
+    </div>
+
+    <!-- Positive -->
+    <div>
+      <div class="state-tag" style="margin-bottom:6px">Positive</div>
+      <div class="toast toast-positive">
+        <svg class="toast-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="12" cy="12" r="9" fill="#00C592"/>
+          <path d="M8.5 12L11.2 14.8L15.5 9.5" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <div class="toast-text">Message text</div>
+      </div>
+    </div>
+
+    <!-- Progress -->
+    <div>
+      <div class="state-tag" style="margin-bottom:6px">Progress</div>
+      <div class="toast toast-progress">
+        <svg class="toast-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="12" cy="12" r="9" fill="#1890FF"/>
+          <circle cx="12" cy="12" r="5" stroke="#fff" stroke-width="1.5"/>
+        </svg>
+        <div class="toast-text">Message text</div>
+      </div>
+    </div>
+
+    <!-- Negative -->
+    <div>
+      <div class="state-tag" style="margin-bottom:6px">Negative</div>
+      <div class="toast toast-negative">
+        <svg class="toast-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="3" y="3" width="18" height="18" rx="5" fill="#F91C1C"/>
+          <path d="M9 9L15 15M15 9L9 15" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        <div class="toast-text">Message text</div>
+      </div>
+    </div>
+
+    <!-- Warning -->
+    <div>
+      <div class="state-tag" style="margin-bottom:6px">Warning</div>
+      <div class="toast toast-warning">
+        <svg class="toast-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="3" y="3" width="18" height="18" rx="5" fill="#FF6200"/>
+          <path d="M12 8.5V13.5" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/>
+          <circle cx="12" cy="16.5" r="1" fill="#fff"/>
+        </svg>
+        <div class="toast-text">Message text</div>
+      </div>
+    </div>
+
+  </div>
+</div></body></html>
