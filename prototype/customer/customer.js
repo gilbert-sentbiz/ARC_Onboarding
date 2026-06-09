@@ -253,7 +253,7 @@ function updateServiceCountryField() {
       <option value="ID">인도네시아 (IDR)</option>
     `;
   } else {
-    countryLabel.textContent = "지급 국가";
+    countryLabel.textContent = "송금 국가";
     serviceCountry.innerHTML = `
       <option value="KR">한국</option>
       <option value="US">미국</option>
