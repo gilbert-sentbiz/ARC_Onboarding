@@ -1,0 +1,387 @@
+:root {
+  --arc-bg: linear-gradient(180deg, var(--s-bg-normal) 0%, var(--f-neutral-100) 100%);
+  --arc-hero: linear-gradient(145deg, rgba(7, 70, 202, 0.04), rgba(255, 123, 10, 0.06));
+  --arc-shadow: 0 16px 48px rgba(15, 23, 42, 0.08);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  font-family: "Pretendard", sans-serif;
+  color: var(--s-label-default);
+  background: var(--arc-bg);
+}
+
+.shell {
+  width: min(1440px, calc(100vw - 32px));
+  margin: 0 auto;
+  padding: 24px 0 56px;
+}
+
+.hero {
+  padding: 28px;
+  border: 1px solid var(--s-line-normal);
+  border-radius: 20px;
+  background: var(--arc-hero), var(--s-bg-normal);
+  box-shadow: var(--arc-shadow);
+}
+
+.hero__brand,
+.panel__header,
+.message__meta {
+  display: flex;
+  align-items: center;
+}
+
+.hero__brand {
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.hero__logo {
+  height: 24px;
+}
+
+.hero__badge,
+.flow-index,
+.segment-tag,
+.role-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.hero__badge {
+  background: rgba(7, 70, 202, 0.08);
+  color: var(--f-blue-700);
+}
+
+.hero__grid,
+.grid-two,
+.grid-two--wide,
+.hero__cards,
+.hero-card,
+.section-columns,
+.document-layout,
+.detail-grid {
+  display: grid;
+  gap: 20px;
+}
+
+.hero__grid {
+  grid-template-columns: 1.4fr 1fr;
+}
+
+.hero__cards {
+  align-content: start;
+}
+
+.eyebrow,
+.panel-label,
+.meta-label {
+  margin: 0 0 8px;
+  color: var(--s-label-natural);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.hero h1,
+.panel h2 {
+  margin: 0;
+  color: var(--s-label-strong);
+}
+
+.hero h1 {
+  font-size: clamp(34px, 4vw, 54px);
+  line-height: 1.08;
+}
+
+.hero__summary,
+.meta-card p,
+.hero-card__label,
+.detail-card span,
+.role-summary p,
+.segment-card p,
+.state-card p {
+  color: var(--s-label-natural);
+}
+
+.meta-card,
+.panel,
+.detail-card,
+.hero-card,
+.document-list li,
+.history-list li,
+.message,
+.case-table-wrapper,
+.segment-card,
+.state-card,
+.flow-list li {
+  border: 1px solid var(--s-line-normal);
+  background: var(--s-bg-normal);
+  box-shadow: var(--arc-shadow);
+}
+
+.meta-card,
+.panel,
+.detail-card,
+.hero-card {
+  border-radius: 16px;
+}
+
+.meta-card,
+.detail-card,
+.message,
+.segment-card,
+.state-card,
+.flow-list li {
+  padding: 18px;
+}
+
+.top-tabs {
+  display: inline-flex;
+  gap: 8px;
+  margin: 20px 0;
+  padding: 6px;
+  border: 1px solid var(--s-line-normal);
+  border-radius: 999px;
+  background: var(--s-bg-normal);
+}
+
+.top-tab,
+.action {
+  border: 0;
+  font: inherit;
+  cursor: pointer;
+}
+
+.top-tab {
+  padding: 11px 16px;
+  border-radius: 999px;
+  color: var(--s-label-natural);
+  background: transparent;
+  font-weight: 600;
+}
+
+.top-tab.is-active {
+  background: var(--f-blue-700);
+  color: var(--f-base-white);
+}
+
+.view {
+  display: none;
+}
+
+.view.is-active {
+  display: block;
+}
+
+.panel {
+  padding: 22px;
+}
+
+.panel__header {
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.panel--overview {
+  margin-bottom: 20px;
+}
+
+.grid-two {
+  grid-template-columns: 1fr 1fr;
+}
+
+.grid-two--wide {
+  grid-template-columns: 320px 1fr;
+  align-items: start;
+}
+
+.sidebar {
+  position: sticky;
+  top: 18px;
+}
+
+.field,
+.field-group,
+.segment-grid,
+.state-stack,
+.timeline-mini,
+.message-list,
+.role-summary {
+  display: grid;
+  gap: 10px;
+}
+
+.field {
+  margin-bottom: 14px;
+}
+
+.field span {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+select,
+input {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--s-line-normal);
+  border-radius: 8px;
+  background: var(--s-bg-normal);
+  color: var(--s-label-default);
+  font: inherit;
+}
+
+.action {
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-weight: 600;
+}
+
+.action--primary {
+  width: 100%;
+  background: var(--f-blue-700);
+  color: var(--f-base-white);
+}
+
+.flow-list {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 12px;
+  padding: 0;
+  list-style: none;
+}
+
+.flow-index,
+.segment-tag {
+  background: rgba(7, 70, 202, 0.08);
+  color: var(--f-blue-700);
+}
+
+.role-chip {
+  width: fit-content;
+  background: rgba(255, 123, 10, 0.12);
+  color: var(--f-orange-700);
+}
+
+.status-pill {
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(0, 197, 146, 0.12);
+  color: var(--f-green-700);
+  font-weight: 600;
+}
+
+.hero-card {
+  grid-template-columns: 1.3fr 1fr;
+  padding: 18px;
+}
+
+.section-columns,
+.document-layout {
+  grid-template-columns: 1fr 1fr;
+}
+
+.detail-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.section-title,
+.segment-card h3,
+.state-card h3 {
+  margin: 0 0 8px;
+}
+
+.bullet-list,
+.document-list,
+.history-list {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 8px;
+}
+
+.document-list li,
+.history-list li {
+  list-style: none;
+  padding: 12px 14px;
+  border-radius: 12px;
+}
+
+.message-list {
+  align-content: start;
+}
+
+.message {
+  border-radius: 12px;
+}
+
+.message__meta {
+  justify-content: space-between;
+  margin-bottom: 8px;
+  font-size: 12px;
+  color: var(--s-label-natural);
+}
+
+.case-table-wrapper {
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.case-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.case-table th,
+.case-table td {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--s-line-normal);
+  text-align: left;
+}
+
+.case-table th {
+  color: var(--s-label-natural);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.case-table tr:last-child td {
+  border-bottom: 0;
+}
+
+@media (max-width: 1100px) {
+  .hero__grid,
+  .grid-two,
+  .grid-two--wide,
+  .hero-card,
+  .section-columns,
+  .document-layout,
+  .detail-grid,
+  .flow-list {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar {
+    position: static;
+  }
+}

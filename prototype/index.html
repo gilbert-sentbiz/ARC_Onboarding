@@ -1,0 +1,291 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ARC Onboarding Prototype</title>
+    <link rel="stylesheet" href="../design_system/colors_and_type.css" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="shell">
+      <header class="hero">
+        <div class="hero__brand">
+          <img
+            class="hero__logo"
+            src="../design_system/assets/logos/wordmark-dark.svg"
+            alt="SentBiz"
+          />
+          <span class="hero__badge">Prototype</span>
+        </div>
+
+        <div class="hero__grid">
+          <div class="hero__copy">
+            <p class="eyebrow">ARC Onboarding</p>
+            <h1>세그먼트별 질문과 서류를 분기하는 온보딩 프로토타입</h1>
+            <p class="hero__summary">
+              고객 입력값을 바탕으로 고객 유형과 처리 기준을 판단하고, 세그먼트별 질문과
+              제출 서류를 동적으로 보여준다. 내부 화면에서는 영업, 컴플라이언스, 운영의
+              검토 흐름을 함께 점검한다.
+            </p>
+          </div>
+
+          <div class="hero__cards">
+            <article class="meta-card">
+              <p class="meta-label">Range</p>
+              <strong>Customer + Internal</strong>
+              <p>고객 인테이크, 서류 제출, 내부 검토, 운영 안내까지 한 흐름으로 본다.</p>
+            </article>
+            <article class="meta-card">
+              <p class="meta-label">Host</p>
+              <strong>GitHub Pages Ready</strong>
+              <p>정적 파일만 사용한다. 수정 후 push 하면 다시 배포할 수 있다.</p>
+            </article>
+          </div>
+        </div>
+      </header>
+
+      <nav class="top-tabs" aria-label="Prototype Views">
+        <button class="top-tab is-active" data-view="overview">Overview</button>
+        <button class="top-tab" data-view="customer">Customer</button>
+        <button class="top-tab" data-view="internal">Internal</button>
+      </nav>
+
+      <main>
+        <section class="view is-active" id="view-overview">
+          <section class="panel panel--overview">
+            <div class="panel__header">
+              <div>
+                <p class="panel-label">Core Flow</p>
+                <h2>핵심 흐름</h2>
+              </div>
+            </div>
+            <ol class="flow-list" id="flow-list"></ol>
+          </section>
+
+          <div class="grid-two">
+            <section class="panel">
+              <div class="panel__header">
+                <div>
+                  <p class="panel-label">Segments</p>
+                  <h2>세그먼트 구조</h2>
+                </div>
+              </div>
+              <div class="segment-grid" id="segment-grid"></div>
+            </section>
+
+            <section class="panel">
+              <div class="panel__header">
+                <div>
+                  <p class="panel-label">Case States</p>
+                  <h2>케이스 상태</h2>
+                </div>
+              </div>
+              <div class="state-stack" id="state-stack"></div>
+            </section>
+          </div>
+        </section>
+
+        <section class="view" id="view-customer">
+          <div class="grid-two grid-two--wide">
+            <aside class="panel sidebar">
+              <div class="panel__header">
+                <div>
+                  <p class="panel-label">Scenario</p>
+                  <h2>세그먼트 시뮬레이션</h2>
+                </div>
+              </div>
+              <label class="field">
+                <span>세그먼트</span>
+                <select id="segment-select"></select>
+              </label>
+              <div class="field-group" id="intake-fields"></div>
+              <button class="action action--primary" id="simulate-button">질문 / 서류 반영</button>
+            </aside>
+
+            <div class="customer-layout">
+              <section class="panel">
+                <div class="panel__header">
+                  <div>
+                    <p class="panel-label">C-01</p>
+                    <h2>온보딩 홈</h2>
+                  </div>
+                  <span class="status-pill" id="customer-case-status"></span>
+                </div>
+                <div class="hero-card">
+                  <div>
+                    <p class="hero-card__label">현재 상태</p>
+                    <h3 id="customer-next-title"></h3>
+                    <p id="customer-next-copy"></p>
+                  </div>
+                  <div class="timeline-mini" id="customer-timeline"></div>
+                </div>
+              </section>
+
+              <section class="panel">
+                <div class="panel__header">
+                  <div>
+                    <p class="panel-label">C-02</p>
+                    <h2>정보 입력</h2>
+                  </div>
+                </div>
+                <div class="section-columns">
+                  <div>
+                    <h3 class="section-title">공통 인테이크</h3>
+                    <ul class="bullet-list" id="customer-base-fields"></ul>
+                  </div>
+                  <div>
+                    <h3 class="section-title">세그먼트별 질문</h3>
+                    <ul class="bullet-list" id="customer-segment-fields"></ul>
+                  </div>
+                </div>
+              </section>
+
+              <section class="panel">
+                <div class="panel__header">
+                  <div>
+                    <p class="panel-label">C-03 / C-04</p>
+                    <h2>필요 서류 안내 / 서류 제출</h2>
+                  </div>
+                </div>
+                <div class="document-layout">
+                  <div>
+                    <h3 class="section-title">기본 서류</h3>
+                    <ul class="document-list" id="customer-documents"></ul>
+                  </div>
+                  <div>
+                    <h3 class="section-title">조건부 추가 서류</h3>
+                    <ul class="document-list" id="customer-extra-documents"></ul>
+                  </div>
+                </div>
+              </section>
+
+              <section class="panel">
+                <div class="panel__header">
+                  <div>
+                    <p class="panel-label">C-05 / C-06</p>
+                    <h2>이력 / 텍스트 소통</h2>
+                  </div>
+                </div>
+                <div class="section-columns">
+                  <div>
+                    <h3 class="section-title">제출 / 검토 이력</h3>
+                    <ul class="history-list" id="customer-history"></ul>
+                  </div>
+                  <div>
+                    <h3 class="section-title">메시지</h3>
+                    <div class="message-list" id="customer-messages"></div>
+                  </div>
+                </div>
+              </section>
+            </div>
+          </div>
+        </section>
+
+        <section class="view" id="view-internal">
+          <div class="grid-two grid-two--wide">
+            <aside class="panel sidebar">
+              <div class="panel__header">
+                <div>
+                  <p class="panel-label">Filters</p>
+                  <h2>내부 시나리오</h2>
+                </div>
+              </div>
+              <label class="field">
+                <span>담당 역할</span>
+                <select id="role-select">
+                  <option value="sales">영업</option>
+                  <option value="compliance">컴플라이언스</option>
+                  <option value="ops">운영</option>
+                </select>
+              </label>
+              <div class="role-summary" id="role-summary"></div>
+            </aside>
+
+            <div class="internal-layout">
+              <section class="panel">
+                <div class="panel__header">
+                  <div>
+                    <p class="panel-label">I-01</p>
+                    <h2>케이스 리스트</h2>
+                  </div>
+                </div>
+                <div class="case-table-wrapper">
+                  <table class="case-table">
+                    <thead>
+                      <tr>
+                        <th>케이스</th>
+                        <th>세그먼트</th>
+                        <th>상태</th>
+                        <th>담당자</th>
+                      </tr>
+                    </thead>
+                    <tbody id="internal-case-list"></tbody>
+                  </table>
+                </div>
+              </section>
+
+              <section class="panel">
+                <div class="panel__header">
+                  <div>
+                    <p class="panel-label">I-02</p>
+                    <h2>케이스 상세</h2>
+                  </div>
+                </div>
+                <div class="detail-grid">
+                  <div class="detail-card">
+                    <span>현재 상태</span>
+                    <strong id="internal-current-state"></strong>
+                  </div>
+                  <div class="detail-card">
+                    <span>질문 분기 결과</span>
+                    <strong id="internal-segment-name"></strong>
+                  </div>
+                  <div class="detail-card">
+                    <span>문서 상태</span>
+                    <strong id="internal-doc-state"></strong>
+                  </div>
+                  <div class="detail-card">
+                    <span>종료 사유</span>
+                    <strong id="internal-close-reason"></strong>
+                  </div>
+                </div>
+              </section>
+
+              <section class="panel">
+                <div class="panel__header">
+                  <div>
+                    <p class="panel-label">I-03 / I-04 / I-05</p>
+                    <h2>역할별 액션</h2>
+                  </div>
+                </div>
+                <div class="section-columns">
+                  <div>
+                    <h3 class="section-title">핵심 액션</h3>
+                    <ul class="bullet-list" id="role-actions"></ul>
+                  </div>
+                  <div>
+                    <h3 class="section-title">검토 포인트</h3>
+                    <ul class="bullet-list" id="role-checks"></ul>
+                  </div>
+                </div>
+              </section>
+
+              <section class="panel">
+                <div class="panel__header">
+                  <div>
+                    <p class="panel-label">Messages</p>
+                    <h2>고객과의 텍스트 소통</h2>
+                  </div>
+                </div>
+                <div class="message-list" id="internal-messages"></div>
+              </section>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
