@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ARC Onboarding - Survey</title>
+    <link rel="stylesheet" href="../../design_system/colors_and_type.css" />
+    <link rel="stylesheet" href="./customer.css" />
+  </head>
+  <body>
+    <div class="customer-shell">
+      <header class="customer-header">
+        <img class="customer-header__logo" src="../../design_system/assets/logos/wordmark-dark.svg" alt="SentBiz" />
+        <span class="customer-header__badge">Customer Prototype</span>
+      </header>
+
+      <main class="survey-layout">
+        <section class="survey-panel">
+          <div class="survey-panel__header">
+            <div>
+              <p class="eyebrow">Page 02</p>
+              <h1>최초 설문</h1>
+              <p class="survey-panel__copy">
+                공통 인테이크 입력값으로 세그먼트를 판단하고, 세그먼트별 추가 질문과 제출 서류를
+                동적으로 노출한다.
+              </p>
+            </div>
+            <a class="button button--secondary" href="./login.html">이전</a>
+          </div>
+
+          <form class="survey-form">
+            <div class="survey-grid">
+              <section class="survey-card">
+                <h2>공통 인테이크</h2>
+                <div class="form-stack">
+                  <label class="field">
+                    <span>서비스 유형</span>
+                    <select id="service-type">
+                      <option value="payout">Payout</option>
+                      <option value="collection">Collection</option>
+                    </select>
+                  </label>
+                  <label class="field">
+                    <span>수금 국가</span>
+                    <select id="collection-country">
+                      <option value="KR">KR</option>
+                      <option value="VN">VN</option>
+                      <option value="ID">ID</option>
+                    </select>
+                  </label>
+                  <label class="field">
+                    <span>지급 국가</span>
+                    <select id="payout-country">
+                      <option value="KR">KR</option>
+                      <option value="US">US</option>
+                      <option value="VN">VN</option>
+                    </select>
+                  </label>
+                  <label class="field">
+                    <span>엔터티 유형</span>
+                    <select id="entity-type">
+                      <option value="corporate">Corporate</option>
+                      <option value="individual">Individual</option>
+                      <option value="fi">FI</option>
+                    </select>
+                  </label>
+                  <label class="field">
+                    <span>설립 국가</span>
+                    <select id="incorporation-country">
+                      <option value="KR">KR</option>
+                      <option value="CN">CN</option>
+                      <option value="HK">HK</option>
+                      <option value="VN">VN</option>
+                    </select>
+                  </label>
+                </div>
+              </section>
+
+              <section class="survey-card">
+                <h2>세그먼트 판정 결과</h2>
+                <div class="result-card">
+                  <span>Current Segment</span>
+                  <strong id="segment-name">SentBiz Corporate</strong>
+                  <p id="segment-description">
+                    일반 법인 고객. 대표자와 실제소유자 확인이 핵심이다.
+                  </p>
+                </div>
+                <div class="stats-grid" id="survey-stats"></div>
+              </section>
+            </div>
+
+            <section class="survey-card">
+              <h2>세그먼트별 추가 질문</h2>
+              <div class="question-list" id="segment-questions"></div>
+            </section>
+
+            <section class="survey-card">
+              <div class="card-header-inline">
+                <h2>제출 서류</h2>
+                <span class="status-chip" id="segment-chip">SentBiz Corporate</span>
+              </div>
+              <div class="documents-grid">
+                <div>
+                  <h3>기본 서류</h3>
+                  <ul class="document-list" id="base-documents"></ul>
+                </div>
+                <div>
+                  <h3>조건부 추가 서류</h3>
+                  <ul class="document-list" id="extra-documents"></ul>
+                </div>
+              </div>
+            </section>
+          </form>
+        </section>
+      </main>
+    </div>
+
+    <script src="./customer.js"></script>
+  </body>
+</html>

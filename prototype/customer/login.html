@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ARC Onboarding - Login</title>
+    <link rel="stylesheet" href="../../design_system/colors_and_type.css" />
+    <link rel="stylesheet" href="./customer.css" />
+  </head>
+  <body>
+    <div class="customer-shell">
+      <header class="customer-header">
+        <img class="customer-header__logo" src="../../design_system/assets/logos/wordmark-dark.svg" alt="SentBiz" />
+        <span class="customer-header__badge">Customer Prototype</span>
+      </header>
+
+      <main class="auth-layout">
+        <section class="auth-panel">
+          <p class="eyebrow">Page 01</p>
+          <h1>로그인 / 가입</h1>
+          <p class="auth-panel__copy">
+            이메일 주소와 비밀번호를 입력하면, 기존 계정이면 로그인되고 계정이 없으면 가입 후
+            최초 설문으로 이어진다.
+          </p>
+
+          <form class="auth-form" id="auth-form">
+            <label class="field">
+              <span>이메일 주소</span>
+              <input id="email" type="email" value="merchant@sample.com" required />
+            </label>
+
+            <label class="field">
+              <span>비밀번호</span>
+              <input id="password" type="password" value="password" required />
+            </label>
+
+            <div class="auth-actions">
+              <button type="submit" class="button button--primary">로그인 후 설문 시작</button>
+            </div>
+          </form>
+        </section>
+
+        <aside class="info-stack">
+          <article class="info-card">
+            <span>가입</span>
+            <strong>계정이 없으면 자동 가입</strong>
+            <p>이메일 인증 이후 바로 최초 설문으로 이어진다.</p>
+          </article>
+          <article class="info-card">
+            <span>로그인</span>
+            <strong>기존 계정이면 이어서 진행</strong>
+            <p>향후에는 저장된 설문 진행 상태와 케이스 상태를 불러오게 된다.</p>
+          </article>
+          <article class="info-card">
+            <span>Next</span>
+            <strong>최초 설문</strong>
+            <p>고객 유형, 거래 유형, 국가, 통화 기준으로 질문과 서류가 분기된다.</p>
+          </article>
+        </aside>
+      </main>
+    </div>
+
+    <script src="./customer.js"></script>
+  </body>
+</html>
