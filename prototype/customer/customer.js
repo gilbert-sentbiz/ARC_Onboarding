@@ -2,7 +2,7 @@ const STORAGE_KEY = "arc-onboarding-customer";
 
 const segments = {
   corporate: {
-    name: "SentBiz Corporate",
+    name: "법인 사업자",
     description: "일반 법인 고객. 대표자와 실제소유자 확인이 핵심이다.",
     questions: [
       "기본 정보: 회사명, 사업자등록번호, 연락처, 업종, 업태, 사업장 주소",
@@ -25,7 +25,7 @@ const segments = {
     extraDocuments: ["공동대표 여부에 따라 대표자 신분증 사본 복수 제출"],
   },
   individual: {
-    name: "SentBiz Individual",
+    name: "개인 사업자",
     description: "개인사업자 / 개인 엔터티. 대표자와 BO 동일 여부가 분기 기준이다.",
     questions: [
       "기본 정보: 사업체명, 사업자등록번호, 연락처, 업종, 업태, 사업장 주소",
@@ -44,7 +44,7 @@ const segments = {
     extraDocuments: ["BO가 대표자와 다를 경우 BO 확인 정보 추가"],
   },
   fi: {
-    name: "FI",
+    name: "금융기관",
     description: "금융기관 / 송금대행사 / 환전회사. 가장 긴 인테이크와 높은 수준의 검토가 필요하다.",
     questions: [
       "섹션 A: 기본 정보, 법적 형태, 등록 국가, 웹사이트, 주소, 지점 수, 라이선스, 대표자",
@@ -72,7 +72,7 @@ const segments = {
     extraDocuments: ["KRW Collection FI일 경우 샘플 가맹점 KYC 문서 세트 필수"],
   },
   krw: {
-    name: "KRW Collection",
+    name: "원화 수금",
     description: "서비스 레벨 세그먼트. 엔터티 레벨 질문 위에 업종별 문서가 추가된다.",
     questions: [
       "업종 / 하위 세그먼트 선택: Trading, Consulting, Development / Design, Advertising / Marketing, Research, IT & Computer, Coupang",
@@ -98,7 +98,7 @@ const segments = {
     ],
   },
   vnd: {
-    name: "VND Collection",
+    name: "베트남 동 수금",
     description: "현재 CN / HK 기업 우선 범위. 조건부 서류가 많다.",
     questions: [
       "법인명, 사업자 번호, 등록 사업장 주소, 설립지",
@@ -133,7 +133,7 @@ const segments = {
     ],
   },
   id: {
-    name: "ID Collection",
+    name: "인도네시아 수금",
     description: "현재는 자리표시자다. 질문 구조와 제출 서류가 아직 정의되지 않았다.",
     questions: ["추후 정의 예정"],
     documents: ["추후 정의 예정"],
@@ -177,46 +177,12 @@ function renderSurvey() {
   const name = document.getElementById("segment-name");
   const description = document.getElementById("segment-description");
   const chip = document.getElementById("segment-chip");
-  const stats = document.getElementById("survey-stats");
-  const questions = document.getElementById("segment-questions");
-  const baseDocs = document.getElementById("base-documents");
-  const extraDocs = document.getElementById("extra-documents");
 
   if (!name) return;
 
   name.textContent = segment.name;
   description.textContent = segment.description;
   chip.textContent = segment.name;
-
-  stats.innerHTML = [
-    ["공통 입력", "5개", "모든 고객이 공통으로 입력하는 값"],
-    ["추가 질문", `${segment.questions.length}개`, "세그먼트별 질문 블록"],
-    ["기본 서류", `${segment.documents.length}개`, "기본 제출 서류"],
-    ["추가 서류", `${segment.extraDocuments.length}개`, "조건부 추가 서류"],
-  ]
-    .map(
-      ([label, value, copy]) => `
-        <article class="stat-card">
-          <span>${label}</span>
-          <strong>${value}</strong>
-          <p>${copy}</p>
-        </article>`
-    )
-    .join("");
-
-  questions.innerHTML = segment.questions
-    .map(
-      (item, index) => `
-        <article class="question-item">
-          <span>QUESTION ${index + 1}</span>
-          <strong>${item}</strong>
-          <p>이 항목은 현재 세그먼트에만 노출된다.</p>
-        </article>`
-    )
-    .join("");
-
-  baseDocs.innerHTML = segment.documents.map((item) => `<li>${item}</li>`).join("");
-  extraDocs.innerHTML = segment.extraDocuments.map((item) => `<li>${item}</li>`).join("");
 }
 
 const authForm = document.getElementById("auth-form");
