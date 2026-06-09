@@ -267,7 +267,23 @@ function renderCustomerView(segmentKey = "corporate") {
   document.getElementById("customer-case-status").textContent = segment.customerStatus;
   document.getElementById("customer-next-title").textContent = `${segment.name} 온보딩 진행`;
   document.getElementById("customer-next-copy").textContent =
-    "정보 입력 결과에 따라 필요한 질문과 서류만 노출되고, 보완 요청과 메시지는 같은 흐름 안에서 확인한다.";
+    "입력 정보에 따라 필요한 질문과 서류만 노출된다. 제출 후에는 같은 화면에서 보완 요청과 검토 이력을 확인할 수 있다.";
+
+  document.getElementById("customer-stats").innerHTML = [
+    ["현재 세그먼트", segment.name, "고객 유형과 처리 기준이 자동으로 반영된다."],
+    ["공통 질문", `${baseFields.length}개`, "모든 고객이 공통으로 입력해야 하는 기준 정보다."],
+    ["기본 서류", `${segment.documents.length}개`, "현재 세그먼트에 기본으로 필요한 제출 항목이다."],
+    ["추가 서류", `${segment.extraDocuments.length}개`, "조건에 따라 추가되거나 검토되는 항목이다."],
+  ]
+    .map(
+      ([label, value, copy]) => `
+        <article class="stat-card">
+          <span>${label}</span>
+          <strong>${value}</strong>
+          <p>${copy}</p>
+        </article>`
+    )
+    .join("");
 
   document.getElementById("customer-base-fields").innerHTML = baseFields.map((field) => `<li>${field}</li>`).join("");
   document.getElementById("customer-segment-fields").innerHTML = segment.questions.map((field) => `<li>${field}</li>`).join("");
@@ -288,8 +304,20 @@ function renderCustomerView(segmentKey = "corporate") {
     )
     .join("");
 
-  document.getElementById("customer-timeline").innerHTML = ["입력 완료", "서류 요청 생성", "제출 / 보완", "검토 진행"]
-    .map((item) => `<div class="state-card"><strong>${item}</strong></div>`)
+  document.getElementById("customer-timeline").innerHTML = [
+    ["1", "접수 완료", "온보딩이 시작되었다.", "is-complete"],
+    ["2", "정보 입력", "분류 기준이 되는 정보를 입력한다.", "is-active"],
+    ["3", "서류 제출", "필요한 서류만 업로드한다.", ""],
+    ["4", "검토 / 계정 생성", "검토 완료 후 계정 안내를 받는다.", ""],
+  ]
+    .map(
+      ([step, title, copy, stateClass]) => `
+        <article class="timeline-step ${stateClass}">
+          <span>STEP ${step}</span>
+          <strong>${title}</strong>
+          <p>${copy}</p>
+        </article>`
+    )
     .join("");
 
   document.getElementById("intake-fields").innerHTML = segment.questions

@@ -258,9 +258,14 @@ input {
 }
 
 .action--primary {
-  width: 100%;
   background: var(--f-blue-700);
   color: var(--f-base-white);
+}
+
+.action--secondary {
+  background: var(--s-bg-normal);
+  color: var(--s-label-default);
+  border: 1px solid var(--s-line-normal);
 }
 
 .flow-list {
@@ -294,6 +299,88 @@ input {
 .hero-card {
   grid-template-columns: 1.3fr 1fr;
   padding: 18px;
+}
+
+.customer-home,
+.customer-home__hero,
+.customer-home__stats,
+.customer-progress,
+.next-actions,
+.customer-home__actions {
+  display: grid;
+  gap: 16px;
+}
+
+.customer-home__hero {
+  grid-template-columns: 1.4fr auto;
+  align-items: end;
+}
+
+.customer-home__actions {
+  grid-auto-flow: row;
+}
+
+.customer-home__stats {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.stat-card,
+.timeline-step,
+.next-card {
+  padding: 18px;
+  border: 1px solid var(--s-line-normal);
+  border-radius: 16px;
+  background: var(--s-bg-normal);
+  box-shadow: var(--arc-shadow);
+}
+
+.stat-card span,
+.timeline-step span,
+.next-card__label {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--s-label-natural);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.stat-card strong,
+.timeline-step strong {
+  display: block;
+  font-size: 22px;
+  line-height: 1.1;
+  color: var(--s-label-strong);
+}
+
+.stat-card p,
+.timeline-step p,
+.next-card p {
+  margin: 8px 0 0;
+  color: var(--s-label-natural);
+}
+
+.customer-progress {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.timeline-step.is-active {
+  background: rgba(7, 70, 202, 0.06);
+  border-color: rgba(7, 70, 202, 0.2);
+}
+
+.timeline-step.is-complete {
+  background: rgba(0, 197, 146, 0.08);
+  border-color: rgba(0, 197, 146, 0.18);
+}
+
+.next-actions {
+  grid-template-columns: 1.1fr 0.9fr;
+}
+
+.next-card--primary {
+  background: linear-gradient(135deg, rgba(7, 70, 202, 0.06), rgba(255, 255, 255, 1));
 }
 
 .section-columns,
@@ -374,6 +461,10 @@ input {
   .grid-two,
   .grid-two--wide,
   .hero-card,
+  .customer-home__hero,
+  .customer-home__stats,
+  .customer-progress,
+  .next-actions,
   .section-columns,
   .document-layout,
   .detail-grid,

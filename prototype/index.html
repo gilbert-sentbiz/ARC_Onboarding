@@ -46,13 +46,13 @@
       </header>
 
       <nav class="top-tabs" aria-label="Prototype Views">
-        <button class="top-tab is-active" data-view="overview">Overview</button>
-        <button class="top-tab" data-view="customer">Customer</button>
+        <button class="top-tab" data-view="overview">Overview</button>
+        <button class="top-tab is-active" data-view="customer">Customer</button>
         <button class="top-tab" data-view="internal">Internal</button>
       </nav>
 
       <main>
-        <section class="view is-active" id="view-overview">
+        <section class="view" id="view-overview">
           <section class="panel panel--overview">
             <div class="panel__header">
               <div>
@@ -86,7 +86,7 @@
           </div>
         </section>
 
-        <section class="view" id="view-customer">
+        <section class="view is-active" id="view-customer">
           <div class="grid-two grid-two--wide">
             <aside class="panel sidebar">
               <div class="panel__header">
@@ -107,18 +107,57 @@
               <section class="panel">
                 <div class="panel__header">
                   <div>
-                    <p class="panel-label">C-01</p>
-                    <h2>온보딩 홈</h2>
+                    <p class="panel-label">Customer Product / Home</p>
+                    <h2>온보딩 진행 홈</h2>
                   </div>
                   <span class="status-pill" id="customer-case-status"></span>
                 </div>
-                <div class="hero-card">
-                  <div>
-                    <p class="hero-card__label">현재 상태</p>
-                    <h3 id="customer-next-title"></h3>
-                    <p id="customer-next-copy"></p>
+
+                <div class="customer-home">
+                  <div class="customer-home__hero">
+                    <div>
+                      <p class="hero-card__label">현재 상태</p>
+                      <h3 id="customer-next-title"></h3>
+                      <p id="customer-next-copy"></p>
+                    </div>
+                    <div class="customer-home__actions">
+                      <button class="action action--primary">계속 진행하기</button>
+                      <button class="action action--secondary">문의하기</button>
+                    </div>
                   </div>
-                  <div class="timeline-mini" id="customer-timeline"></div>
+
+                  <div class="customer-home__stats" id="customer-stats"></div>
+                </div>
+              </section>
+
+              <section class="panel">
+                <div class="panel__header">
+                  <div>
+                    <p class="panel-label">Progress</p>
+                    <h2>진행 단계</h2>
+                  </div>
+                </div>
+                <div class="customer-progress" id="customer-timeline"></div>
+              </section>
+
+              <section class="panel">
+                <div class="panel__header">
+                  <div>
+                    <p class="panel-label">Next Actions</p>
+                    <h2>지금 해야 할 일</h2>
+                  </div>
+                </div>
+                <div class="next-actions">
+                  <article class="next-card next-card--primary">
+                    <span class="next-card__label">Primary</span>
+                    <h3>정보 입력 완료 후 서류 제출</h3>
+                    <p>현재 세그먼트에 필요한 질문과 서류만 표시된다.</p>
+                  </article>
+                  <article class="next-card">
+                    <span class="next-card__label">Support</span>
+                    <h3>보완 요청 확인</h3>
+                    <p>보완이 필요한 문서는 제출 이력에서 다시 제출할 수 있다.</p>
+                  </article>
                 </div>
               </section>
 
