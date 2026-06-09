@@ -52,7 +52,9 @@ body {
 .survey-grid,
 .documents-grid,
 .stats-grid,
-.survey-fields-grid {
+.survey-fields-grid,
+.detail-section-list,
+.detail-fields {
   display: grid;
   gap: 20px;
 }
@@ -234,6 +236,13 @@ textarea {
   text-transform: none;
 }
 
+.survey-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 4px;
+}
+
 .result-card strong {
   display: block;
   margin-bottom: 8px;
@@ -307,12 +316,53 @@ textarea {
   text-transform: uppercase;
 }
 
+.detail-section-list {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.detail-section-card,
+.detail-field-card {
+  padding: 16px;
+  border: 1px solid var(--f-neutral-150);
+  border-radius: 12px;
+  background: #fff;
+}
+
+.detail-section-card span,
+.detail-field-card span {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--s-label-natural);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+}
+
+.detail-section-card strong,
+.detail-field-card strong {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--s-label-strong);
+  font-size: 16px;
+  line-height: 22px;
+}
+
+.detail-section-card p,
+.detail-field-card p {
+  margin: 0;
+  color: var(--s-label-natural);
+  font-size: 14px;
+  line-height: 20px;
+}
+
 @media (max-width: 980px) {
   .auth-layout,
   .survey-grid,
   .documents-grid,
   .stats-grid,
-  .survey-fields-grid {
+  .survey-fields-grid,
+  .detail-section-list {
     grid-template-columns: 1fr;
   }
 

@@ -23,6 +23,23 @@ const segments = {
       "홈페이지 주소",
     ],
     extraDocuments: ["공동대표 여부에 따라 대표자 신분증 사본 복수 제출"],
+    detailSections: [
+      ["섹션 1", "기본 정보", "가맹점 기본 정보와 법인 기본값 입력"],
+      ["섹션 2", "실제 소유자 확인사항", "BO 면제 여부와 실제 소유자 정보 입력"],
+      ["섹션 3", "추가 확인사항", "거래 목적, 자금원, 상장 여부 등 입력"],
+    ],
+    detailFields: [
+      "회사명 (한글)",
+      "회사명 (영문)",
+      "사업자등록번호",
+      "법인 등록번호",
+      "사업장 주소",
+      "대표자 1 성명 / 생년월일 / 국적",
+      "실제소유자 1 성명 / 생년월일 / 거주국가",
+      "거래 목적",
+      "자금 및 재산 원천",
+      "설립일자",
+    ],
   },
   individual: {
     name: "개인 사업자",
@@ -42,6 +59,22 @@ const segments = {
       "홈페이지 주소",
     ],
     extraDocuments: ["BO가 대표자와 다를 경우 BO 확인 정보 추가"],
+    detailSections: [
+      ["섹션 1", "기본 정보", "사업체 기본 정보와 대표자 기본값 입력"],
+      ["섹션 2", "실제 소유자 확인", "대표자와 BO 동일 여부 확인"],
+      ["섹션 3", "추가 확인사항", "거래 목적과 자금원 입력"],
+    ],
+    detailFields: [
+      "사업체명",
+      "사업자등록번호",
+      "연락처",
+      "사업장 주소",
+      "대표자 성명 / 생년월일 / 성별 / 국적",
+      "BO 동일 여부",
+      "BO 성명 / 생년월일 / 거주국가",
+      "거래 목적",
+      "자금 및 재산 원천",
+    ],
   },
   fi: {
     name: "금융기관",
@@ -70,6 +103,26 @@ const segments = {
       "샘플 가맹점 2곳의 KYC 문서 세트",
     ],
     extraDocuments: ["KRW Collection FI일 경우 샘플 가맹점 KYC 문서 세트 필수"],
+    detailSections: [
+      ["섹션 A", "기본 정보", "법인, 라이선스, 지점, 대표자, 웹사이트 등"],
+      ["섹션 B", "원하는 서비스", "Collection / Payout, 발신 국가, 가상자산 여부"],
+      ["섹션 C", "자금원 및 재산원", "자본, 투자자산, 이익, 기타 자금원"],
+      ["섹션 D", "소유 및 경영 구조", "모회사, 25% 이상 소유자, 이사, 경영진"],
+      ["섹션 E", "법률 및 AML", "제재, 조사, 소송, FATF 관할 관련 질문"],
+      ["섹션 F", "정책 및 교육", "컴플라이언스 / 리스크 정책과 직원 교육 여부"],
+    ],
+    detailFields: [
+      "등록 법인명",
+      "법적 형태",
+      "설립 / 등록 일자 및 국가",
+      "라이선스 유형 / 발급일 / 만료일",
+      "SentBe에서 원하는 서비스",
+      "Collection 수취 통화",
+      "상위 고객 거래 구조",
+      "25% 이상 소유자 정보",
+      "AML 위반 / 조사 / 소송 이력",
+      "서면 정책 및 직원 교육 여부",
+    ],
   },
   krw: {
     name: "원화 수금",
@@ -95,6 +148,16 @@ const segments = {
       "Research: 고객 계약서, 연구 산출물",
       "IT & Computer: 고객 계약서, 시스템 문서, 프로젝트 배포 증빙",
       "Coupang 특수 케이스: 판매자 URL / 스크린샷, 정산서, 서비스 계약서",
+    ],
+    detailSections: [
+      ["서비스 레벨", "업종 / 하위 세그먼트", "어떤 업종인지에 따라 추가 서류가 달라진다."],
+      ["엔터티 레벨", "기본 정보 재사용", "법인 / 개인 / FI 상세 정보 입력 구조를 그대로 따른다."],
+    ],
+    detailFields: [
+      "업종 / 하위 세그먼트",
+      "엔터티 레벨 기본 정보",
+      "엔터티 레벨 실제 소유자 정보",
+      "엔터티 레벨 추가 확인사항",
     ],
   },
   vnd: {
@@ -131,6 +194,25 @@ const segments = {
       "은행 명세서: SentBe 앱 사용자에 한함",
       "회계사 관련 문서: VN 법인에 한함",
     ],
+    detailSections: [
+      ["단일 폼", "기본 사업 정보", "법인명, 사업자 번호, 주소, 설립지, 웹사이트 등"],
+      ["거래 정보", "거래 규모 및 목적", "예상 월 거래 규모, 계좌 개설 목적 등"],
+      ["Collection 추가값", "입금자 관계", "입금자와의 관계, 법인/개인 여부"],
+    ],
+    detailFields: [
+      "법인 / 사업체 전체 명칭",
+      "사업자 번호",
+      "등록 사업장 주소",
+      "설립지",
+      "사업 웹사이트",
+      "담당자 이름 / 연락처 / 이메일",
+      "엔터티 유형",
+      "업종 유형",
+      "예상 월 거래 규모",
+      "계좌 개설 목적",
+      "입금자와의 관계",
+      "입금자가 법인인지 개인인지 여부",
+    ],
   },
   id: {
     name: "인도네시아 수금",
@@ -138,6 +220,8 @@ const segments = {
     questions: ["추후 정의 예정"],
     documents: ["추후 정의 예정"],
     extraDocuments: ["없음"],
+    detailSections: [["미정", "자리표시자", "세그먼트 정의와 입력 항목이 아직 없다."]],
+    detailFields: ["추후 정의 예정"],
   },
 };
 
@@ -185,6 +269,44 @@ function renderSurvey() {
   chip.textContent = segment.name;
 }
 
+function renderDetails() {
+  const key = determineSegment();
+  const segment = segments[key];
+  const chip = document.getElementById("details-segment-chip");
+  const name = document.getElementById("details-segment-name");
+  const description = document.getElementById("details-segment-description");
+  const sectionList = document.getElementById("detail-section-list");
+  const fields = document.getElementById("detail-fields");
+
+  if (!chip) return;
+
+  chip.textContent = segment.name;
+  name.textContent = segment.name;
+  description.textContent = segment.description;
+
+  sectionList.innerHTML = segment.detailSections
+    .map(
+      ([index, title, copy]) => `
+        <article class="detail-section-card">
+          <span>${index}</span>
+          <strong>${title}</strong>
+          <p>${copy}</p>
+        </article>`
+    )
+    .join("");
+
+  fields.innerHTML = segment.detailFields
+    .map(
+      (field, index) => `
+        <article class="detail-field-card">
+          <span>필드 ${index + 1}</span>
+          <strong>${field}</strong>
+          <p>현재 세그먼트에서 고객이 입력해야 하는 항목이다.</p>
+        </article>`
+    )
+    .join("");
+}
+
 const authForm = document.getElementById("auth-form");
 if (authForm) {
   authForm.addEventListener("submit", (event) => {
@@ -203,5 +325,14 @@ if (document.getElementById("segment-name")) {
       select.addEventListener("change", renderSurvey);
     });
     renderSurvey();
+  }
+}
+
+if (document.getElementById("details-segment-name")) {
+  const authState = loadAuthState();
+  if (!authState.signedIn) {
+    window.location.href = "./login.html";
+  } else {
+    renderDetails();
   }
 }
