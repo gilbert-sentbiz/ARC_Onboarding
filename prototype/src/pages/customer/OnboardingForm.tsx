@@ -26,6 +26,7 @@ interface FormData {
   email: string
   services: string[]
   collectionCountries: string[]
+  collectionOtherCountry: string
   remittanceFrom: string
   remittanceTo: string
   businessType: string
@@ -48,6 +49,7 @@ const INITIAL: FormData = {
   email: '',
   services: [],
   collectionCountries: [],
+  collectionOtherCountry: '',
   remittanceFrom: '',
   remittanceTo: '',
   businessType: '',
@@ -58,6 +60,18 @@ const INITIAL: FormData = {
   referralSource: '',
   additionalNote: '',
   agreed: false,
+}
+
+function formatPhone(raw: string): string {
+  const d = raw.replace(/\D/g, '').slice(0, 11)
+  if (d.length <= 3) return d
+  if (d.length <= 7) return `${d.slice(0, 3)}-${d.slice(3)}`
+  return `${d.slice(0, 3)}-${d.slice(3, 7)}-${d.slice(7)}`
+}
+
+function formatAmount(raw: string): string {
+  const digits = raw.replace(/,/g, '').replace(/\D/g, '')
+  return digits.replace(/\B(?=(\d{3})+(?!\d))/g, ',')
 }
 
 const REFERRAL_OPTIONS = [
@@ -294,6 +308,7 @@ export default function OnboardingForm() {
               <SectionLabel>담당자 정보</SectionLabel>
               <Input
                 label="회사명"
+                required
                 placeholder="예: 주식회사 센트비"
                 value={data.companyName}
                 onChange={(e) => set('companyName', e.target.value)}
@@ -302,6 +317,7 @@ export default function OnboardingForm() {
               <div className="grid grid-cols-2 gap-4">
                 <Input
                   label="담당자 이름"
+                  required
                   placeholder="홍길동"
                   value={data.contactName}
                   onChange={(e) => set('contactName', e.target.value)}
@@ -309,6 +325,7 @@ export default function OnboardingForm() {
                 />
                 <Input
                   label="직함"
+                  required
                   placeholder="대리, 과장 등"
                   value={data.contactTitle}
                   onChange={(e) => set('contactTitle', e.target.value)}
@@ -318,14 +335,16 @@ export default function OnboardingForm() {
               <div className="grid grid-cols-2 gap-4">
                 <Input
                   label="연락처"
+                  required
                   type="tel"
                   placeholder="010-0000-0000"
                   value={data.phone}
-                  onChange={(e) => set('phone', e.target.value)}
+                  onChange={(e) => set('phone', formatPhone(e.target.value))}
                   error={errors.phone}
                 />
                 <Input
                   label="이메일"
+                  required
                   type="email"
                   placeholder="example@company.com"
                   value={data.email}
@@ -338,7 +357,10 @@ export default function OnboardingForm() {
             <div className="h-px bg-sb-n100" />
 
             <div className="flex flex-col gap-4">
-              <SectionLabel>서비스 선택</SectionLabel>
+              <div className="flex items-baseline gap-2">
+                <SectionLabel>서비스 선택</SectionLabel>
+                <span className="text-[12px] text-sb-n400">(중복 선택 가능)</span>
+              </div>
               <div className="flex flex-col gap-3">
                 <OptionCard
                   icon={<PaperPlaneRight size={20} weight="fill" />}
@@ -360,7 +382,10 @@ export default function OnboardingForm() {
               {/* 수금 국가 */}
               {data.services.includes('collection') && (
                 <div className="flex flex-col gap-3 p-4 bg-sb-n50 rounded-[10px] border border-sb-n200">
-                  <p className="text-[13px] font-medium text-sb-n700">수금 국가 <span className="text-sb-negative">*</span></p>
+                  <p className="text-[13px] font-medium text-sb-n700">
+                    수금 국가 <span className="text-sb-negative">*</span>
+                    <span className="text-sb-n400 font-normal ml-1">(중복 선택 가능)</span>
+                  </p>
                   <div className="flex flex-wrap gap-2">
                     {[
                       { value: 'KRW', label: '한국 (KRW)' },
@@ -375,6 +400,13 @@ export default function OnboardingForm() {
                       />
                     ))}
                   </div>
+                  {data.collectionCountries.includes('OTHER') && (
+                    <Input
+                      placeholder="수금 국가를 직접 입력해주세요"
+                      value={data.collectionOtherCountry}
+                      onChange={(e) => set('collectionOtherCountry', e.target.value)}
+                    />
+                  )}
                   {errors.collectionCountries && (
                     <p className="text-[11px] text-sb-negative">{errors.collectionCountries}</p>
                   )}
@@ -386,6 +418,7 @@ export default function OnboardingForm() {
                 <div className="grid grid-cols-2 gap-4 p-4 bg-sb-n50 rounded-[10px] border border-sb-n200">
                   <Input
                     label="송금 출발 국가"
+                    required
                     placeholder="예: 한국"
                     value={data.remittanceFrom}
                     onChange={(e) => set('remittanceFrom', e.target.value)}
@@ -393,6 +426,7 @@ export default function OnboardingForm() {
                   />
                   <Input
                     label="송금 도착 국가"
+                    required
                     placeholder="예: 미국"
                     value={data.remittanceTo}
                     onChange={(e) => set('remittanceTo', e.target.value)}
@@ -436,6 +470,7 @@ export default function OnboardingForm() {
 
               <Input
                 label="법인·사업자 설립 국가"
+                required
                 placeholder="예: 한국"
                 value={data.foundingCountry}
                 onChange={(e) => set('foundingCountry', e.target.value)}
@@ -448,14 +483,16 @@ export default function OnboardingForm() {
             <div className="flex flex-col gap-4">
               <SectionLabel>거래 규모</SectionLabel>
               <div className="flex flex-col gap-1.5">
-                <label className="text-[14px] text-sb-n500">예상 월간 거래 규모 <span className="text-sb-negative">*</span></label>
+                <label className="text-[14px] text-sb-n500">
+                  예상 월간 거래 규모 <span className="text-sb-negative">*</span>
+                </label>
                 <div className="flex gap-2">
                   <Input
                     className="flex-1"
-                    type="number"
+                    inputMode="numeric"
                     placeholder="0"
                     value={data.monthlyVolume}
-                    onChange={(e) => set('monthlyVolume', e.target.value)}
+                    onChange={(e) => set('monthlyVolume', formatAmount(e.target.value))}
                     error={errors.monthlyVolume}
                   />
                   <Select
@@ -468,10 +505,11 @@ export default function OnboardingForm() {
               </div>
               <Input
                 label="예상 월간 거래 건수"
-                type="number"
+                required
+                inputMode="numeric"
                 placeholder="0"
                 value={data.monthlyCount}
-                onChange={(e) => set('monthlyCount', e.target.value)}
+                onChange={(e) => set('monthlyCount', formatAmount(e.target.value))}
                 error={errors.monthlyCount}
                 iconRight={<span className="text-[13px] text-sb-n500 whitespace-nowrap">건 / 월</span>}
               />
@@ -483,6 +521,7 @@ export default function OnboardingForm() {
               <SectionLabel>추가 정보</SectionLabel>
               <Select
                 label="센트비를 어떻게 알게 되셨나요?"
+                required
                 options={REFERRAL_OPTIONS}
                 placeholder="선택해주세요"
                 value={data.referralSource}

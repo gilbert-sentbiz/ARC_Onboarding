@@ -2,13 +2,14 @@ import { type InputHTMLAttributes, type ReactNode } from 'react'
 
 interface Props extends InputHTMLAttributes<HTMLInputElement> {
   label?: string
+  required?: boolean
   error?: string
   helper?: string
   iconLeft?: ReactNode
   iconRight?: ReactNode
 }
 
-export default function Input({ label, error, helper, iconLeft, iconRight, className = '', ...rest }: Props) {
+export default function Input({ label, required, error, helper, iconLeft, iconRight, className = '', ...rest }: Props) {
   const borderColor = error
     ? 'border-sb-negative focus-within:border-sb-negative'
     : 'border-sb-n200 focus-within:border-sb-brand'
@@ -17,7 +18,7 @@ export default function Input({ label, error, helper, iconLeft, iconRight, class
     <div className={`flex flex-col gap-1.5 ${className}`}>
       {label && (
         <label className="text-[14px] leading-[20px] text-sb-n500 font-normal tracking-[0.07px]">
-          {label}
+          {label}{required && <span className="text-sb-negative ml-0.5">*</span>}
         </label>
       )}
       <div

@@ -3,18 +3,21 @@ import { CaretDown } from '@phosphor-icons/react'
 
 interface Props extends SelectHTMLAttributes<HTMLSelectElement> {
   label?: string
+  required?: boolean
   error?: string
   options: { value: string; label: string }[]
   placeholder?: string
 }
 
-export default function Select({ label, error, options, placeholder, className = '', ...rest }: Props) {
+export default function Select({ label, required, error, options, placeholder, className = '', ...rest }: Props) {
   const borderColor = error ? 'border-sb-negative' : 'border-sb-n200 focus-within:border-sb-brand'
 
   return (
     <div className={`flex flex-col gap-1.5 ${className}`}>
       {label && (
-        <label className="text-[14px] leading-[20px] text-sb-n500 font-normal">{label}</label>
+        <label className="text-[14px] leading-[20px] text-sb-n500 font-normal">
+          {label}{required && <span className="text-sb-negative ml-0.5">*</span>}
+        </label>
       )}
       <div className={`relative flex items-center h-10 rounded-[6px] border bg-white transition-colors duration-[120ms] ${borderColor}`}>
         <select
