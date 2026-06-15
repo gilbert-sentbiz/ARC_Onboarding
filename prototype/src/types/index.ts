@@ -118,6 +118,7 @@ export interface Case {
   customerEmail: string
   segmentInfo: SegmentInfo
   currentOwner: { role: UserRole; name: string }
+  intakeData?: Record<string, unknown>
   documents: Document[]
   messages: Message[]
   statusHistory: StatusChangeHistory[]
