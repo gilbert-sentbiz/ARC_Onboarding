@@ -15,6 +15,9 @@ export type DocumentStatus =
 
 export type UserRole = 'CUSTOMER' | 'SALES' | 'COMPLIANCE' | 'OPS'
 export type CloseReason = 'DROPPED' | 'EXITED'
+export type EntitySegment = 'SentBiz Corporate' | 'SentBiz Individual' | 'FI'
+export type ServiceSegment = 'KRW Collection' | 'VND Collection' | '기타 Collection' | 'Remittance'
+export type ComplianceRisk = 'LOW' | 'MEDIUM' | 'HIGH'
 
 export interface UserSession {
   userId: string
@@ -24,12 +27,33 @@ export interface UserSession {
 }
 
 export interface SegmentInfo {
-  customerType: string
-  transactionType: string
-  country: string
-  currency: string
-  businessScale: string
-  complianceRisk: string
+  entitySegment: EntitySegment
+  serviceSegments: ServiceSegment[]
+  foundingCountry: string
+  monthlyVolumeCurrency: string
+  monthlyVolume: string
+  monthlyCount: string
+  complianceRisk: ComplianceRisk
+}
+
+export interface OnboardingFormData {
+  companyName: string
+  contactName: string
+  contactTitle: string
+  phone: string
+  email: string
+  services: string[]
+  collectionCountries: string[]
+  collectionOtherCountry: string
+  remittanceFrom: string
+  remittanceTo: string
+  businessType: string
+  foundingCountry: string
+  monthlyVolume: string
+  monthlyVolumeCurrency: string
+  monthlyCount: string
+  referralSource: string
+  additionalNote: string
 }
 
 export interface UploadedFile {
@@ -92,7 +116,7 @@ export interface Case {
   customerId: string
   customerName: string
   customerEmail: string
-  segmentInfo: Partial<SegmentInfo>
+  segmentInfo: SegmentInfo
   currentOwner: { role: UserRole; name: string }
   documents: Document[]
   messages: Message[]

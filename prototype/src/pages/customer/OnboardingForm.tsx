@@ -15,8 +15,7 @@ import Textarea from '../../components/ui/Textarea'
 import Select from '../../components/ui/Select'
 import Button from '../../components/ui/Button'
 import { useSessionStore } from '../../store/sessionStore'
-import { useCaseStore } from '../../store/caseStore'
-import { classifyEntity, classifyServices } from '../../utils/classifier'
+import { createCase } from '../../services/caseService'
 
 interface FormData {
   companyName: string
@@ -148,7 +147,6 @@ function OptionCard({
 export default function OnboardingForm() {
   const navigate = useNavigate()
   const session = useSessionStore((s) => s.session)
-  const addCase = useCaseStore((s) => s.addCase)
 
   const [step, setStep] = useState(0)
   const [data, setData] = useState<FormData>({ ...INITIAL, email: session?.email ?? '' })
@@ -223,43 +221,8 @@ export default function OnboardingForm() {
   }
 
   function handleSubmit() {
-    const entitySegment = classifyEntity(data.businessType, data.foundingCountry)
-    const serviceSegments = classifyServices(data.services, data.collectionCountries)
-    const caseId = Date.now().toString(36) + Math.random().toString(36).slice(2, 7)
-    const now = Date.now()
-
-    addCase({
-      id: caseId,
-      createdAt: now,
-      updatedAt: now,
-      status: 'SALES_REVIEW_REQUIRED',
-      customerId: session?.userId ?? '',
-      customerName: data.contactName,
-      customerEmail: data.email,
-      segmentInfo: {
-        customerType: entitySegment,
-        transactionType: data.services.join(','),
-        country: data.foundingCountry,
-        currency: data.monthlyVolumeCurrency,
-        businessScale: data.monthlyVolume,
-        complianceRisk: 'MEDIUM',
-      },
-      currentOwner: { role: 'SALES', name: '영업팀' },
-      documents: [],
-      messages: [],
-      statusHistory: [
-        {
-          id: `hist_${now}`,
-          caseId,
-          previousStatus: null,
-          newStatus: 'SALES_REVIEW_REQUIRED',
-          changedAt: now,
-          changedBy: { role: 'CUSTOMER', name: data.contactName },
-        },
-      ],
-    })
-
-    navigate(`/customer/case/${caseId}`, { state: { entitySegment, serviceSegments } })
+    const newCase = createCase(data, session!)
+    navigate(`/customer/case/${newCase.id}`)
   }
 
   return (
