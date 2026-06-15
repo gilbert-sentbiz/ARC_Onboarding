@@ -79,6 +79,7 @@ export function transitionStatus(
 
 function resolveOwner(status: CaseStatus): { role: UserRole; name: string } {
   switch (status) {
+    case 'DOCUMENT_SUBMISSION_REQUIRED': return { role: 'CUSTOMER', name: '고객' }
     case 'SALES_REVIEW_REQUIRED': return { role: 'SALES', name: '영업팀' }
     case 'COMPLIANCE_REVIEW_REQUIRED': return { role: 'COMPLIANCE', name: '컴플라이언스팀' }
     case 'OPS_REVIEW_REQUIRED': return { role: 'OPS', name: '운영팀' }
