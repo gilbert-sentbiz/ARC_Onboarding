@@ -1,0 +1,100 @@
+export type CaseStatus =
+  | 'INQUIRY_RECEIVED'
+  | 'SALES_REVIEW_REQUIRED'
+  | 'COMPLIANCE_REVIEW_REQUIRED'
+  | 'OPS_REVIEW_REQUIRED'
+  | 'COMPLETED'
+  | 'CLOSED'
+
+export type DocumentStatus =
+  | 'NOT_REQUESTED'
+  | 'REQUESTED'
+  | 'SUBMITTED'
+  | 'REVISION_REQUIRED'
+  | 'APPROVED'
+
+export type UserRole = 'CUSTOMER' | 'SALES' | 'COMPLIANCE' | 'OPS'
+export type CloseReason = 'DROPPED' | 'EXITED'
+
+export interface UserSession {
+  userId: string
+  role: UserRole
+  name: string
+  email: string
+}
+
+export interface SegmentInfo {
+  customerType: string
+  transactionType: string
+  country: string
+  currency: string
+  businessScale: string
+  complianceRisk: string
+}
+
+export interface UploadedFile {
+  id: string
+  documentId: string
+  fileName: string
+  fileSize: number
+  uploadedAt: number
+  uploadedBy: string
+  dataUrl?: string
+}
+
+export interface RevisionRecord {
+  documentId: string
+  timestamp: number
+  requiredBy: string
+  reason: string
+  resolvedAt?: number
+}
+
+export interface Document {
+  id: string
+  caseId: string
+  type: string
+  displayName: string
+  status: DocumentStatus
+  isRequired: boolean
+  isConditional: boolean
+  uploadedFiles: UploadedFile[]
+  revisionHistory: RevisionRecord[]
+  approvalNote?: string
+}
+
+export interface Message {
+  id: string
+  caseId: string
+  sender: { role: UserRole; name: string }
+  text: string
+  sentAt: number
+  readAt?: number
+}
+
+export interface StatusChangeHistory {
+  id: string
+  caseId: string
+  previousStatus: CaseStatus | DocumentStatus | null
+  newStatus: CaseStatus | DocumentStatus
+  changedAt: number
+  changedBy: { role: UserRole; name: string }
+  closeReason?: CloseReason
+  notes?: string
+}
+
+export interface Case {
+  id: string
+  createdAt: number
+  updatedAt: number
+  status: CaseStatus
+  closeReason?: CloseReason
+  customerId: string
+  customerName: string
+  customerEmail: string
+  segmentInfo: Partial<SegmentInfo>
+  currentOwner: { role: UserRole; name: string }
+  documents: Document[]
+  messages: Message[]
+  statusHistory: StatusChangeHistory[]
+}

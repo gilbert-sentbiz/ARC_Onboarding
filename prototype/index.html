@@ -1,44 +1,13 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ko">
   <head>
     <meta charset="UTF-8" />
-    <meta http-equiv="refresh" content="0; url=./customer/login.html" />
+    <link rel="icon" type="image/svg+xml" href="/ARC_Onboarding/logos/logo-mark-dark-navy.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ARC Onboarding Prototype</title>
-    <link rel="stylesheet" href="../design_system/colors_and_type.css" />
-    <style>
-      body {
-        margin: 0;
-        font-family: "Pretendard", sans-serif;
-        background: linear-gradient(180deg, var(--s-bg-normal) 0%, var(--f-neutral-100) 100%);
-        color: var(--s-label-default);
-      }
-      .fallback {
-        min-height: 100vh;
-        display: grid;
-        place-items: center;
-        padding: 24px;
-      }
-      .card {
-        width: min(520px, 100%);
-        padding: 28px;
-        border: 1px solid var(--s-line-normal);
-        border-radius: 16px;
-        background: var(--s-bg-normal);
-        box-shadow: 0 16px 48px rgba(15, 23, 42, 0.08);
-      }
-      a {
-        color: var(--f-blue-700);
-      }
-    </style>
+    <title>SentBiz 기업 서비스 온보딩</title>
   </head>
   <body>
-    <div class="fallback">
-      <div class="card">
-        <h1>ARC Onboarding Prototype</h1>
-        <p>고객용 프로토타입으로 이동 중이다.</p>
-        <p><a href="./customer/login.html">직접 열기</a></p>
-      </div>
-    </div>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
