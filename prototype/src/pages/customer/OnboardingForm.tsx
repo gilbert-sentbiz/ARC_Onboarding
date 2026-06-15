@@ -1,0 +1,646 @@
+import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import {
+  ArrowLeft,
+  ArrowRight,
+  Check,
+  Buildings,
+  Bank,
+  User,
+  PaperPlaneRight,
+  HandCoins,
+} from '@phosphor-icons/react'
+import Input from '../../components/ui/Input'
+import Textarea from '../../components/ui/Textarea'
+import Select from '../../components/ui/Select'
+import Button from '../../components/ui/Button'
+import { useSessionStore } from '../../store/sessionStore'
+import { useCaseStore } from '../../store/caseStore'
+import { classifyEntity, classifyServices } from '../../utils/classifier'
+
+// ── Types ──────────────────────────────────────────────────────────────────
+
+interface FormData {
+  // Step 1
+  companyName: string
+  contactName: string
+  contactTitle: string
+  phone: string
+  email: string
+  // Step 2
+  services: string[]
+  collectionCountries: string[]
+  remittanceFrom: string
+  remittanceTo: string
+  // Step 3
+  businessType: string
+  foundingCountry: string
+  monthlyVolume: string
+  monthlyVolumeCurrency: string
+  monthlyCount: string
+  // Step 4
+  referralSource: string
+  additionalNote: string
+  agreed: boolean
+}
+
+type Errors = Partial<Record<keyof FormData | 'services' | 'collectionCountries', string>>
+
+const INITIAL: FormData = {
+  companyName: '',
+  contactName: '',
+  contactTitle: '',
+  phone: '',
+  email: '',
+  services: [],
+  collectionCountries: [],
+  remittanceFrom: '',
+  remittanceTo: '',
+  businessType: '',
+  foundingCountry: '',
+  monthlyVolume: '',
+  monthlyVolumeCurrency: 'USD',
+  monthlyCount: '',
+  referralSource: '',
+  additionalNote: '',
+  agreed: false,
+}
+
+const STEPS = ['담당자 정보', '서비스 선택', '사업자 정보', '추가 정보']
+
+const REFERRAL_OPTIONS = [
+  { value: 'search', label: '검색 (네이버·구글 등)' },
+  { value: 'referral', label: '지인 추천' },
+  { value: 'sns', label: 'SNS' },
+  { value: 'news', label: '뉴스 기사' },
+  { value: 'other', label: '기타' },
+]
+
+const CURRENCY_OPTIONS = [
+  { value: 'USD', label: 'USD' },
+  { value: 'EUR', label: 'EUR' },
+  { value: 'KRW', label: 'KRW' },
+  { value: 'CNY', label: 'CNY' },
+  { value: 'JPY', label: 'JPY' },
+  { value: 'VND', label: 'VND' },
+  { value: 'OTHER', label: '기타' },
+]
+
+// ── Sub-components ─────────────────────────────────────────────────────────
+
+function ToggleChip({
+  label,
+  selected,
+  onClick,
+}: {
+  label: string
+  selected: boolean
+  onClick: () => void
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`inline-flex items-center gap-1.5 px-4 h-10 rounded-[6px] border text-[14px] font-medium transition-all duration-[120ms] ${
+        selected
+          ? 'bg-sb-blue-150 border-sb-brand text-sb-brand'
+          : 'bg-white border-sb-n200 text-sb-n700 hover:border-sb-n400'
+      }`}
+    >
+      {selected && <Check size={14} weight="bold" />}
+      {label}
+    </button>
+  )
+}
+
+function ServiceCard({
+  icon,
+  label,
+  desc,
+  selected,
+  onClick,
+}: {
+  icon: React.ReactNode
+  label: string
+  desc: string
+  selected: boolean
+  onClick: () => void
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`flex items-start gap-4 p-4 rounded-[10px] border text-left transition-all duration-[120ms] ${
+        selected
+          ? 'bg-sb-blue-100 border-sb-brand'
+          : 'bg-white border-sb-n200 hover:border-sb-n400'
+      }`}
+    >
+      <div
+        className={`flex-shrink-0 w-10 h-10 rounded-[8px] flex items-center justify-center transition-colors duration-[120ms] ${
+          selected ? 'bg-sb-brand text-white' : 'bg-sb-n100 text-sb-n500'
+        }`}
+      >
+        {icon}
+      </div>
+      <div className="flex flex-col gap-0.5">
+        <p className={`text-[14px] font-semibold leading-[20px] ${selected ? 'text-sb-brand' : 'text-sb-n800'}`}>
+          {label}
+        </p>
+        <p className="text-[12px] leading-[18px] text-sb-n500">{desc}</p>
+      </div>
+    </button>
+  )
+}
+
+function BusinessTypeCard({
+  icon,
+  label,
+  desc,
+  selected,
+  onClick,
+}: {
+  icon: React.ReactNode
+  label: string
+  desc: string
+  selected: boolean
+  onClick: () => void
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`flex items-start gap-4 p-4 rounded-[10px] border text-left transition-all duration-[120ms] ${
+        selected
+          ? 'bg-sb-blue-100 border-sb-brand'
+          : 'bg-white border-sb-n200 hover:border-sb-n400'
+      }`}
+    >
+      <div
+        className={`flex-shrink-0 w-10 h-10 rounded-[8px] flex items-center justify-center transition-colors duration-[120ms] ${
+          selected ? 'bg-sb-brand text-white' : 'bg-sb-n100 text-sb-n500'
+        }`}
+      >
+        {icon}
+      </div>
+      <div className="flex flex-col gap-0.5">
+        <p className={`text-[14px] font-semibold leading-[20px] ${selected ? 'text-sb-brand' : 'text-sb-n800'}`}>
+          {label}
+        </p>
+        <p className="text-[12px] leading-[18px] text-sb-n500">{desc}</p>
+      </div>
+    </button>
+  )
+}
+
+// ── Main component ─────────────────────────────────────────────────────────
+
+export default function OnboardingForm() {
+  const navigate = useNavigate()
+  const session = useSessionStore((s) => s.session)
+  const addCase = useCaseStore((s) => s.addCase)
+
+  const [step, setStep] = useState(0)
+  const [data, setData] = useState<FormData>({
+    ...INITIAL,
+    email: session?.email ?? '',
+  })
+  const [errors, setErrors] = useState<Errors>({})
+
+  function set<K extends keyof FormData>(key: K, value: FormData[K]) {
+    setData((prev) => ({ ...prev, [key]: value }))
+    setErrors((prev) => ({ ...prev, [key]: undefined }))
+  }
+
+  function toggleService(value: string) {
+    setData((prev) => ({
+      ...prev,
+      services: prev.services.includes(value)
+        ? prev.services.filter((s) => s !== value)
+        : [...prev.services, value],
+      // 수금 해제 시 수금 국가 초기화
+      collectionCountries:
+        value === 'collection' && prev.services.includes('collection')
+          ? []
+          : prev.collectionCountries,
+    }))
+    setErrors((prev) => ({ ...prev, services: undefined }))
+  }
+
+  function toggleCollectionCountry(value: string) {
+    setData((prev) => ({
+      ...prev,
+      collectionCountries: prev.collectionCountries.includes(value)
+        ? prev.collectionCountries.filter((c) => c !== value)
+        : [...prev.collectionCountries, value],
+    }))
+    setErrors((prev) => ({ ...prev, collectionCountries: undefined }))
+  }
+
+  // ── Validation ────────────────────────────────────────────────────────
+
+  function validateStep(): boolean {
+    const next: Errors = {}
+
+    if (step === 0) {
+      if (!data.companyName.trim()) next.companyName = '필수 항목입니다.'
+      if (!data.contactName.trim()) next.contactName = '필수 항목입니다.'
+      if (!data.contactTitle.trim()) next.contactTitle = '필수 항목입니다.'
+      if (!data.phone.trim()) next.phone = '필수 항목입니다.'
+      if (!data.email.trim()) next.email = '필수 항목입니다.'
+    }
+
+    if (step === 1) {
+      if (data.services.length === 0) next.services = '서비스를 하나 이상 선택해주세요.'
+      if (data.services.includes('collection') && data.collectionCountries.length === 0)
+        next.collectionCountries = '수금 국가를 하나 이상 선택해주세요.'
+      if (data.services.includes('remittance')) {
+        if (!data.remittanceFrom.trim()) next.remittanceFrom = '필수 항목입니다.'
+        if (!data.remittanceTo.trim()) next.remittanceTo = '필수 항목입니다.'
+      }
+    }
+
+    if (step === 2) {
+      if (!data.businessType) next.businessType = '사업자 유형을 선택해주세요.'
+      if (!data.foundingCountry.trim()) next.foundingCountry = '필수 항목입니다.'
+      if (!data.monthlyVolume.trim()) next.monthlyVolume = '필수 항목입니다.'
+      if (!data.monthlyCount.trim()) next.monthlyCount = '필수 항목입니다.'
+    }
+
+    if (step === 3) {
+      if (!data.referralSource) next.referralSource = '선택해주세요.'
+      if (!data.agreed) next.agreed = '동의가 필요합니다.'
+    }
+
+    setErrors(next)
+    return Object.keys(next).length === 0
+  }
+
+  function handleNext() {
+    if (!validateStep()) return
+    if (step < STEPS.length - 1) {
+      setStep((s) => s + 1)
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    } else {
+      handleSubmit()
+    }
+  }
+
+  function handleBack() {
+    setStep((s) => s - 1)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  function handleSubmit() {
+    const entitySegment = classifyEntity(data.businessType, data.foundingCountry)
+    const serviceSegments = classifyServices(data.services, data.collectionCountries)
+    const caseId = Date.now().toString(36) + Math.random().toString(36).slice(2, 7)
+    const now = Date.now()
+
+    addCase({
+      id: caseId,
+      createdAt: now,
+      updatedAt: now,
+      status: 'SALES_REVIEW_REQUIRED',
+      customerId: session?.userId ?? '',
+      customerName: data.contactName,
+      customerEmail: data.email,
+      segmentInfo: {
+        customerType: entitySegment,
+        transactionType: data.services.join(','),
+        country: data.foundingCountry,
+        currency: data.monthlyVolumeCurrency,
+        businessScale: data.monthlyVolume,
+        complianceRisk: 'MEDIUM',
+      },
+      currentOwner: { role: 'SALES', name: '영업팀' },
+      documents: [],
+      messages: [],
+      statusHistory: [
+        {
+          id: `hist_${now}`,
+          caseId,
+          previousStatus: null,
+          newStatus: 'SALES_REVIEW_REQUIRED',
+          changedAt: now,
+          changedBy: { role: 'CUSTOMER', name: data.contactName },
+        },
+      ],
+    })
+
+    navigate(`/customer/case/${caseId}`, {
+      state: { entitySegment, serviceSegments },
+    })
+  }
+
+  // ── Render steps ──────────────────────────────────────────────────────
+
+  return (
+    <div className="min-h-screen bg-sb-n50 flex flex-col items-center px-4 py-8">
+      {/* Header */}
+      <div className="w-full max-w-[600px] mb-6">
+        <div className="flex items-center justify-between mb-5">
+          <button
+            type="button"
+            onClick={() => (step === 0 ? navigate('/') : handleBack())}
+            className="flex items-center gap-1.5 text-[13px] text-sb-n500 hover:text-sb-n800 transition-colors"
+          >
+            <ArrowLeft size={16} />
+            {step === 0 ? '처음으로' : '이전'}
+          </button>
+          <span className="text-[13px] font-medium text-sb-n500">
+            {step + 1} / {STEPS.length}
+          </span>
+        </div>
+
+        {/* Progress bar */}
+        <div className="w-full h-1 bg-sb-n200 rounded-full overflow-hidden">
+          <div
+            className="h-full bg-sb-brand rounded-full transition-all duration-[300ms]"
+            style={{ width: `${((step + 1) / STEPS.length) * 100}%` }}
+          />
+        </div>
+      </div>
+
+      {/* Card */}
+      <div
+        className="w-full max-w-[600px] bg-white rounded-[16px] p-8 flex flex-col gap-8"
+        style={{ boxShadow: 'var(--shadow-200)' }}
+      >
+        {/* Step title */}
+        <div className="flex flex-col gap-1">
+          <p className="text-[12px] font-semibold text-sb-brand tracking-[1px] uppercase">
+            {STEPS[step]}
+          </p>
+          <h2 className="text-[20px] leading-[30px] font-bold text-sb-n900">
+            {step === 0 && '담당자 정보를 입력해주세요'}
+            {step === 1 && '이용하실 서비스를 선택해주세요'}
+            {step === 2 && '사업자 정보를 입력해주세요'}
+            {step === 3 && '마지막으로 확인해주세요'}
+          </h2>
+        </div>
+
+        {/* ── Step 0: 담당자 정보 ── */}
+        {step === 0 && (
+          <div className="flex flex-col gap-5">
+            <Input
+              label="회사명"
+              placeholder="예: 주식회사 센트비"
+              value={data.companyName}
+              onChange={(e) => set('companyName', e.target.value)}
+              error={errors.companyName}
+            />
+            <div className="grid grid-cols-2 gap-4">
+              <Input
+                label="담당자 이름"
+                placeholder="홍길동"
+                value={data.contactName}
+                onChange={(e) => set('contactName', e.target.value)}
+                error={errors.contactName}
+              />
+              <Input
+                label="담당자 직함"
+                placeholder="대리, 과장 등"
+                value={data.contactTitle}
+                onChange={(e) => set('contactTitle', e.target.value)}
+                error={errors.contactTitle}
+              />
+            </div>
+            <Input
+              label="연락처"
+              type="tel"
+              placeholder="010-0000-0000"
+              value={data.phone}
+              onChange={(e) => set('phone', e.target.value)}
+              error={errors.phone}
+            />
+            <Input
+              label="이메일"
+              type="email"
+              placeholder="example@company.com"
+              value={data.email}
+              onChange={(e) => set('email', e.target.value)}
+              error={errors.email}
+            />
+          </div>
+        )}
+
+        {/* ── Step 1: 서비스 선택 ── */}
+        {step === 1 && (
+          <div className="flex flex-col gap-6">
+            <div className="flex flex-col gap-3">
+              <p className="text-[14px] text-sb-n500">이용하려는 서비스 <span className="text-sb-negative">*</span></p>
+              <div className="flex flex-col gap-3">
+                <ServiceCard
+                  icon={<PaperPlaneRight size={20} weight="fill" />}
+                  label="해외 송금"
+                  desc="해외 거래처로 외화를 송금합니다"
+                  selected={data.services.includes('remittance')}
+                  onClick={() => toggleService('remittance')}
+                />
+                <ServiceCard
+                  icon={<HandCoins size={20} weight="fill" />}
+                  label="수금"
+                  desc="해외에서 원화 또는 외화로 대금을 수금합니다"
+                  selected={data.services.includes('collection')}
+                  onClick={() => toggleService('collection')}
+                />
+              </div>
+              {errors.services && (
+                <p className="text-[11px] text-sb-negative">{errors.services}</p>
+              )}
+            </div>
+
+            {/* 수금 국가 — 수금 선택 시만 */}
+            {data.services.includes('collection') && (
+              <div className="flex flex-col gap-3 p-4 bg-sb-n50 rounded-[10px] border border-sb-n200">
+                <p className="text-[14px] text-sb-n500">수금 국가 <span className="text-sb-negative">*</span></p>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    { value: 'KRW', label: '한국 (KRW)' },
+                    { value: 'VND', label: '베트남 (VND)' },
+                    { value: 'OTHER', label: '기타' },
+                  ].map((c) => (
+                    <ToggleChip
+                      key={c.value}
+                      label={c.label}
+                      selected={data.collectionCountries.includes(c.value)}
+                      onClick={() => toggleCollectionCountry(c.value)}
+                    />
+                  ))}
+                </div>
+                {errors.collectionCountries && (
+                  <p className="text-[11px] text-sb-negative">{errors.collectionCountries}</p>
+                )}
+              </div>
+            )}
+
+            {/* 송금 국가 — 해외 송금 선택 시만 */}
+            {data.services.includes('remittance') && (
+              <div className="flex flex-col gap-4 p-4 bg-sb-n50 rounded-[10px] border border-sb-n200">
+                <Input
+                  label="송금 출발 국가"
+                  placeholder="예: 한국"
+                  value={data.remittanceFrom}
+                  onChange={(e) => set('remittanceFrom', e.target.value)}
+                  error={errors.remittanceFrom}
+                />
+                <Input
+                  label="송금 도착 국가"
+                  placeholder="예: 미국, 중국 등"
+                  value={data.remittanceTo}
+                  onChange={(e) => set('remittanceTo', e.target.value)}
+                  error={errors.remittanceTo}
+                />
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── Step 2: 사업자 정보 ── */}
+        {step === 2 && (
+          <div className="flex flex-col gap-6">
+            <div className="flex flex-col gap-3">
+              <p className="text-[14px] text-sb-n500">사업자 유형 <span className="text-sb-negative">*</span></p>
+              <div className="flex flex-col gap-3">
+                <BusinessTypeCard
+                  icon={<Buildings size={20} weight="fill" />}
+                  label="법인 사업자"
+                  desc="주식회사, 유한회사 등 법인 형태의 사업자"
+                  selected={data.businessType === 'corporation'}
+                  onClick={() => set('businessType', 'corporation')}
+                />
+                <BusinessTypeCard
+                  icon={<User size={20} weight="fill" />}
+                  label="개인 사업자"
+                  desc="개인 명의로 사업자등록을 한 사업자"
+                  selected={data.businessType === 'individual'}
+                  onClick={() => set('businessType', 'individual')}
+                />
+                <BusinessTypeCard
+                  icon={<Bank size={20} weight="fill" />}
+                  label="금융업"
+                  desc="은행, 보험, 증권 등 금융 관련 업종"
+                  selected={data.businessType === 'financial'}
+                  onClick={() => set('businessType', 'financial')}
+                />
+              </div>
+              {errors.businessType && (
+                <p className="text-[11px] text-sb-negative">{errors.businessType}</p>
+              )}
+            </div>
+
+            <Input
+              label="법인·사업자 설립 국가"
+              placeholder="예: 한국"
+              value={data.foundingCountry}
+              onChange={(e) => set('foundingCountry', e.target.value)}
+              error={errors.foundingCountry}
+            />
+
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[14px] text-sb-n500">예상 월간 거래 규모 <span className="text-sb-negative">*</span></label>
+              <div className="flex gap-2">
+                <Input
+                  className="flex-1"
+                  type="number"
+                  placeholder="0"
+                  value={data.monthlyVolume}
+                  onChange={(e) => set('monthlyVolume', e.target.value)}
+                  error={errors.monthlyVolume}
+                />
+                <Select
+                  className="w-28"
+                  options={CURRENCY_OPTIONS}
+                  value={data.monthlyVolumeCurrency}
+                  onChange={(e) => set('monthlyVolumeCurrency', e.target.value)}
+                />
+              </div>
+              {errors.monthlyVolume && (
+                <p className="text-[11px] text-sb-negative">{errors.monthlyVolume}</p>
+              )}
+            </div>
+
+            <Input
+              label="예상 월간 거래 건수"
+              type="number"
+              placeholder="0"
+              value={data.monthlyCount}
+              onChange={(e) => set('monthlyCount', e.target.value)}
+              error={errors.monthlyCount}
+              iconRight={<span className="text-[13px] text-sb-n500 whitespace-nowrap">건 / 월</span>}
+            />
+          </div>
+        )}
+
+        {/* ── Step 3: 추가 정보 ── */}
+        {step === 3 && (
+          <div className="flex flex-col gap-5">
+            <Select
+              label="센트비를 어떻게 알게 되셨나요?"
+              options={REFERRAL_OPTIONS}
+              placeholder="선택해주세요"
+              value={data.referralSource}
+              onChange={(e) => {
+                set('referralSource', e.target.value)
+                setErrors((prev) => ({ ...prev, referralSource: undefined }))
+              }}
+              error={errors.referralSource}
+            />
+
+            <Textarea
+              label="추가 문의사항 (선택)"
+              placeholder="궁금하신 내용이 있으면 자유롭게 입력해주세요."
+              value={data.additionalNote}
+              onChange={(e) => set('additionalNote', e.target.value)}
+              rows={4}
+            />
+
+            {/* Agreement */}
+            <div className="pt-2 border-t border-sb-n100">
+              <label
+                className="flex items-start gap-3 cursor-pointer group"
+                onClick={() => {
+                  set('agreed', !data.agreed)
+                  setErrors((prev) => ({ ...prev, agreed: undefined }))
+                }}
+              >
+                <div
+                  className={`mt-0.5 flex-shrink-0 w-[18px] h-[18px] rounded-[4px] border flex items-center justify-center transition-colors duration-[120ms] ${
+                    data.agreed
+                      ? 'bg-sb-brand border-sb-brand'
+                      : errors.agreed
+                      ? 'border-sb-negative bg-sb-negative-light'
+                      : 'border-sb-n300 bg-white group-hover:border-sb-brand'
+                  }`}
+                >
+                  {data.agreed && <Check size={12} weight="bold" className="text-white" />}
+                </div>
+                <span className={`text-[13px] leading-[20px] ${errors.agreed ? 'text-sb-negative' : 'text-sb-n600'}`}>
+                  <span className="font-medium">개인정보 수집 및 이용</span>에 동의합니다. <span className="text-sb-negative">*</span>
+                </span>
+              </label>
+              {errors.agreed && (
+                <p className="mt-1.5 ml-[30px] text-[11px] text-sb-negative">{errors.agreed}</p>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Navigation */}
+        <div className="flex gap-3 pt-2">
+          {step > 0 && (
+            <Button variant="outline" onClick={handleBack} className="flex-1">
+              <ArrowLeft size={16} />
+              이전
+            </Button>
+          )}
+          <Button onClick={handleNext} fullWidth={step === 0} className="flex-1">
+            {step === STEPS.length - 1 ? '제출하기' : '다음'}
+            {step < STEPS.length - 1 && <ArrowRight size={16} />}
+          </Button>
+        </div>
+      </div>
+    </div>
+  )
+}
