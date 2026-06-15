@@ -101,7 +101,7 @@ export default function CasePage() {
                 {RISK_LABELS[c.segmentInfo.complianceRisk]}
               </p>
             </div>
-            {c.segmentInfo.serviceSegments.length > 0 && (
+            {(c.segmentInfo.serviceSegments?.length ?? 0) > 0 && (
               <div className="col-span-2">
                 <p className="text-[11px] text-sb-n400 uppercase tracking-[0.5px]">서비스</p>
                 <p className="text-[13px] font-medium text-sb-n800 mt-0.5">
