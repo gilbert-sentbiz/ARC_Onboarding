@@ -1,10 +1,11 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowRight, Envelope, CheckCircle, FileText, Buildings, ArrowsLeftRight } from '@phosphor-icons/react'
+import { ArrowRight, Envelope, Lock, Eye, EyeSlash, CheckCircle, FileText, Buildings, ArrowsLeftRight } from '@phosphor-icons/react'
 import Button from '../../components/ui/Button'
 import Input from '../../components/ui/Input'
 import { useSessionStore } from '../../store/sessionStore'
 import { useCaseStore } from '../../store/caseStore'
+import { useAccountStore } from '../../store/accountStore'
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
@@ -28,33 +29,42 @@ const FEATURES = [
 
 export default function LandingPage() {
   const [email, setEmail] = useState('')
-  const [emailError, setEmailError] = useState('')
+  const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [agreed, setAgreed] = useState(false)
-  const [agreedError, setAgreedError] = useState(false)
+  const [errors, setErrors] = useState<{ email?: string; password?: string; agreed?: string }>({})
+
   const navigate = useNavigate()
   const setSession = useSessionStore((s) => s.setSession)
   const findByEmail = useCaseStore((s) => s.findByEmail)
+  const { exists, verify, register } = useAccountStore()
+
+  const isReturning = EMAIL_RE.test(email) && exists(email)
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
 
-    let valid = true
+    const next: typeof errors = {}
 
-    if (!EMAIL_RE.test(email)) {
-      setEmailError('올바른 이메일 주소를 입력해주세요.')
-      valid = false
-    } else {
-      setEmailError('')
+    if (!EMAIL_RE.test(email)) next.email = '올바른 이메일 주소를 입력해주세요.'
+    if (!password) next.password = '비밀번호를 입력해주세요.'
+
+    if (Object.keys(next).length === 0 && isReturning) {
+      if (!verify(email, password)) {
+        next.password = '비밀번호가 올바르지 않습니다.'
+      }
     }
 
-    if (!agreed) {
-      setAgreedError(true)
-      valid = false
-    } else {
-      setAgreedError(false)
+    if (Object.keys(next).length === 0 && !isReturning && !agreed) {
+      next.agreed = '개인정보 수집 및 이용에 동의해주세요.'
     }
 
-    if (!valid) return
+    if (Object.keys(next).length > 0) {
+      setErrors(next)
+      return
+    }
+
+    if (!isReturning) register(email, password)
 
     setSession({ userId: email, role: 'CUSTOMER', name: '', email })
 
@@ -113,13 +123,8 @@ export default function LandingPage() {
 
       {/* ── Right: Form panel ── */}
       <div className="flex-1 flex flex-col items-center justify-center px-6 py-12 bg-sb-n50">
-        {/* Mobile logo */}
         <div className="lg:hidden mb-10">
-          <img
-            src="/ARC_Onboarding/logos/wordmark-navy.svg"
-            alt="SentBiz"
-            className="h-7 w-auto"
-          />
+          <img src="/ARC_Onboarding/logos/wordmark-navy.svg" alt="SentBiz" className="h-7 w-auto" />
         </div>
 
         <div className="w-full max-w-[440px]">
@@ -127,17 +132,17 @@ export default function LandingPage() {
             className="bg-white rounded-[16px] p-8 flex flex-col gap-8"
             style={{ boxShadow: 'var(--shadow-200)' }}
           >
-            {/* Header */}
             <div className="flex flex-col gap-1.5">
               <h2 className="text-[22px] leading-[34px] font-bold text-sb-n900">
-                온보딩 시작하기
+                {isReturning ? '다시 오셨군요' : '온보딩 시작하기'}
               </h2>
               <p className="text-[14px] leading-[20px] text-sb-n500">
-                이메일 주소로 진행 중인 케이스를 확인하거나 새 온보딩을 시작합니다.
+                {isReturning
+                  ? '비밀번호를 입력해 진행 중인 케이스를 이어가세요.'
+                  : '이메일과 비밀번호를 입력하면 온보딩을 시작합니다.'}
               </p>
             </div>
 
-            {/* Form */}
             <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-5">
               <Input
                 label="이메일 주소"
@@ -146,53 +151,81 @@ export default function LandingPage() {
                 value={email}
                 onChange={(e) => {
                   setEmail(e.target.value)
-                  if (emailError) setEmailError('')
+                  setErrors((prev) => ({ ...prev, email: undefined }))
                 }}
-                error={emailError}
+                error={errors.email}
                 iconLeft={<Envelope size={16} />}
                 autoComplete="email"
                 autoFocus
               />
 
-              {/* Agreement */}
-              <label
-                className={`flex items-start gap-3 cursor-pointer group`}
-                onClick={() => {
-                  setAgreed((v) => !v)
-                  setAgreedError(false)
+              <Input
+                label="비밀번호"
+                type={showPassword ? 'text' : 'password'}
+                placeholder={isReturning ? '비밀번호 입력' : '사용할 비밀번호 설정'}
+                value={password}
+                onChange={(e) => {
+                  setPassword(e.target.value)
+                  setErrors((prev) => ({ ...prev, password: undefined }))
                 }}
-              >
-                <div
-                  className={`mt-0.5 flex-shrink-0 w-[18px] h-[18px] rounded-[4px] border flex items-center justify-center transition-colors duration-[120ms] ${
-                    agreed
-                      ? 'bg-sb-brand border-sb-brand'
-                      : agreedError
-                      ? 'border-sb-negative bg-sb-negative-light'
-                      : 'border-sb-n300 bg-white group-hover:border-sb-brand'
-                  }`}
-                >
-                  {agreed && <CheckCircle size={12} weight="fill" className="text-white" />}
+                error={errors.password}
+                iconLeft={<Lock size={16} />}
+                iconRight={
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((v) => !v)}
+                    className="flex items-center text-sb-n400 hover:text-sb-n600 transition-colors"
+                    tabIndex={-1}
+                  >
+                    {showPassword ? <EyeSlash size={16} /> : <Eye size={16} />}
+                  </button>
+                }
+                autoComplete={isReturning ? 'current-password' : 'new-password'}
+              />
+
+              {/* Agreement — 신규 가입 시만 */}
+              {!isReturning && (
+                <div>
+                  <label
+                    className="flex items-start gap-3 cursor-pointer group"
+                    onClick={() => {
+                      setAgreed((v) => !v)
+                      setErrors((prev) => ({ ...prev, agreed: undefined }))
+                    }}
+                  >
+                    <div
+                      className={`mt-0.5 flex-shrink-0 w-[18px] h-[18px] rounded-[4px] border flex items-center justify-center transition-colors duration-[120ms] ${
+                        agreed
+                          ? 'bg-sb-brand border-sb-brand'
+                          : errors.agreed
+                          ? 'border-sb-negative bg-sb-negative-light'
+                          : 'border-sb-n300 bg-white group-hover:border-sb-brand'
+                      }`}
+                    >
+                      {agreed && <CheckCircle size={12} weight="fill" className="text-white" />}
+                    </div>
+                    <span className={`text-[13px] leading-[20px] ${errors.agreed ? 'text-sb-negative' : 'text-sb-n600'}`}>
+                      <span className="font-medium">개인정보 수집 및 이용</span>에 동의합니다.
+                    </span>
+                  </label>
+                  {errors.agreed && (
+                    <p className="mt-1.5 text-[11px] leading-[16px] text-sb-negative">{errors.agreed}</p>
+                  )}
                 </div>
-                <span className={`text-[13px] leading-[20px] ${agreedError ? 'text-sb-negative' : 'text-sb-n600'}`}>
-                  <span className="font-medium">개인정보 수집 및 이용</span>에 동의합니다.{' '}
-                  {agreedError && <span className="text-sb-negative">(필수)</span>}
-                </span>
-              </label>
+              )}
 
               <Button type="submit" fullWidth size="lg">
-                시작하기
+                {isReturning ? '계속하기' : '시작하기'}
                 <ArrowRight size={16} weight="bold" />
               </Button>
             </form>
 
-            {/* Divider */}
             <div className="flex items-center gap-3">
               <div className="flex-1 h-px bg-sb-n100" />
               <span className="text-[12px] text-sb-n400">또는</span>
               <div className="flex-1 h-px bg-sb-n100" />
             </div>
 
-            {/* Internal access */}
             <button
               type="button"
               onClick={() => navigate('/internal')}
@@ -204,10 +237,7 @@ export default function LandingPage() {
 
           <p className="mt-6 text-center text-[12px] leading-[18px] text-sb-n400">
             도움이 필요하시면{' '}
-            <a
-              href="mailto:support@sentbe.com"
-              className="text-sb-brand hover:underline"
-            >
+            <a href="mailto:support@sentbe.com" className="text-sb-brand hover:underline">
               support@sentbe.com
             </a>
             으로 문의해 주세요.
