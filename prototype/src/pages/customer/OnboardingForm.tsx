@@ -33,6 +33,7 @@ interface FormData {
   foundingCountry: string
   monthlyVolume: string
   monthlyVolumeCurrency: string
+  monthlyVolumeCurrencyOther: string
   monthlyCount: string
   referralSource: string
   additionalNote: string
@@ -56,6 +57,7 @@ const INITIAL: FormData = {
   foundingCountry: '',
   monthlyVolume: '',
   monthlyVolumeCurrency: 'USD',
+  monthlyVolumeCurrencyOther: '',
   monthlyCount: '',
   referralSource: '',
   additionalNote: '',
@@ -492,9 +494,19 @@ export default function OnboardingForm() {
                     className="w-28"
                     options={CURRENCY_OPTIONS}
                     value={data.monthlyVolumeCurrency}
-                    onChange={(e) => set('monthlyVolumeCurrency', e.target.value)}
+                    onChange={(e) => {
+                      set('monthlyVolumeCurrency', e.target.value)
+                      if (e.target.value !== 'OTHER') set('monthlyVolumeCurrencyOther', '')
+                    }}
                   />
                 </div>
+                {data.monthlyVolumeCurrency === 'OTHER' && (
+                  <Input
+                    placeholder="통화를 직접 입력해주세요 (예: SGD)"
+                    value={data.monthlyVolumeCurrencyOther}
+                    onChange={(e) => set('monthlyVolumeCurrencyOther', e.target.value)}
+                  />
+                )}
               </div>
               <Input
                 label="예상 월간 거래 건수"
