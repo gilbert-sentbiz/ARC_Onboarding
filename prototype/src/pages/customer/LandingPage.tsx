@@ -77,8 +77,8 @@ export default function LandingPage() {
       // 1차 confirmed, 2차 not started → 2차 입력
       navigate(`/customer/case/${existing.id}/information`)
     } else if (existing.secondIntake.status === 'draft') {
-      // 2차 form complete but not yet confirmed → 2차 리뷰
-      navigate(`/customer/case/${existing.id}/review/second`)
+      // 2차 draft saved → continue 2차 입력 (not review)
+      navigate(`/customer/case/${existing.id}/information`)
     } else {
       // 2차 confirmed (submitted) → route by case status
       const s = existing.status

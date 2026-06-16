@@ -14,6 +14,7 @@ import { useCaseStore } from '../../store/caseStore'
 import { useSessionStore } from '../../store/sessionStore'
 import { STATUS_LABELS } from '../../services/stateMachine'
 import type { CaseStatus, Message } from '../../types'
+import TabBar from '../../components/customer/TabBar'
 
 // ── 상수 ─────────────────────────────────────────────────────────────────────
 
@@ -153,7 +154,9 @@ export default function CasePage() {
   }
 
   return (
-    <div className="min-h-screen bg-sb-n50 flex flex-col items-center px-4 py-8">
+    <div className="min-h-screen bg-sb-n50 flex flex-col">
+      <TabBar caseId={id} active="status" />
+      <div className="flex flex-col items-center px-4 py-8">
       <div className="w-full max-w-[640px] flex flex-col gap-4">
 
         {/* ── 헤더 ── */}
@@ -418,6 +421,7 @@ export default function CasePage() {
           </div>
         </div>
 
+      </div>
       </div>
     </div>
   )

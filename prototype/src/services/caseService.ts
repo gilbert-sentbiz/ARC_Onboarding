@@ -138,7 +138,7 @@ export function confirmSecondIntake(
   if (!c) return { ok: false, error: '케이스를 찾을 수 없습니다.' }
 
   const now = Date.now()
-  const documents = buildDocuments(caseId, c.segmentInfo)
+  const documents = buildDocuments(caseId, c.segmentInfo, c.secondIntake.data as Record<string, unknown>)
 
   store.updateCase(caseId, {
     status: 'DOCUMENT_SUBMISSION_REQUIRED',

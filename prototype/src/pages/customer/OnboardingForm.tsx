@@ -207,6 +207,8 @@ export default function OnboardingForm() {
       if (data.services.length === 0) next.services = '서비스를 하나 이상 선택해주세요.'
       if (data.services.includes('collection') && data.collectionCountries.length === 0)
         next.collectionCountries = '수금 국가를 하나 이상 선택해주세요.'
+      if (data.collectionCountries.includes('OTHER') && !data.collectionOtherCountry.trim())
+        next.collectionOtherCountry = '수금 국가를 직접 입력해주세요.'
       if (data.services.includes('remittance')) {
         if (!data.remittanceFrom.trim()) next.remittanceFrom = '필수 항목입니다.'
         if (!data.remittanceTo.trim()) next.remittanceTo = '필수 항목입니다.'
@@ -217,6 +219,8 @@ export default function OnboardingForm() {
       if (!data.businessType) next.businessType = '사업자 유형을 선택해주세요.'
       if (!data.foundingCountry.trim()) next.foundingCountry = '필수 항목입니다.'
       if (!data.monthlyVolume.trim()) next.monthlyVolume = '필수 항목입니다.'
+      if (data.monthlyVolumeCurrency === 'OTHER' && !data.monthlyVolumeCurrencyOther.trim())
+        next.monthlyVolumeCurrencyOther = '통화를 직접 입력해주세요.'
       if (!data.monthlyCount.trim()) next.monthlyCount = '필수 항목입니다.'
       if (!data.referralSource) next.referralSource = '선택해주세요.'
       if (!data.agreed) next.agreed = '동의가 필요합니다.'
@@ -246,6 +250,7 @@ export default function OnboardingForm() {
   function handleSubmit() {
     if (!session) return
     const savedCase = saveFirstIntakeDraft(data, session)
+    useSessionStore.getState().setSession({ ...session, name: data.contactName })
     navigate(`/customer/case/${savedCase.id}/review/first`)
   }
 

@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { CheckCircle, CloudArrowUp, Warning, ArrowRight, Clock } from '@phosphor-icons/react'
 import { useCaseStore } from '../../store/caseStore'
@@ -6,6 +6,7 @@ import { useSessionStore } from '../../store/sessionStore'
 import { transitionStatus } from '../../services/caseService'
 import type { Document, UploadedFile } from '../../types'
 import Button from '../../components/ui/Button'
+import TabBar from '../../components/customer/TabBar'
 
 function DocRow({
   doc,
@@ -89,11 +90,28 @@ export default function DocumentUpload() {
   const session = useSessionStore((s) => s.session)
   const c = useCaseStore((s) => (id ? s.cases[id] : null))
   const updateCase = useCaseStore((s) => s.updateCase)
+  const [submitted, setSubmitted] = useState(false)
 
   if (!c || !id) {
     return (
       <div className="min-h-screen bg-sb-n50 flex items-center justify-center">
         <p className="text-sb-n500">케이스를 찾을 수 없습니다.</p>
+      </div>
+    )
+  }
+
+  if (submitted) {
+    return (
+      <div className="min-h-screen bg-sb-n50 flex flex-col items-center justify-center px-4">
+        <div className="w-full max-w-[480px] bg-white rounded-[20px] p-10 flex flex-col items-center gap-4 text-center" style={{ boxShadow: 'var(--shadow-200)' }}>
+          <CheckCircle size={52} weight="fill" className="text-sb-positive" />
+          <div>
+            <p className="text-[18px] font-bold text-sb-n900 mb-2">서류가 제출되었습니다</p>
+            <p className="text-[14px] text-sb-n600 leading-relaxed">
+              담당팀에서 검토 후 연락드리겠습니다.<br />잠시 후 상태 & 이력으로 이동합니다.
+            </p>
+          </div>
+        </div>
       </div>
     )
   }
@@ -147,20 +165,15 @@ export default function DocumentUpload() {
       name: session.name || '고객',
     })
     if (result.ok) {
-      navigate(`/customer/case/${id}`)
+      setSubmitted(true)
+      setTimeout(() => navigate(`/customer/case/${id}`), 2000)
     }
   }
 
   return (
-    <div className="min-h-screen bg-sb-n50 flex flex-col items-center px-4 py-8">
-      {/* Header */}
-      <div className="w-full max-w-[640px] mb-6">
-        <div className="flex items-center justify-between mb-5">
-          <span className="text-[13px] font-semibold text-sb-n700">서류 업로드</span>
-          <span className="text-[13px] text-sb-n400">케이스 #{c.id.slice(-6).toUpperCase()}</span>
-        </div>
-        <div className="w-full h-1 bg-sb-brand rounded-full" />
-      </div>
+    <div className="min-h-screen bg-sb-n50 flex flex-col">
+      <TabBar caseId={id} active="documents" />
+      <div className="flex flex-col items-center px-4 py-8">
 
       <div className="w-full max-w-[640px] flex flex-col gap-4">
         {/* Revision banner */}
@@ -241,6 +254,7 @@ export default function DocumentUpload() {
             <ArrowRight size={16} />
           </Button>
         </div>
+      </div>
       </div>
     </div>
   )

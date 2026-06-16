@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, ArrowRight, Plus, Trash } from '@phosphor-icons/react'
 import Input from '../../../components/ui/Input'
 import Select from '../../../components/ui/Select'
@@ -20,6 +21,7 @@ type Errors = Record<string, string>
 const TOTAL_STEPS = 3
 
 export default function CorporateForm({ onComplete, onDraftSave }: Props) {
+  const navigate = useNavigate()
   const [step, setStep] = useState(0)
   const [errors, setErrors] = useState<Errors>({})
 
@@ -100,6 +102,13 @@ export default function CorporateForm({ onComplete, onDraftSave }: Props) {
       if (!rep1Dob) e.rep1Dob = '필수 항목입니다.'
       if (!rep1Gender) e.rep1Gender = '선택해주세요.'
       if (!rep1Nationality) e.rep1Nationality = '선택해주세요.'
+      if (hasCoRep) {
+        if (!rep2NameKr.trim()) e.rep2NameKr = '필수 항목입니다.'
+        if (!rep2NameEn.trim()) e.rep2NameEn = '필수 항목입니다.'
+        if (!rep2Dob) e.rep2Dob = '필수 항목입니다.'
+        if (!rep2Gender) e.rep2Gender = '선택해주세요.'
+        if (!rep2Nationality) e.rep2Nationality = '선택해주세요.'
+      }
     }
     if (step === 1) {
       const exempt = boExemptions.length > 0
@@ -154,7 +163,7 @@ export default function CorporateForm({ onComplete, onDraftSave }: Props) {
       step={step}
       totalSteps={TOTAL_STEPS}
       titles={['기본 정보', '실제 소유자 확인', '추가 확인사항']}
-      onBack={() => step === 0 ? history.back() : setStep(s => s - 1)}
+      onBack={() => step === 0 ? navigate(-1) : setStep(s => s - 1)}
       onDraftSave={onDraftSave ? () => onDraftSave(collectCurrentData()) : undefined}
     >
       {/* ── Step 0: 기본 정보 ── */}
@@ -318,9 +327,12 @@ export default function CorporateForm({ onComplete, onDraftSave }: Props) {
               required
               options={[
                 { value: 'business', label: '사업소득' },
+                { value: 'labor', label: '근로·연금소득' },
                 { value: 'realestate_rent', label: '부동산 임대소득' },
                 { value: 'realestate_sale', label: '부동산 양도소득' },
                 { value: 'financial', label: '금융소득 (이자·배당)' },
+                { value: 'inheritance', label: '상속·증여' },
+                { value: 'asset_transfer', label: '일시 재산양도로 인한 소득' },
               ]}
               values={fundsSource}
               onChange={v => { setFundsSource(v); clearErr('fundsSource') }}

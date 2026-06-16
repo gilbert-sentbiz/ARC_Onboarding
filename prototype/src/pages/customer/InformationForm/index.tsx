@@ -17,7 +17,9 @@ export default function InformationForm() {
   const c = useCaseStore((s) => (id ? s.cases[id] : null))
 
   const [stage, setStage] = useState<Stage>('entity')
-  const [accumulated, setAccumulated] = useState<Record<string, unknown>>({})
+  const [accumulated, setAccumulated] = useState<Record<string, unknown>>(
+    () => (c?.secondIntake?.status === 'draft' ? (c.secondIntake.data as Record<string, unknown>) : {})
+  )
 
   if (!c) {
     return (
