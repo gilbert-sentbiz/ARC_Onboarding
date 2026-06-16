@@ -245,7 +245,7 @@ export default function OnboardingForm() {
 
   function handleSubmit() {
     const newCase = createCase(data, session!)
-    navigate(`/customer/case/${newCase.id}`)
+    navigate(`/customer/case/${newCase.id}/information`)
   }
 
   return (
