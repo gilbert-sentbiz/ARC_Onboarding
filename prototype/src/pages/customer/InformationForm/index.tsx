@@ -42,8 +42,8 @@ export default function InformationForm() {
 
   function saveAndNavigate(data: Record<string, unknown>) {
     if (!id) return
-    updateCase(id, { secondIntake: { status: 'submitted', data, savedAt: Date.now() } })
-    navigate(`/customer/case/${id}`)
+    updateCase(id, { secondIntake: { status: 'draft', data, savedAt: Date.now() } })
+    navigate(`/customer/case/${id}/review/second`)
   }
 
   function handleEntityComplete(data: Record<string, unknown>) {

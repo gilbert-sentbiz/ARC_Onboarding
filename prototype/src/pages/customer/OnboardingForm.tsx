@@ -15,7 +15,7 @@ import Textarea from '../../components/ui/Textarea'
 import Select from '../../components/ui/Select'
 import Button from '../../components/ui/Button'
 import { useSessionStore } from '../../store/sessionStore'
-import { createCase, saveFirstIntakeDraft } from '../../services/caseService'
+import { saveFirstIntakeDraft } from '../../services/caseService'
 import { useCaseStore } from '../../store/caseStore'
 
 interface FormData {
@@ -244,8 +244,9 @@ export default function OnboardingForm() {
   }
 
   function handleSubmit() {
-    const newCase = createCase(data, session!)
-    navigate(`/customer/case/${newCase.id}/information`)
+    if (!session) return
+    const savedCase = saveFirstIntakeDraft(data, session)
+    navigate(`/customer/case/${savedCase.id}/review/first`)
   }
 
   return (

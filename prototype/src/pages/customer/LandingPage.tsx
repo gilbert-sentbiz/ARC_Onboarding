@@ -69,10 +69,24 @@ export default function LandingPage() {
     setSession({ userId: email, role: 'CUSTOMER', name: '', email })
 
     const existing = findByEmail(email)
+
     if (!existing || existing.firstIntake?.status !== 'submitted') {
+      // No case, or 1차 form not yet confirmed → 1차 입력 (pre-fills draft if any)
       navigate('/customer/onboarding')
+    } else if (!existing.secondIntake || existing.secondIntake.status === 'not_started') {
+      // 1차 confirmed, 2차 not started → 2차 입력
+      navigate(`/customer/case/${existing.id}/information`)
+    } else if (existing.secondIntake.status === 'draft') {
+      // 2차 form complete but not yet confirmed → 2차 리뷰
+      navigate(`/customer/case/${existing.id}/review/second`)
     } else {
-      navigate(`/customer/case/${existing.id}`)
+      // 2차 confirmed (submitted) → route by case status
+      const s = existing.status
+      if (s === 'DOCUMENT_SUBMISSION_REQUIRED' || s === 'REVISION_REQUESTED') {
+        navigate(`/customer/case/${existing.id}/documents`)
+      } else {
+        navigate(`/customer/case/${existing.id}`)
+      }
     }
   }
 

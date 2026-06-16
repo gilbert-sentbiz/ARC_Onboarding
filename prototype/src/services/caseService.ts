@@ -129,6 +129,38 @@ export function createCase(formData: OnboardingFormData, session: UserSession): 
   return c
 }
 
+export function confirmSecondIntake(
+  caseId: string,
+  actorName: string
+): { ok: boolean; error?: string } {
+  const store = useCaseStore.getState()
+  const c = store.cases[caseId]
+  if (!c) return { ok: false, error: '케이스를 찾을 수 없습니다.' }
+
+  const now = Date.now()
+  const documents = buildDocuments(caseId, c.segmentInfo)
+
+  store.updateCase(caseId, {
+    status: 'DOCUMENT_SUBMISSION_REQUIRED',
+    currentOwner: { role: 'CUSTOMER', name: '고객' },
+    secondIntake: { status: 'submitted', data: c.secondIntake.data, savedAt: now },
+    documents,
+    statusHistory: [
+      ...c.statusHistory,
+      {
+        id: `hist_${now}`,
+        caseId,
+        previousStatus: c.status,
+        newStatus: 'DOCUMENT_SUBMISSION_REQUIRED',
+        changedAt: now,
+        changedBy: { role: 'CUSTOMER', name: actorName },
+      },
+    ],
+  })
+
+  return { ok: true }
+}
+
 type TransitionResult = { ok: true } | { ok: false; error: string }
 
 export function transitionStatus(
