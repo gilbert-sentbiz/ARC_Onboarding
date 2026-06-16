@@ -12,13 +12,14 @@ import type { ServiceSegment } from '../../../types'
 interface Props {
   serviceSegments: ServiceSegment[]
   onComplete: (data: Record<string, unknown>) => void
+  onDraftSave?: (data: Record<string, unknown>) => void
 }
 
 type Errors = Record<string, string>
 
 const TOTAL_STEPS = 3
 
-export default function CorporateForm({ onComplete }: Props) {
+export default function CorporateForm({ onComplete, onDraftSave }: Props) {
   const [step, setStep] = useState(0)
   const [errors, setErrors] = useState<Errors>({})
 
@@ -122,23 +123,27 @@ export default function CorporateForm({ onComplete }: Props) {
     return Object.keys(e).length === 0
   }
 
+  function collectCurrentData(): Record<string, unknown> {
+    return {
+      companyNameKr, companyNameEn, bizRegNo, phone, industry, bizType,
+      bizAddress, corpType, corpRegNo, corpNationality, headOfficeAddress,
+      rep1: { nameKr: rep1NameKr, nameEn: rep1NameEn, dob: rep1Dob, gender: rep1Gender, nationality: rep1Nationality },
+      rep2: hasCoRep ? { nameKr: rep2NameKr, nameEn: rep2NameEn, dob: rep2Dob, gender: rep2Gender, nationality: rep2Nationality } : null,
+      boExemptions, boStep,
+      bo1: { nameKr: bo1NameKr, nameEn: bo1NameEn, dob: bo1Dob, nationality: bo1Nationality, residence: bo1Residence },
+      bo2: hasSecondBO ? { nameKr: bo2NameKr, nameEn: bo2NameEn, dob: bo2Dob, nationality: bo2Nationality, residence: bo2Residence } : null,
+      txPurpose, txPurposeOther, isVASP, fundsSource, fundsSourceOther,
+      corpSize, listingStatus, listingOther, establishedDate,
+    }
+  }
+
   function handleNext() {
     if (!validate()) return
     if (step < TOTAL_STEPS - 1) {
       setStep(s => s + 1)
       window.scrollTo({ top: 0, behavior: 'smooth' })
     } else {
-      onComplete({
-        companyNameKr, companyNameEn, bizRegNo, phone, industry, bizType,
-        bizAddress, corpType, corpRegNo, corpNationality, headOfficeAddress,
-        rep1: { nameKr: rep1NameKr, nameEn: rep1NameEn, dob: rep1Dob, gender: rep1Gender, nationality: rep1Nationality },
-        rep2: hasCoRep ? { nameKr: rep2NameKr, nameEn: rep2NameEn, dob: rep2Dob, gender: rep2Gender, nationality: rep2Nationality } : null,
-        boExemptions, boStep,
-        bo1: boExemptions.length === 0 ? { nameKr: bo1NameKr, nameEn: bo1NameEn, dob: bo1Dob, nationality: bo1Nationality, residence: bo1Residence } : null,
-        bo2: hasSecondBO ? { nameKr: bo2NameKr, nameEn: bo2NameEn, dob: bo2Dob, nationality: bo2Nationality, residence: bo2Residence } : null,
-        txPurpose, txPurposeOther, isVASP, fundsSource, fundsSourceOther,
-        corpSize, listingStatus, listingOther, establishedDate,
-      })
+      onComplete(collectCurrentData())
     }
   }
 
@@ -150,6 +155,7 @@ export default function CorporateForm({ onComplete }: Props) {
       totalSteps={TOTAL_STEPS}
       titles={['기본 정보', '실제 소유자 확인', '추가 확인사항']}
       onBack={() => step === 0 ? history.back() : setStep(s => s - 1)}
+      onDraftSave={onDraftSave ? () => onDraftSave(collectCurrentData()) : undefined}
     >
       {/* ── Step 0: 기본 정보 ── */}
       {step === 0 && (

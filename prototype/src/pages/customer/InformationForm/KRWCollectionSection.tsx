@@ -18,9 +18,10 @@ const SECTOR_OPTIONS = [
 interface Props {
   onComplete: (data: Record<string, unknown>) => void
   onBack: () => void
+  onDraftSave?: (data: Record<string, unknown>) => void
 }
 
-export default function KRWCollectionSection({ onComplete, onBack }: Props) {
+export default function KRWCollectionSection({ onComplete, onBack, onDraftSave }: Props) {
   const [sector, setSector] = useState('')
   const [error, setError] = useState('')
 
@@ -30,7 +31,7 @@ export default function KRWCollectionSection({ onComplete, onBack }: Props) {
   }
 
   return (
-    <FormShell step={0} totalSteps={1} titles={['KRW Collection — 섹터 선택']} onBack={onBack}>
+    <FormShell step={0} totalSteps={1} titles={['KRW Collection — 섹터 선택']} onBack={onBack} onDraftSave={onDraftSave ? () => onDraftSave({ sector }) : undefined}>
       <div className="flex flex-col gap-5">
         <div className="flex flex-col gap-4">
           <p className="text-[12px] font-semibold text-sb-brand tracking-[1px] uppercase">서비스 섹터</p>

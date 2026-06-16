@@ -11,6 +11,7 @@ import { COUNTRIES } from '../../../constants/countries'
 interface Props {
   onComplete: (data: Record<string, unknown>) => void
   onBack: () => void
+  onDraftSave?: (data: Record<string, unknown>) => void
 }
 
 type Errors = Record<string, string>
@@ -30,7 +31,7 @@ const VOLUME_OPTIONS = [
   { value: 'over_500k', label: 'Over $500,000' },
 ]
 
-export default function VNDCollectionSection({ onComplete, onBack }: Props) {
+export default function VNDCollectionSection({ onComplete, onBack, onDraftSave }: Props) {
   const [errors, setErrors] = useState<Errors>({})
 
   const [entityName, setEntityName] = useState('')
@@ -82,7 +83,7 @@ export default function VNDCollectionSection({ onComplete, onBack }: Props) {
   }
 
   return (
-    <FormShell step={0} totalSteps={1} titles={['VND Collection — 사업자 정보']} onBack={onBack}>
+    <FormShell step={0} totalSteps={1} titles={['VND Collection — 사업자 정보']} onBack={onBack} onDraftSave={onDraftSave ? () => onDraftSave({ entityName, bizNumber, bizAddress, placeOfIncorp, website, contactName, contactPhone, contactEmail, entityType, industryType, mainActivity, monthlyVolume, accountPurpose, depositorRelationship, depositorType }) : undefined}>
       <div className="flex flex-col gap-5">
 
         <div className="flex flex-col gap-4">

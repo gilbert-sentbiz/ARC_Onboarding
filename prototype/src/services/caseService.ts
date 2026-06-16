@@ -1,13 +1,41 @@
-import type { Case, CaseStatus, UserRole, UserSession, OnboardingFormData } from '../types'
+import type { Case, CaseStatus, IntakeRecord, UserRole, UserSession, OnboardingFormData } from '../types'
 import { classify } from './segmentClassifier'
 import { buildDocuments } from './documentRequirements'
 import { canTransition, STATUS_LABELS, ROLE_LABELS } from './stateMachine'
 import { useCaseStore } from '../store/caseStore'
 
-export function createCase(formData: OnboardingFormData, session: UserSession): Case {
-  const segmentInfo = classify(formData)
-  const caseId = Date.now().toString(36) + Math.random().toString(36).slice(2, 7)
+const EMPTY_INTAKE: IntakeRecord = { status: 'not_started', data: {}, savedAt: 0 }
+
+function makeCaseId() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 7)
+}
+
+export function saveFirstIntakeDraft(
+  formData: Partial<OnboardingFormData>,
+  session: UserSession
+): Case {
+  const store = useCaseStore.getState()
+  const existing = store.findByEmail(session.email)
   const now = Date.now()
+
+  if (existing && existing.firstIntake.status === 'draft') {
+    store.updateCase(existing.id, {
+      customerName: formData.contactName ?? existing.customerName,
+      firstIntake: { status: 'draft', data: formData as Record<string, unknown>, savedAt: now },
+    })
+    return store.cases[existing.id]
+  }
+
+  const caseId = makeCaseId()
+  const segmentInfo = classify({
+    companyName: '', contactName: '', contactTitle: '', phone: '',
+    email: session.email, services: [], collectionCountries: [],
+    collectionOtherCountry: '', remittanceFrom: '', remittanceTo: '',
+    businessType: '', foundingCountry: '', monthlyVolume: '',
+    monthlyVolumeCurrency: 'USD', monthlyCount: '', referralSource: '',
+    additionalNote: '',
+    ...formData,
+  })
 
   const c: Case = {
     id: caseId,
@@ -15,11 +43,13 @@ export function createCase(formData: OnboardingFormData, session: UserSession): 
     updatedAt: now,
     status: 'INQUIRY_RECEIVED',
     customerId: session.userId,
-    customerName: formData.contactName,
-    customerEmail: formData.email,
+    customerName: formData.contactName ?? '',
+    customerEmail: formData.email ?? session.email,
     segmentInfo,
-    currentOwner: { role: 'CUSTOMER', name: formData.contactName },
-    documents: buildDocuments(caseId, segmentInfo),
+    currentOwner: { role: 'CUSTOMER', name: formData.contactName ?? '' },
+    firstIntake: { status: 'draft', data: formData as Record<string, unknown>, savedAt: now },
+    secondIntake: { ...EMPTY_INTAKE },
+    documents: [],
     messages: [],
     statusHistory: [
       {
@@ -28,12 +58,74 @@ export function createCase(formData: OnboardingFormData, session: UserSession): 
         previousStatus: null,
         newStatus: 'INQUIRY_RECEIVED',
         changedAt: now,
+        changedBy: { role: 'CUSTOMER', name: formData.contactName ?? '' },
+      },
+    ],
+  }
+
+  store.addCase(c)
+  return c
+}
+
+export function createCase(formData: OnboardingFormData, session: UserSession): Case {
+  const store = useCaseStore.getState()
+  const existing = store.findByEmail(session.email)
+  const now = Date.now()
+  const segmentInfo = classify(formData)
+
+  if (existing && existing.firstIntake.status === 'draft') {
+    const documents = buildDocuments(existing.id, segmentInfo)
+    store.updateCase(existing.id, {
+      status: 'DOCUMENT_SUBMISSION_REQUIRED',
+      customerName: formData.contactName,
+      segmentInfo,
+      currentOwner: { role: 'CUSTOMER', name: formData.contactName },
+      firstIntake: { status: 'submitted', data: formData as unknown as Record<string, unknown>, savedAt: now },
+      secondIntake: { ...EMPTY_INTAKE },
+      documents,
+      statusHistory: [
+        ...existing.statusHistory,
+        {
+          id: `hist_${now}`,
+          caseId: existing.id,
+          previousStatus: existing.status,
+          newStatus: 'DOCUMENT_SUBMISSION_REQUIRED',
+          changedAt: now,
+          changedBy: { role: 'CUSTOMER', name: formData.contactName },
+        },
+      ],
+    })
+    return store.cases[existing.id]
+  }
+
+  const caseId = makeCaseId()
+  const c: Case = {
+    id: caseId,
+    createdAt: now,
+    updatedAt: now,
+    status: 'DOCUMENT_SUBMISSION_REQUIRED',
+    customerId: session.userId,
+    customerName: formData.contactName,
+    customerEmail: formData.email,
+    segmentInfo,
+    currentOwner: { role: 'CUSTOMER', name: formData.contactName },
+    firstIntake: { status: 'submitted', data: formData as unknown as Record<string, unknown>, savedAt: now },
+    secondIntake: { ...EMPTY_INTAKE },
+    documents: buildDocuments(caseId, segmentInfo),
+    messages: [],
+    statusHistory: [
+      {
+        id: `hist_${now}`,
+        caseId,
+        previousStatus: null,
+        newStatus: 'DOCUMENT_SUBMISSION_REQUIRED',
+        changedAt: now,
         changedBy: { role: 'CUSTOMER', name: formData.contactName },
       },
     ],
   }
 
-  useCaseStore.getState().addCase(c)
+  store.addCase(c)
   return c
 }
 
@@ -80,6 +172,7 @@ export function transitionStatus(
 function resolveOwner(status: CaseStatus): { role: UserRole; name: string } {
   switch (status) {
     case 'DOCUMENT_SUBMISSION_REQUIRED': return { role: 'CUSTOMER', name: '고객' }
+    case 'REVISION_REQUESTED': return { role: 'CUSTOMER', name: '고객' }
     case 'SALES_REVIEW_REQUIRED': return { role: 'SALES', name: '영업팀' }
     case 'COMPLIANCE_REVIEW_REQUIRED': return { role: 'COMPLIANCE', name: '컴플라이언스팀' }
     case 'OPS_REVIEW_REQUIRED': return { role: 'OPS', name: '운영팀' }

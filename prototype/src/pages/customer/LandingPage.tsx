@@ -69,10 +69,10 @@ export default function LandingPage() {
     setSession({ userId: email, role: 'CUSTOMER', name: '', email })
 
     const existing = findByEmail(email)
-    if (existing) {
-      navigate(`/customer/case/${existing.id}`)
-    } else {
+    if (!existing || existing.firstIntake?.status !== 'submitted') {
       navigate('/customer/onboarding')
+    } else {
+      navigate(`/customer/case/${existing.id}`)
     }
   }
 

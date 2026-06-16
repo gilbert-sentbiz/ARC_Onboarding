@@ -12,12 +12,13 @@ import type { ServiceSegment } from '../../../types'
 interface Props {
   serviceSegments: ServiceSegment[]
   onComplete: (data: Record<string, unknown>) => void
+  onDraftSave?: (data: Record<string, unknown>) => void
 }
 
 type Errors = Record<string, string>
 const TOTAL_STEPS = 3
 
-export default function IndividualForm({ onComplete }: Props) {
+export default function IndividualForm({ onComplete, onDraftSave }: Props) {
   const [step, setStep] = useState(0)
   const [errors, setErrors] = useState<Errors>({})
 
@@ -94,24 +95,28 @@ export default function IndividualForm({ onComplete }: Props) {
     return Object.keys(e).length === 0
   }
 
+  function collectCurrentData(): Record<string, unknown> {
+    return {
+      bizName, bizRegNo, phone, industry, bizType, bizAddress, residence,
+      rep: { nameKr: repNameKr, nameEn: repNameEn, dob: repDob, gender: repGender, nationality: repNationality },
+      boSameAsRep,
+      bo: boSameAsRep === 'no' ? { nameKr: boNameKr, nameEn: boNameEn, dob: boDob, nationality: boNationality, residence: boResidence } : null,
+      txPurpose, txPurposeOther, isVASP, fundsSource, fundsSourceOther,
+    }
+  }
+
   function handleNext() {
     if (!validate()) return
     if (step < TOTAL_STEPS - 1) {
       setStep(s => s + 1)
       window.scrollTo({ top: 0, behavior: 'smooth' })
     } else {
-      onComplete({
-        bizName, bizRegNo, phone, industry, bizType, bizAddress, residence,
-        rep: { nameKr: repNameKr, nameEn: repNameEn, dob: repDob, gender: repGender, nationality: repNationality },
-        boSameAsRep,
-        bo: boSameAsRep === 'no' ? { nameKr: boNameKr, nameEn: boNameEn, dob: boDob, nationality: boNationality, residence: boResidence } : null,
-        txPurpose, txPurposeOther, isVASP, fundsSource, fundsSourceOther,
-      })
+      onComplete(collectCurrentData())
     }
   }
 
   return (
-    <FormShell step={step} totalSteps={TOTAL_STEPS} titles={['기본 정보', '실제 소유자 확인', '추가 확인사항']} onBack={() => step === 0 ? history.back() : setStep(s => s - 1)}>
+    <FormShell step={step} totalSteps={TOTAL_STEPS} titles={['기본 정보', '실제 소유자 확인', '추가 확인사항']} onBack={() => step === 0 ? history.back() : setStep(s => s - 1)} onDraftSave={onDraftSave ? () => onDraftSave(collectCurrentData()) : undefined}>
       {step === 0 && (
         <div className="flex flex-col gap-5">
           <Section label="사업자 정보">

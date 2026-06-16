@@ -20,7 +20,12 @@ const TRANSITIONS: Record<CaseStatus, TransitionRule[]> = {
   ],
   COMPLIANCE_REVIEW_REQUIRED: [
     { to: 'OPS_REVIEW_REQUIRED', allowedRoles: ['COMPLIANCE'] },
+    { to: 'REVISION_REQUESTED', allowedRoles: ['COMPLIANCE'] },
     { to: 'SALES_REVIEW_REQUIRED', allowedRoles: ['COMPLIANCE'] }, // 반려
+    { to: 'CLOSED', allowedRoles: ['COMPLIANCE'] },
+  ],
+  REVISION_REQUESTED: [
+    { to: 'COMPLIANCE_REVIEW_REQUIRED', allowedRoles: ['CUSTOMER', 'COMPLIANCE'] },
     { to: 'CLOSED', allowedRoles: ['COMPLIANCE'] },
   ],
   OPS_REVIEW_REQUIRED: [
@@ -49,6 +54,7 @@ export const STATUS_LABELS: Record<CaseStatus, string> = {
   DOCUMENT_SUBMISSION_REQUIRED: '서류 제출 대기',
   SALES_REVIEW_REQUIRED: '영업 검토',
   COMPLIANCE_REVIEW_REQUIRED: '컴플라이언스 검토',
+  REVISION_REQUESTED: '보완 요청',
   OPS_REVIEW_REQUIRED: '운영 검토',
   COMPLETED: '온보딩 완료',
   CLOSED: '종료',
@@ -60,6 +66,7 @@ export const STATUS_ORDER: CaseStatus[] = [
   'DOCUMENT_SUBMISSION_REQUIRED',
   'SALES_REVIEW_REQUIRED',
   'COMPLIANCE_REVIEW_REQUIRED',
+  'REVISION_REQUESTED',
   'OPS_REVIEW_REQUIRED',
   'COMPLETED',
   'CLOSED',

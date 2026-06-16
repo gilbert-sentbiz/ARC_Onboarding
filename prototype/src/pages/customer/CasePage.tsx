@@ -32,9 +32,9 @@ export default function CasePage() {
     )
   }
 
-  const hasIntake = !!c.intakeData
+  const hasIntake = c.secondIntake?.status === 'submitted'
   const hasDocSubmitted = c.documents.some(d => d.status !== 'NOT_REQUESTED')
-  const isUnderReview = ['COMPLIANCE_REVIEW_REQUIRED', 'OPS_REVIEW_REQUIRED'].includes(c.status)
+  const isUnderReview = ['SALES_REVIEW_REQUIRED', 'COMPLIANCE_REVIEW_REQUIRED', 'REVISION_REQUESTED', 'OPS_REVIEW_REQUIRED'].includes(c.status)
   const isDone = c.status === 'COMPLETED'
   const isClosed = c.status === 'CLOSED'
 
@@ -93,7 +93,9 @@ export default function CasePage() {
           <div className="pt-4 border-t border-sb-n100 grid grid-cols-2 gap-3">
             <div>
               <p className="text-[11px] text-sb-n400 uppercase tracking-[0.5px]">사업자 유형</p>
-              <p className="text-[13px] font-medium text-sb-n800 mt-0.5">{ENTITY_LABELS[c.segmentInfo.entitySegment]}</p>
+              <p className="text-[13px] font-medium text-sb-n800 mt-0.5">
+                {ENTITY_LABELS[((c.segmentInfo as unknown as Record<string, unknown>).entitySegment ?? (c.segmentInfo as unknown as Record<string, unknown>).customerType) as string] ?? '—'}
+              </p>
             </div>
             <div>
               <p className="text-[11px] text-sb-n400 uppercase tracking-[0.5px]">컴플라이언스 등급</p>

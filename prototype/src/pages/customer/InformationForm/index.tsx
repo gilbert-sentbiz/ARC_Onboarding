@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useCaseStore } from '../../../store/caseStore'
+import type { ServiceSegment } from '../../../types'
 import CorporateForm from './CorporateForm'
 import IndividualForm from './IndividualForm'
 import FIForm from './FIForm'
@@ -26,13 +27,22 @@ export default function InformationForm() {
     )
   }
 
-  const { entitySegment, serviceSegments = [] } = c.segmentInfo
+  const raw = c.segmentInfo as unknown as Record<string, unknown>
+  const entitySegment = (raw.entitySegment ?? raw.customerType) as string | undefined
+  const serviceSegments = (raw.serviceSegments ?? []) as ServiceSegment[]
   const needsKRW = serviceSegments.includes('KRW Collection')
   const needsVND = serviceSegments.includes('VND Collection')
 
+  function saveDraft(partial: Record<string, unknown>) {
+    if (!id) return
+    updateCase(id, {
+      secondIntake: { status: 'draft', data: partial, savedAt: Date.now() },
+    })
+  }
+
   function saveAndNavigate(data: Record<string, unknown>) {
     if (!id) return
-    updateCase(id, { intakeData: data })
+    updateCase(id, { secondIntake: { status: 'submitted', data, savedAt: Date.now() } })
     navigate(`/customer/case/${id}`)
   }
 
@@ -56,29 +66,36 @@ export default function InformationForm() {
   }
 
   if (stage === 'krw')
-    return <KRWCollectionSection onComplete={handleKRWComplete} onBack={() => setStage('entity')} />
+    return (
+      <KRWCollectionSection
+        onComplete={handleKRWComplete}
+        onBack={() => setStage('entity')}
+        onDraftSave={(d) => saveDraft({ ...accumulated, krwCollection: d })}
+      />
+    )
 
   if (stage === 'vnd')
     return (
       <VNDCollectionSection
         onComplete={handleVNDComplete}
         onBack={() => { needsKRW ? setStage('krw') : setStage('entity') }}
+        onDraftSave={(d) => saveDraft({ ...accumulated, vndCollection: d })}
       />
     )
 
   // entity stage
-  const entityProps = { serviceSegments, onComplete: handleEntityComplete }
+  const entityProps = {
+    serviceSegments,
+    onDraftSave: (d: Record<string, unknown>) => saveDraft({ entity: d }),
+  }
 
-  if (entitySegment === 'SentBiz Corporate') return <CorporateForm {...entityProps} />
-  if (entitySegment === 'SentBiz Individual') return <IndividualForm {...entityProps} />
-  if (entitySegment === 'FI') return <FIForm {...entityProps} />
+  if (entitySegment === 'SentBiz Corporate')
+    return <CorporateForm {...entityProps} onComplete={handleEntityComplete} />
+  if (entitySegment === 'SentBiz Individual')
+    return <IndividualForm {...entityProps} onComplete={handleEntityComplete} />
+  if (entitySegment === 'FI')
+    return <FIForm {...entityProps} onComplete={handleEntityComplete} />
 
-  return (
-    <div className="min-h-screen bg-sb-n50 flex items-center justify-center px-4">
-      <div className="bg-white rounded-[16px] p-8 max-w-[400px] text-center" style={{ boxShadow: 'var(--shadow-200)' }}>
-        <p className="text-[16px] font-semibold text-sb-n900 mb-2">세션이 만료되었습니다</p>
-        <p className="text-[14px] text-sb-n500">1차 설문을 다시 제출해주세요.</p>
-      </div>
-    </div>
-  )
+  navigate('/customer/onboarding', { replace: true })
+  return null
 }

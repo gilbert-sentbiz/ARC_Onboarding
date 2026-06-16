@@ -13,6 +13,7 @@ import type { ServiceSegment } from '../../../types'
 interface Props {
   serviceSegments: ServiceSegment[]
   onComplete: (data: Record<string, unknown>) => void
+  onDraftSave?: (data: Record<string, unknown>) => void
 }
 
 type Errors = Record<string, string>
@@ -21,7 +22,7 @@ const TOTAL_STEPS = 4
 interface PersonEntry { nameKr: string; nameEn: string; nationality: string; dob: string; passportNo: string; extra?: string }
 const BLANK_PERSON: PersonEntry = { nameKr: '', nameEn: '', nationality: '', dob: '', passportNo: '' }
 
-export default function FIForm({ onComplete }: Props) {
+export default function FIForm({ onComplete, onDraftSave }: Props) {
   const [step, setStep] = useState(0)
   const [errors, setErrors] = useState<Errors>({})
 
@@ -131,26 +132,30 @@ export default function FIForm({ onComplete }: Props) {
     return Object.keys(e).length === 0
   }
 
+  function collectCurrentData(): Record<string, unknown> {
+    return {
+      legalName, legalForm, incorpDate, incorpCountry, regNo, tradeName, website,
+      regAddress, principalAddress, domesticBranches, foreignBranches,
+      licenseAuthority, licenseType, licenseIssued, licenseExpiry,
+      auditors, taxStatus, repName, repDob, repPhone, repEmail, industryType,
+      services, collectionCurrencies, txPurposes, originCountries,
+      hasUpstreamFI, upstreamLayers, hasUnlicensedFI, upstreamOriginCountries, isVASP,
+      fundsSource, fundsOther,
+      parentName, parentAddress, parentRelationship, parentJurisdiction,
+      parentListed, parentListedWhere, owners, directors, hasBankruptcy, bankruptcyDetails,
+      products, noShellPolicy, fatfPresence,
+      amlPenalty, amlPenaltyDetails, criminalProceedings, criminalDetails,
+      pendingLitigation, litigationDetails, policies, training,
+    }
+  }
+
   function handleNext() {
     if (!validate()) return
     if (step < TOTAL_STEPS - 1) {
       setStep(s => s + 1)
       window.scrollTo({ top: 0, behavior: 'smooth' })
     } else {
-      onComplete({
-        legalName, legalForm, incorpDate, incorpCountry, regNo, tradeName, website,
-        regAddress, principalAddress, domesticBranches, foreignBranches,
-        licenseAuthority, licenseType, licenseIssued, licenseExpiry,
-        auditors, taxStatus, repName, repDob, repPhone, repEmail, industryType,
-        services, collectionCurrencies, txPurposes, originCountries,
-        hasUpstreamFI, upstreamLayers, hasUnlicensedFI, upstreamOriginCountries, isVASP,
-        fundsSource, fundsOther,
-        parentName, parentAddress, parentRelationship, parentJurisdiction,
-        parentListed, parentListedWhere, owners, directors, hasBankruptcy, bankruptcyDetails,
-        products, noShellPolicy, fatfPresence,
-        amlPenalty, amlPenaltyDetails, criminalProceedings, criminalDetails,
-        pendingLitigation, litigationDetails, policies, training,
-      })
+      onComplete(collectCurrentData())
     }
   }
 
@@ -162,6 +167,7 @@ export default function FIForm({ onComplete }: Props) {
       totalSteps={TOTAL_STEPS}
       titles={['기본 정보 (Section A)', '서비스 및 거래 (Section B)', '자금원천 및 소유구조 (Section C·D)', '법률·컴플라이언스 (Section E·F)']}
       onBack={() => step === 0 ? history.back() : setStep(s => s - 1)}
+      onDraftSave={onDraftSave ? () => onDraftSave(collectCurrentData()) : undefined}
     >
       {/* ── Step 0: Section A ── */}
       {step === 0 && (

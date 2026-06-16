@@ -3,9 +3,18 @@ export type CaseStatus =
   | 'DOCUMENT_SUBMISSION_REQUIRED'
   | 'SALES_REVIEW_REQUIRED'
   | 'COMPLIANCE_REVIEW_REQUIRED'
+  | 'REVISION_REQUESTED'
   | 'OPS_REVIEW_REQUIRED'
   | 'COMPLETED'
   | 'CLOSED'
+
+export type IntakeStatus = 'not_started' | 'draft' | 'submitted'
+
+export interface IntakeRecord {
+  status: IntakeStatus
+  data: Record<string, unknown>
+  savedAt: number
+}
 
 export type DocumentStatus =
   | 'NOT_REQUESTED'
@@ -119,7 +128,8 @@ export interface Case {
   customerEmail: string
   segmentInfo: SegmentInfo
   currentOwner: { role: UserRole; name: string }
-  intakeData?: Record<string, unknown>
+  firstIntake: IntakeRecord
+  secondIntake: IntakeRecord
   documents: Document[]
   messages: Message[]
   statusHistory: StatusChangeHistory[]

@@ -15,7 +15,8 @@ import Textarea from '../../components/ui/Textarea'
 import Select from '../../components/ui/Select'
 import Button from '../../components/ui/Button'
 import { useSessionStore } from '../../store/sessionStore'
-import { createCase } from '../../services/caseService'
+import { createCase, saveFirstIntakeDraft } from '../../services/caseService'
+import { useCaseStore } from '../../store/caseStore'
 
 interface FormData {
   companyName: string
@@ -148,9 +149,22 @@ export default function OnboardingForm() {
   const navigate = useNavigate()
   const session = useSessionStore((s) => s.session)
 
+  const existingCase = useCaseStore((s) => {
+    if (!session?.email) return null
+    return Object.values(s.cases).find(c => c.customerEmail === session.email) ?? null
+  })
+  const draftData = existingCase?.firstIntake?.status === 'draft'
+    ? existingCase.firstIntake.data as Partial<FormData>
+    : null
+
   const [step, setStep] = useState(0)
-  const [data, setData] = useState<FormData>({ ...INITIAL, email: session?.email ?? '' })
+  const [data, setData] = useState<FormData>(() =>
+    draftData
+      ? { ...INITIAL, ...draftData, agreed: false }
+      : { ...INITIAL, email: session?.email ?? '' }
+  )
   const [errors, setErrors] = useState<Errors>({})
+  const [draftSaved, setDraftSaved] = useState(false)
 
   function set<K extends keyof FormData>(key: K, value: FormData[K]) {
     setData((prev) => ({ ...prev, [key]: value }))
@@ -220,6 +234,13 @@ export default function OnboardingForm() {
     }
   }
 
+  function handleDraftSave() {
+    if (!session) return
+    saveFirstIntakeDraft(data, session)
+    setDraftSaved(true)
+    setTimeout(() => setDraftSaved(false), 2000)
+  }
+
   function handleSubmit() {
     const newCase = createCase(data, session!)
     navigate(`/customer/case/${newCase.id}`)
@@ -238,7 +259,16 @@ export default function OnboardingForm() {
             <ArrowLeft size={16} />
             {step === 0 ? '처음으로' : '이전'}
           </button>
-          <span className="text-[13px] font-medium text-sb-n500">{step + 1} / 2</span>
+          <div className="flex items-center gap-4">
+            <button
+              type="button"
+              onClick={handleDraftSave}
+              className="text-[13px] text-sb-brand hover:text-sb-brand-dark transition-colors font-medium"
+            >
+              {draftSaved ? '저장됨 ✓' : '임시저장'}
+            </button>
+            <span className="text-[13px] font-medium text-sb-n500">{step + 1} / 2</span>
+          </div>
         </div>
         <div className="w-full h-1 bg-sb-n200 rounded-full overflow-hidden">
           <div
