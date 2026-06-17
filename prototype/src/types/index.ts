@@ -134,3 +134,26 @@ export interface Case {
   messages: Message[]
   statusHistory: StatusChangeHistory[]
 }
+
+export interface InternalStaff {
+  email: string
+  password: string
+  role: 'SALES' | 'COMPLIANCE' | 'OPS'
+  name: string
+}
+
+export interface InternalNote {
+  id: string
+  caseId: string
+  author: { role: UserRole; name: string }
+  text: string
+  createdAt: number
+}
+
+export interface SalesAction {
+  id: string
+  caseId: string
+  author: { name: string; email: string }
+  text: string
+  createdAt: number
+}

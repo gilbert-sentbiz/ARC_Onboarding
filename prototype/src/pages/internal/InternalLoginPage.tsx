@@ -1,35 +1,42 @@
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Briefcase, ShieldCheck, Headset } from '@phosphor-icons/react'
+import { Envelope, Lock, Eye, EyeSlash, ArrowRight } from '@phosphor-icons/react'
+import Button from '../../components/ui/Button'
+import Input from '../../components/ui/Input'
 import { useSessionStore } from '../../store/sessionStore'
-import type { UserRole } from '../../types'
-
-const ROLES: { role: UserRole; label: string; desc: string; icon: React.ReactNode }[] = [
-  {
-    role: 'SALES',
-    label: '영업 담당자',
-    desc: '케이스 분류 및 인계',
-    icon: <Briefcase size={22} weight="fill" />,
-  },
-  {
-    role: 'COMPLIANCE',
-    label: '컴플라이언스 담당자',
-    desc: '서류 검토 및 승인/드롭',
-    icon: <ShieldCheck size={22} weight="fill" />,
-  },
-  {
-    role: 'OPS',
-    label: '운영 담당자',
-    desc: '승인 케이스 확인 및 계정 안내',
-    icon: <Headset size={22} weight="fill" />,
-  },
-]
+import { useInternalStaffStore } from '../../store/internalStaffStore'
 
 export default function InternalLoginPage() {
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
+  const [error, setError] = useState('')
+
   const navigate = useNavigate()
   const setSession = useSessionStore((s) => s.setSession)
+  const login = useInternalStaffStore((s) => s.login)
 
-  function selectRole(role: UserRole, label: string) {
-    setSession({ userId: `${role}_demo`, role, name: label, email: `${role.toLowerCase()}@sentbe.com` })
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setError('')
+
+    if (!email || !password) {
+      setError('이메일과 비밀번호를 모두 입력해주세요.')
+      return
+    }
+
+    const staff = login(email.trim().toLowerCase(), password)
+    if (!staff) {
+      setError('이메일 또는 비밀번호가 올바르지 않습니다.')
+      return
+    }
+
+    setSession({
+      userId: staff.email,
+      role: staff.role,
+      name: staff.name,
+      email: staff.email,
+    })
     navigate('/internal/dashboard')
   }
 
@@ -39,27 +46,74 @@ export default function InternalLoginPage() {
         <div className="flex flex-col items-center gap-3 text-center">
           <img src="/ARC_Onboarding/logos/wordmark-navy.svg" alt="SentBiz" className="h-7 w-auto" />
           <div className="flex flex-col gap-1">
-            <h2 className="text-[20px] leading-[30px] font-bold text-sb-n900">내부 담당자 접속</h2>
-            <p className="text-[14px] leading-[20px] text-sb-n500">역할을 선택하세요</p>
+            <h2 className="text-[20px] leading-[30px] font-bold text-sb-n900">내부 담당자 로그인</h2>
+            <p className="text-[14px] leading-[20px] text-sb-n500">계정 이메일과 비밀번호를 입력하세요</p>
           </div>
         </div>
 
-        <div className="flex flex-col gap-3">
-          {ROLES.map(({ role, label, desc, icon }) => (
-            <button
-              key={role}
-              onClick={() => selectRole(role, label)}
-              className="flex items-center gap-4 bg-white border border-sb-n200 rounded-[12px] px-5 py-4 text-left hover:border-sb-brand hover:shadow-sb-100 transition-all duration-[120ms] group"
-            >
-              <div className="w-10 h-10 rounded-[8px] bg-sb-blue-100 flex items-center justify-center text-sb-brand group-hover:bg-sb-brand group-hover:text-white transition-colors duration-[120ms] flex-shrink-0">
-                {icon}
-              </div>
-              <div className="flex flex-col gap-0.5">
-                <p className="text-[14px] font-semibold text-sb-n800 leading-[20px]">{label}</p>
-                <p className="text-[12px] text-sb-n500 leading-[18px]">{desc}</p>
-              </div>
-            </button>
-          ))}
+        <div className="bg-white rounded-[16px] p-6 flex flex-col gap-5" style={{ boxShadow: 'var(--shadow-200)' }}>
+          <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-4">
+            <Input
+              label="이메일"
+              type="email"
+              placeholder="이메일 주소"
+              value={email}
+              onChange={(e) => { setEmail(e.target.value); setError('') }}
+              iconLeft={<Envelope size={16} />}
+              autoComplete="email"
+              autoFocus
+            />
+
+            <Input
+              label="비밀번호"
+              type={showPassword ? 'text' : 'password'}
+              placeholder="비밀번호"
+              value={password}
+              onChange={(e) => { setPassword(e.target.value); setError('') }}
+              iconLeft={<Lock size={16} />}
+              iconRight={
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((v) => !v)}
+                  className="flex items-center text-sb-n400 hover:text-sb-n600 transition-colors"
+                  tabIndex={-1}
+                >
+                  {showPassword ? <EyeSlash size={16} /> : <Eye size={16} />}
+                </button>
+              }
+              autoComplete="current-password"
+            />
+
+            {error && (
+              <p className="text-[13px] text-sb-negative leading-[18px]">{error}</p>
+            )}
+
+            <Button type="submit" fullWidth size="lg">
+              로그인
+              <ArrowRight size={16} weight="bold" />
+            </Button>
+          </form>
+
+          {/* Demo account hint */}
+          <div className="border-t border-sb-n100 pt-4">
+            <p className="text-[12px] text-sb-n400 mb-2">데모 계정 (비밀번호: sentbe1234)</p>
+            <div className="flex flex-col gap-1">
+              {[
+                { email: 'sales@sentbe.com', label: '영업' },
+                { email: 'compliance@sentbe.com', label: '컴플라이언스' },
+                { email: 'ops@sentbe.com', label: '운영' },
+              ].map((d) => (
+                <button
+                  key={d.email}
+                  type="button"
+                  onClick={() => { setEmail(d.email); setPassword('sentbe1234') }}
+                  className="text-left text-[12px] text-sb-brand hover:underline"
+                >
+                  {d.label} — {d.email}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
 
         <button

@@ -7,6 +7,9 @@ import SecondIntakeReview from './pages/customer/SecondIntakeReview'
 import DocumentUpload from './pages/customer/DocumentUpload'
 import CasePage from './pages/customer/CasePage'
 import InternalLoginPage from './pages/internal/InternalLoginPage'
+import InternalDashboard from './pages/internal/InternalDashboard'
+import InternalCaseDetail from './pages/internal/InternalCaseDetail'
+import InternalCRM from './pages/internal/InternalCRM'
 
 export default function App() {
   return (
@@ -20,6 +23,9 @@ export default function App() {
         <Route path="/customer/case/:id/documents" element={<DocumentUpload />} />
         <Route path="/customer/case/:id" element={<CasePage />} />
         <Route path="/internal" element={<InternalLoginPage />} />
+        <Route path="/internal/dashboard" element={<InternalDashboard />} />
+        <Route path="/internal/case/:id" element={<InternalCaseDetail />} />
+        <Route path="/internal/crm" element={<InternalCRM />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </HashRouter>
