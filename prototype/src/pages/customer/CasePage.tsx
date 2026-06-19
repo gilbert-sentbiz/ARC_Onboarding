@@ -9,6 +9,7 @@ import {
   ArrowRight,
   CheckFat,
   XCircle,
+  WarningCircle,
 } from '@phosphor-icons/react'
 import { useCaseStore } from '../../store/caseStore'
 import { useSessionStore } from '../../store/sessionStore'
@@ -262,6 +263,29 @@ export default function CasePage() {
             <div>
               <p className="text-[14px] font-semibold text-sb-brand mb-0.5">{banner.title}</p>
               <p className="text-[13px] text-sb-n700">{banner.desc}</p>
+            </div>
+          </div>
+        )}
+
+        {/* ── 서류 보완 요청 배너 ── */}
+        {c.status === 'REVISION_REQUESTED' && (
+          <div className="rounded-[12px] border border-amber-300 bg-amber-50 p-4 flex items-start gap-3">
+            <WarningCircle size={20} weight="fill" className="text-amber-500 flex-shrink-0 mt-0.5" />
+            <div className="flex flex-col gap-2 flex-1">
+              <div>
+                <p className="text-[14px] font-semibold text-amber-700 mb-0.5">서류 보완이 필요합니다</p>
+                <p className="text-[13px] text-sb-n700">
+                  컴플라이언스 검토 결과 일부 서류의 보완이 요청되었습니다. 서류 업로드 화면에서 보완 사유를 확인하고 재제출해주세요.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => navigate(`/customer/case/${id}/documents`)}
+                className="self-start flex items-center gap-1.5 px-3 py-2 rounded-[8px] text-[13px] font-medium bg-amber-500 text-white hover:bg-amber-600 transition-colors"
+              >
+                서류 보완하러 가기
+                <ArrowRight size={15} />
+              </button>
             </div>
           </div>
         )}
