@@ -20,20 +20,30 @@ export function saveFirstIntakeDraft(
 
   if (existing && existing.firstIntake.status === 'draft') {
     const segmentInfo = classify({
-      companyName: '', contactName: '', contactTitle: '', phone: '',
-      email: session.email, services: [], collectionCountries: [],
-      collectionOtherCountry: '', remittanceFrom: '', remittanceTo: '',
-      businessType: '', foundingCountry: '', monthlyVolume: '',
-      monthlyVolumeCurrency: 'USD', monthlyCount: '', referralSource: '',
-      additionalNote: '',
-      ...formData,
+      companyName: formData.companyName ?? '',
+      contactName: formData.contactName ?? '',
+      contactTitle: formData.contactTitle ?? '',
+      phone: formData.phone ?? '',
+      email: session.email,
+      services: Array.isArray(formData.services) ? formData.services : [],
+      collectionCountries: Array.isArray(formData.collectionCountries) ? formData.collectionCountries : [],
+      collectionOtherCountry: formData.collectionOtherCountry ?? '',
+      remittanceFrom: formData.remittanceFrom ?? '',
+      remittanceTo: formData.remittanceTo ?? '',
+      businessType: formData.businessType ?? '',
+      foundingCountry: formData.foundingCountry ?? '',
+      monthlyVolume: formData.monthlyVolume ?? '',
+      monthlyVolumeCurrency: formData.monthlyVolumeCurrency ?? 'USD',
+      monthlyCount: formData.monthlyCount ?? '',
+      referralSource: formData.referralSource ?? '',
+      additionalNote: formData.additionalNote ?? '',
     })
     store.updateCase(existing.id, {
       customerName: formData.contactName ?? existing.customerName,
       segmentInfo,
       firstIntake: { status: 'draft', data: formData as Record<string, unknown>, savedAt: now },
     })
-    return store.cases[existing.id]
+    return useCaseStore.getState().cases[existing.id]
   }
 
   const caseId = makeCaseId()
