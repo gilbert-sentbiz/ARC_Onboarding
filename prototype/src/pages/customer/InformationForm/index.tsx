@@ -70,6 +70,7 @@ export default function InformationForm() {
   if (stage === 'krw')
     return (
       <KRWCollectionSection
+        initialData={(accumulated.krwCollection as Record<string, unknown>) ?? {}}
         onComplete={handleKRWComplete}
         onBack={() => setStage('entity')}
         onDraftSave={(d) => saveDraft({ ...accumulated, krwCollection: d })}
@@ -79,6 +80,7 @@ export default function InformationForm() {
   if (stage === 'vnd')
     return (
       <VNDCollectionSection
+        initialData={(accumulated.vndCollection as Record<string, unknown>) ?? {}}
         onComplete={handleVNDComplete}
         onBack={() => { needsKRW ? setStage('krw') : setStage('entity') }}
         onDraftSave={(d) => saveDraft({ ...accumulated, vndCollection: d })}
@@ -88,6 +90,7 @@ export default function InformationForm() {
   // entity stage
   const entityProps = {
     serviceSegments,
+    initialData: (accumulated.entity as Record<string, unknown>) ?? {},
     onDraftSave: (d: Record<string, unknown>) => saveDraft({ entity: d }),
   }
 

@@ -20,7 +20,7 @@ export const useCaseStore = create<CaseState>()(
         })),
       findByEmail: (email) => {
         const all = Object.values(get().cases)
-        return all.find((c) => c.customerEmail === email) ?? null
+        return all.find((c) => c.customerEmail === email && c.status !== 'CLOSED') ?? null
       },
     }),
     { name: 'cases' }

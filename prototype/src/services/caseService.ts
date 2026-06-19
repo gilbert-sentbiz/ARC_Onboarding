@@ -19,8 +19,18 @@ export function saveFirstIntakeDraft(
   const now = Date.now()
 
   if (existing && existing.firstIntake.status === 'draft') {
+    const segmentInfo = classify({
+      companyName: '', contactName: '', contactTitle: '', phone: '',
+      email: session.email, services: [], collectionCountries: [],
+      collectionOtherCountry: '', remittanceFrom: '', remittanceTo: '',
+      businessType: '', foundingCountry: '', monthlyVolume: '',
+      monthlyVolumeCurrency: 'USD', monthlyCount: '', referralSource: '',
+      additionalNote: '',
+      ...formData,
+    })
     store.updateCase(existing.id, {
       customerName: formData.contactName ?? existing.customerName,
+      segmentInfo,
       firstIntake: { status: 'draft', data: formData as Record<string, unknown>, savedAt: now },
     })
     return store.cases[existing.id]

@@ -8,7 +8,7 @@ function isKorea(country: string): boolean {
 
 export function classifyEntity(businessType: string, foundingCountry: string): EntitySegment {
   if (businessType === 'financial') return 'FI'
-  if (!isKorea(foundingCountry)) return 'FI'
+  if (foundingCountry && !isKorea(foundingCountry)) return 'FI'
   return businessType === 'corporation' ? 'SentBiz Corporate' : 'SentBiz Individual'
 }
 

@@ -11,6 +11,7 @@ import type { ServiceSegment } from '../../../types'
 
 interface Props {
   serviceSegments: ServiceSegment[]
+  initialData?: Record<string, unknown>
   onComplete: (data: Record<string, unknown>) => void
   onDraftSave?: (data: Record<string, unknown>) => void
 }
@@ -18,38 +19,42 @@ interface Props {
 type Errors = Record<string, string>
 const TOTAL_STEPS = 3
 
-export default function IndividualForm({ onComplete, onDraftSave }: Props) {
+export default function IndividualForm({ onComplete, onDraftSave, initialData }: Props) {
   const [step, setStep] = useState(0)
   const [errors, setErrors] = useState<Errors>({})
 
+  const d = initialData ?? {}
+  const rep = (d.rep as Record<string, string>) ?? {}
+  const bo = (d.bo as Record<string, string>) ?? {}
+
   // Section 1
-  const [bizName, setBizName] = useState('')
-  const [bizRegNo, setBizRegNo] = useState('')
-  const [phone, setPhone] = useState('')
-  const [industry, setIndustry] = useState('')
-  const [bizType, setBizType] = useState('')
-  const [bizAddress, setBizAddress] = useState('')
-  const [residence, setResidence] = useState('')
-  const [repNameKr, setRepNameKr] = useState('')
-  const [repNameEn, setRepNameEn] = useState('')
-  const [repDob, setRepDob] = useState('')
-  const [repGender, setRepGender] = useState('')
-  const [repNationality, setRepNationality] = useState('')
+  const [bizName, setBizName] = useState((d.bizName as string) ?? '')
+  const [bizRegNo, setBizRegNo] = useState((d.bizRegNo as string) ?? '')
+  const [phone, setPhone] = useState((d.phone as string) ?? '')
+  const [industry, setIndustry] = useState((d.industry as string) ?? '')
+  const [bizType, setBizType] = useState((d.bizType as string) ?? '')
+  const [bizAddress, setBizAddress] = useState((d.bizAddress as string) ?? '')
+  const [residence, setResidence] = useState((d.residence as string) ?? '')
+  const [repNameKr, setRepNameKr] = useState(rep.nameKr ?? '')
+  const [repNameEn, setRepNameEn] = useState(rep.nameEn ?? '')
+  const [repDob, setRepDob] = useState(rep.dob ?? '')
+  const [repGender, setRepGender] = useState(rep.gender ?? '')
+  const [repNationality, setRepNationality] = useState(rep.nationality ?? '')
 
   // Section 2
-  const [boSameAsRep, setBoSameAsRep] = useState('')
-  const [boNameKr, setBoNameKr] = useState('')
-  const [boNameEn, setBoNameEn] = useState('')
-  const [boDob, setBoDob] = useState('')
-  const [boNationality, setBoNationality] = useState('')
-  const [boResidence, setBoResidence] = useState('')
+  const [boSameAsRep, setBoSameAsRep] = useState((d.boSameAsRep as string) ?? '')
+  const [boNameKr, setBoNameKr] = useState(bo.nameKr ?? '')
+  const [boNameEn, setBoNameEn] = useState(bo.nameEn ?? '')
+  const [boDob, setBoDob] = useState(bo.dob ?? '')
+  const [boNationality, setBoNationality] = useState(bo.nationality ?? '')
+  const [boResidence, setBoResidence] = useState(bo.residence ?? '')
 
   // Section 3
-  const [txPurpose, setTxPurpose] = useState('')
-  const [txPurposeOther, setTxPurposeOther] = useState('')
-  const [isVASP, setIsVASP] = useState('')
-  const [fundsSource, setFundsSource] = useState<string[]>([])
-  const [fundsSourceOther, setFundsSourceOther] = useState('')
+  const [txPurpose, setTxPurpose] = useState((d.txPurpose as string) ?? '')
+  const [txPurposeOther, setTxPurposeOther] = useState((d.txPurposeOther as string) ?? '')
+  const [isVASP, setIsVASP] = useState((d.isVASP as string) ?? '')
+  const [fundsSource, setFundsSource] = useState<string[]>((d.fundsSource as string[]) ?? [])
+  const [fundsSourceOther, setFundsSourceOther] = useState((d.fundsSourceOther as string) ?? '')
 
   function formatBizRegNo(v: string) {
     const d = v.replace(/\D/g, '').slice(0, 10)

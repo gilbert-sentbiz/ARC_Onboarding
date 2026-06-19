@@ -12,6 +12,7 @@ import type { ServiceSegment } from '../../../types'
 
 interface Props {
   serviceSegments: ServiceSegment[]
+  initialData?: Record<string, unknown>
   onComplete: (data: Record<string, unknown>) => void
   onDraftSave?: (data: Record<string, unknown>) => void
 }
@@ -22,76 +23,78 @@ const TOTAL_STEPS = 4
 interface PersonEntry { nameKr: string; nameEn: string; nationality: string; dob: string; passportNo: string; extra?: string }
 const BLANK_PERSON: PersonEntry = { nameKr: '', nameEn: '', nationality: '', dob: '', passportNo: '' }
 
-export default function FIForm({ onComplete, onDraftSave }: Props) {
+export default function FIForm({ onComplete, onDraftSave, initialData }: Props) {
   const [step, setStep] = useState(0)
   const [errors, setErrors] = useState<Errors>({})
 
+  const d = initialData ?? {}
+
   // Section A — Basic Info
-  const [legalName, setLegalName] = useState('')
-  const [legalForm, setLegalForm] = useState('')
-  const [incorpDate, setIncorpDate] = useState('')
-  const [incorpCountry, setIncorpCountry] = useState('')
-  const [regNo, setRegNo] = useState('')
-  const [tradeName, setTradeName] = useState('')
-  const [website, setWebsite] = useState('')
-  const [regAddress, setRegAddress] = useState('')
-  const [principalAddress, setPrincipalAddress] = useState('')
-  const [domesticBranches, setDomesticBranches] = useState('')
-  const [foreignBranches, setForeignBranches] = useState('')
-  const [licenseAuthority, setLicenseAuthority] = useState('')
-  const [licenseType, setLicenseType] = useState('')
-  const [licenseIssued, setLicenseIssued] = useState('')
-  const [licenseExpiry, setLicenseExpiry] = useState('')
-  const [auditors, setAuditors] = useState('')
-  const [taxStatus, setTaxStatus] = useState('')
-  const [repName, setRepName] = useState('')
-  const [repDob, setRepDob] = useState('')
-  const [repPhone, setRepPhone] = useState('')
-  const [repEmail, setRepEmail] = useState('')
-  const [industryType, setIndustryType] = useState('')
+  const [legalName, setLegalName] = useState((d.legalName as string) ?? '')
+  const [legalForm, setLegalForm] = useState((d.legalForm as string) ?? '')
+  const [incorpDate, setIncorpDate] = useState((d.incorpDate as string) ?? '')
+  const [incorpCountry, setIncorpCountry] = useState((d.incorpCountry as string) ?? '')
+  const [regNo, setRegNo] = useState((d.regNo as string) ?? '')
+  const [tradeName, setTradeName] = useState((d.tradeName as string) ?? '')
+  const [website, setWebsite] = useState((d.website as string) ?? '')
+  const [regAddress, setRegAddress] = useState((d.regAddress as string) ?? '')
+  const [principalAddress, setPrincipalAddress] = useState((d.principalAddress as string) ?? '')
+  const [domesticBranches, setDomesticBranches] = useState((d.domesticBranches as string) ?? '')
+  const [foreignBranches, setForeignBranches] = useState((d.foreignBranches as string) ?? '')
+  const [licenseAuthority, setLicenseAuthority] = useState((d.licenseAuthority as string) ?? '')
+  const [licenseType, setLicenseType] = useState((d.licenseType as string) ?? '')
+  const [licenseIssued, setLicenseIssued] = useState((d.licenseIssued as string) ?? '')
+  const [licenseExpiry, setLicenseExpiry] = useState((d.licenseExpiry as string) ?? '')
+  const [auditors, setAuditors] = useState((d.auditors as string) ?? '')
+  const [taxStatus, setTaxStatus] = useState((d.taxStatus as string) ?? '')
+  const [repName, setRepName] = useState((d.repName as string) ?? '')
+  const [repDob, setRepDob] = useState((d.repDob as string) ?? '')
+  const [repPhone, setRepPhone] = useState((d.repPhone as string) ?? '')
+  const [repEmail, setRepEmail] = useState((d.repEmail as string) ?? '')
+  const [industryType, setIndustryType] = useState((d.industryType as string) ?? '')
 
   // Section B — Services
-  const [services, setServices] = useState<string[]>([])
-  const [collectionCurrencies, setCollectionCurrencies] = useState<string[]>([])
-  const [txPurposes, setTxPurposes] = useState('')
-  const [originCountries, setOriginCountries] = useState('')
-  const [hasUpstreamFI, setHasUpstreamFI] = useState('')
-  const [upstreamLayers, setUpstreamLayers] = useState('')
-  const [hasUnlicensedFI, setHasUnlicensedFI] = useState('')
-  const [upstreamOriginCountries, setUpstreamOriginCountries] = useState('')
-  const [isVASP, setIsVASP] = useState('')
+  const [services, setServices] = useState<string[]>((d.services as string[]) ?? [])
+  const [collectionCurrencies, setCollectionCurrencies] = useState<string[]>((d.collectionCurrencies as string[]) ?? [])
+  const [txPurposes, setTxPurposes] = useState((d.txPurposes as string) ?? '')
+  const [originCountries, setOriginCountries] = useState((d.originCountries as string) ?? '')
+  const [hasUpstreamFI, setHasUpstreamFI] = useState((d.hasUpstreamFI as string) ?? '')
+  const [upstreamLayers, setUpstreamLayers] = useState((d.upstreamLayers as string) ?? '')
+  const [hasUnlicensedFI, setHasUnlicensedFI] = useState((d.hasUnlicensedFI as string) ?? '')
+  const [upstreamOriginCountries, setUpstreamOriginCountries] = useState((d.upstreamOriginCountries as string) ?? '')
+  const [isVASP, setIsVASP] = useState((d.isVASP as string) ?? '')
 
   // Section C — Source of Funds
-  const [fundsSource, setFundsSource] = useState<string[]>([])
-  const [fundsOther, setFundsOther] = useState('')
+  const [fundsSource, setFundsSource] = useState<string[]>((d.fundsSource as string[]) ?? [])
+  const [fundsOther, setFundsOther] = useState((d.fundsOther as string) ?? '')
 
   // Section D — Ownership
-  const [parentName, setParentName] = useState('')
-  const [parentAddress, setParentAddress] = useState('')
-  const [parentRelationship, setParentRelationship] = useState('')
-  const [parentJurisdiction, setParentJurisdiction] = useState('')
-  const [parentListed, setParentListed] = useState('')
-  const [parentListedWhere, setParentListedWhere] = useState('')
-  const [owners, setOwners] = useState<PersonEntry[]>([{ ...BLANK_PERSON, extra: '' }])
-  const [directors, setDirectors] = useState<PersonEntry[]>([{ ...BLANK_PERSON, extra: '' }])
-  const [hasBankruptcy, setHasBankruptcy] = useState('')
-  const [bankruptcyDetails, setBankruptcyDetails] = useState('')
+  const [parentName, setParentName] = useState((d.parentName as string) ?? '')
+  const [parentAddress, setParentAddress] = useState((d.parentAddress as string) ?? '')
+  const [parentRelationship, setParentRelationship] = useState((d.parentRelationship as string) ?? '')
+  const [parentJurisdiction, setParentJurisdiction] = useState((d.parentJurisdiction as string) ?? '')
+  const [parentListed, setParentListed] = useState((d.parentListed as string) ?? '')
+  const [parentListedWhere, setParentListedWhere] = useState((d.parentListedWhere as string) ?? '')
+  const [owners, setOwners] = useState<PersonEntry[]>((d.owners as PersonEntry[]) ?? [{ ...BLANK_PERSON, extra: '' }])
+  const [directors, setDirectors] = useState<PersonEntry[]>((d.directors as PersonEntry[]) ?? [{ ...BLANK_PERSON, extra: '' }])
+  const [hasBankruptcy, setHasBankruptcy] = useState((d.hasBankruptcy as string) ?? '')
+  const [bankruptcyDetails, setBankruptcyDetails] = useState((d.bankruptcyDetails as string) ?? '')
 
   // Section E — Legal / AML
-  const [products, setProducts] = useState('')
-  const [noShellPolicy, setNoShellPolicy] = useState('')
-  const [fatfPresence, setFatfPresence] = useState('')
-  const [amlPenalty, setAmlPenalty] = useState('')
-  const [amlPenaltyDetails, setAmlPenaltyDetails] = useState('')
-  const [criminalProceedings, setCriminalProceedings] = useState('')
-  const [criminalDetails, setCriminalDetails] = useState('')
-  const [pendingLitigation, setPendingLitigation] = useState('')
-  const [litigationDetails, setLitigationDetails] = useState('')
+  const [products, setProducts] = useState((d.products as string) ?? '')
+  const [noShellPolicy, setNoShellPolicy] = useState((d.noShellPolicy as string) ?? '')
+  const [fatfPresence, setFatfPresence] = useState((d.fatfPresence as string) ?? '')
+  const [amlPenalty, setAmlPenalty] = useState((d.amlPenalty as string) ?? '')
+  const [amlPenaltyDetails, setAmlPenaltyDetails] = useState((d.amlPenaltyDetails as string) ?? '')
+  const [criminalProceedings, setCriminalProceedings] = useState((d.criminalProceedings as string) ?? '')
+  const [criminalDetails, setCriminalDetails] = useState((d.criminalDetails as string) ?? '')
+  const [pendingLitigation, setPendingLitigation] = useState((d.pendingLitigation as string) ?? '')
+  const [litigationDetails, setLitigationDetails] = useState((d.litigationDetails as string) ?? '')
 
   // Section F — Compliance
   const POLICY_TOPICS = ['Anti-Bribery & Corruption', 'AML', 'Business Continuity', 'Data Protection', 'Information Security', 'Risk Management']
-  const [policies, setPolicies] = useState<Record<string, string>>({})
-  const [training, setTraining] = useState<Record<string, string>>({})
+  const [policies, setPolicies] = useState<Record<string, string>>((d.policies as Record<string, string>) ?? {})
+  const [training, setTraining] = useState<Record<string, string>>((d.training as Record<string, string>) ?? {})
 
   function clearErr(k: string) { setErrors(e => ({ ...e, [k]: undefined as unknown as string })) }
 

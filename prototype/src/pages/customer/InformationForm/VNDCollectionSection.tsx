@@ -9,6 +9,7 @@ import FormShell from './FormShell'
 import { COUNTRIES } from '../../../constants/countries'
 
 interface Props {
+  initialData?: Record<string, unknown>
   onComplete: (data: Record<string, unknown>) => void
   onBack: () => void
   onDraftSave?: (data: Record<string, unknown>) => void
@@ -31,24 +32,25 @@ const VOLUME_OPTIONS = [
   { value: 'over_500k', label: 'Over $500,000' },
 ]
 
-export default function VNDCollectionSection({ onComplete, onBack, onDraftSave }: Props) {
+export default function VNDCollectionSection({ initialData, onComplete, onBack, onDraftSave }: Props) {
   const [errors, setErrors] = useState<Errors>({})
 
-  const [entityName, setEntityName] = useState('')
-  const [bizNumber, setBizNumber] = useState('')
-  const [bizAddress, setBizAddress] = useState('')
-  const [placeOfIncorp, setPlaceOfIncorp] = useState('')
-  const [website, setWebsite] = useState('')
-  const [contactName, setContactName] = useState('')
-  const [contactPhone, setContactPhone] = useState('')
-  const [contactEmail, setContactEmail] = useState('')
-  const [entityType, setEntityType] = useState('')
-  const [industryType, setIndustryType] = useState('')
-  const [mainActivity, setMainActivity] = useState('')
-  const [monthlyVolume, setMonthlyVolume] = useState('')
-  const [accountPurpose, setAccountPurpose] = useState('')
-  const [depositorRelationship, setDepositorRelationship] = useState('')
-  const [depositorType, setDepositorType] = useState('')
+  const d = initialData ?? {}
+  const [entityName, setEntityName] = useState((d.entityName as string) ?? '')
+  const [bizNumber, setBizNumber] = useState((d.bizNumber as string) ?? '')
+  const [bizAddress, setBizAddress] = useState((d.bizAddress as string) ?? '')
+  const [placeOfIncorp, setPlaceOfIncorp] = useState((d.placeOfIncorp as string) ?? '')
+  const [website, setWebsite] = useState((d.website as string) ?? '')
+  const [contactName, setContactName] = useState((d.contactName as string) ?? '')
+  const [contactPhone, setContactPhone] = useState((d.contactPhone as string) ?? '')
+  const [contactEmail, setContactEmail] = useState((d.contactEmail as string) ?? '')
+  const [entityType, setEntityType] = useState((d.entityType as string) ?? '')
+  const [industryType, setIndustryType] = useState((d.industryType as string) ?? '')
+  const [mainActivity, setMainActivity] = useState((d.mainActivity as string) ?? '')
+  const [monthlyVolume, setMonthlyVolume] = useState((d.monthlyVolume as string) ?? '')
+  const [accountPurpose, setAccountPurpose] = useState((d.accountPurpose as string) ?? '')
+  const [depositorRelationship, setDepositorRelationship] = useState((d.depositorRelationship as string) ?? '')
+  const [depositorType, setDepositorType] = useState((d.depositorType as string) ?? '')
 
   function clearErr(k: string) { setErrors(e => ({ ...e, [k]: undefined as unknown as string })) }
 

@@ -12,6 +12,7 @@ import type { ServiceSegment } from '../../../types'
 
 interface Props {
   serviceSegments: ServiceSegment[]
+  initialData?: Record<string, unknown>
   onComplete: (data: Record<string, unknown>) => void
   onDraftSave?: (data: Record<string, unknown>) => void
 }
@@ -20,62 +21,68 @@ type Errors = Record<string, string>
 
 const TOTAL_STEPS = 3
 
-export default function CorporateForm({ onComplete, onDraftSave }: Props) {
+export default function CorporateForm({ onComplete, onDraftSave, initialData }: Props) {
   const navigate = useNavigate()
   const [step, setStep] = useState(0)
   const [errors, setErrors] = useState<Errors>({})
 
+  const d = initialData ?? {}
+  const rep1 = (d.rep1 as Record<string, string>) ?? {}
+  const rep2 = (d.rep2 as Record<string, string> | null) ?? null
+  const bo1 = (d.bo1 as Record<string, string>) ?? {}
+  const bo2 = (d.bo2 as Record<string, string> | null) ?? null
+
   // Section 1 — 기본 정보
-  const [companyNameKr, setCompanyNameKr] = useState('')
-  const [companyNameEn, setCompanyNameEn] = useState('')
-  const [bizRegNo, setBizRegNo] = useState('')
-  const [phone, setPhone] = useState('')
-  const [industry, setIndustry] = useState('')
-  const [bizType, setBizType] = useState('')
-  const [bizAddress, setBizAddress] = useState('')
-  const [corpType, setCorpType] = useState('')
-  const [corpRegNo, setCorpRegNo] = useState('')
-  const [corpNationality, setCorpNationality] = useState('')
-  const [headOfficeAddress, setHeadOfficeAddress] = useState('')
+  const [companyNameKr, setCompanyNameKr] = useState((d.companyNameKr as string) ?? '')
+  const [companyNameEn, setCompanyNameEn] = useState((d.companyNameEn as string) ?? '')
+  const [bizRegNo, setBizRegNo] = useState((d.bizRegNo as string) ?? '')
+  const [phone, setPhone] = useState((d.phone as string) ?? '')
+  const [industry, setIndustry] = useState((d.industry as string) ?? '')
+  const [bizType, setBizType] = useState((d.bizType as string) ?? '')
+  const [bizAddress, setBizAddress] = useState((d.bizAddress as string) ?? '')
+  const [corpType, setCorpType] = useState((d.corpType as string) ?? '')
+  const [corpRegNo, setCorpRegNo] = useState((d.corpRegNo as string) ?? '')
+  const [corpNationality, setCorpNationality] = useState((d.corpNationality as string) ?? '')
+  const [headOfficeAddress, setHeadOfficeAddress] = useState((d.headOfficeAddress as string) ?? '')
   // 대표자 1
-  const [rep1NameKr, setRep1NameKr] = useState('')
-  const [rep1NameEn, setRep1NameEn] = useState('')
-  const [rep1Dob, setRep1Dob] = useState('')
-  const [rep1Gender, setRep1Gender] = useState('')
-  const [rep1Nationality, setRep1Nationality] = useState('')
+  const [rep1NameKr, setRep1NameKr] = useState(rep1.nameKr ?? '')
+  const [rep1NameEn, setRep1NameEn] = useState(rep1.nameEn ?? '')
+  const [rep1Dob, setRep1Dob] = useState(rep1.dob ?? '')
+  const [rep1Gender, setRep1Gender] = useState(rep1.gender ?? '')
+  const [rep1Nationality, setRep1Nationality] = useState(rep1.nationality ?? '')
   // 대표자 2 (co-rep)
-  const [hasCoRep, setHasCoRep] = useState(false)
-  const [rep2NameKr, setRep2NameKr] = useState('')
-  const [rep2NameEn, setRep2NameEn] = useState('')
-  const [rep2Dob, setRep2Dob] = useState('')
-  const [rep2Gender, setRep2Gender] = useState('')
-  const [rep2Nationality, setRep2Nationality] = useState('')
+  const [hasCoRep, setHasCoRep] = useState(rep2 != null)
+  const [rep2NameKr, setRep2NameKr] = useState(rep2?.nameKr ?? '')
+  const [rep2NameEn, setRep2NameEn] = useState(rep2?.nameEn ?? '')
+  const [rep2Dob, setRep2Dob] = useState(rep2?.dob ?? '')
+  const [rep2Gender, setRep2Gender] = useState(rep2?.gender ?? '')
+  const [rep2Nationality, setRep2Nationality] = useState(rep2?.nationality ?? '')
 
   // Section 2 — 실제 소유자
-  const [boExemptions, setBoExemptions] = useState<string[]>([])
-  const [boStep, setBoStep] = useState('1') // '1' | '2a' | '2b' | '2c' | '3'
-  const [bo1NameKr, setBo1NameKr] = useState('')
-  const [bo1NameEn, setBo1NameEn] = useState('')
-  const [bo1Dob, setBo1Dob] = useState('')
-  const [bo1Nationality, setBo1Nationality] = useState('')
-  const [bo1Residence, setBo1Residence] = useState('')
-  const [hasSecondBO, setHasSecondBO] = useState(false)
-  const [bo2NameKr, setBo2NameKr] = useState('')
-  const [bo2NameEn, setBo2NameEn] = useState('')
-  const [bo2Dob, setBo2Dob] = useState('')
-  const [bo2Nationality, setBo2Nationality] = useState('')
-  const [bo2Residence, setBo2Residence] = useState('')
+  const [boExemptions, setBoExemptions] = useState<string[]>((d.boExemptions as string[]) ?? [])
+  const [boStep, setBoStep] = useState((d.boStep as string) ?? '1')
+  const [bo1NameKr, setBo1NameKr] = useState(bo1.nameKr ?? '')
+  const [bo1NameEn, setBo1NameEn] = useState(bo1.nameEn ?? '')
+  const [bo1Dob, setBo1Dob] = useState(bo1.dob ?? '')
+  const [bo1Nationality, setBo1Nationality] = useState(bo1.nationality ?? '')
+  const [bo1Residence, setBo1Residence] = useState(bo1.residence ?? '')
+  const [hasSecondBO, setHasSecondBO] = useState(bo2 != null)
+  const [bo2NameKr, setBo2NameKr] = useState(bo2?.nameKr ?? '')
+  const [bo2NameEn, setBo2NameEn] = useState(bo2?.nameEn ?? '')
+  const [bo2Dob, setBo2Dob] = useState(bo2?.dob ?? '')
+  const [bo2Nationality, setBo2Nationality] = useState(bo2?.nationality ?? '')
+  const [bo2Residence, setBo2Residence] = useState(bo2?.residence ?? '')
 
   // Section 3 — 추가 확인
-  const [txPurpose, setTxPurpose] = useState('')
-  const [txPurposeOther, setTxPurposeOther] = useState('')
-  const [isVASP, setIsVASP] = useState('')
-  const [fundsSource, setFundsSource] = useState<string[]>([])
-  const [fundsSourceOther, setFundsSourceOther] = useState('')
-  const [corpSize, setCorpSize] = useState('')
-  const [listingStatus, setListingStatus] = useState('')
-  const [listingOther, setListingOther] = useState('')
-  const [establishedDate, setEstablishedDate] = useState('')
+  const [txPurpose, setTxPurpose] = useState((d.txPurpose as string) ?? '')
+  const [txPurposeOther, setTxPurposeOther] = useState((d.txPurposeOther as string) ?? '')
+  const [isVASP, setIsVASP] = useState((d.isVASP as string) ?? '')
+  const [fundsSource, setFundsSource] = useState<string[]>((d.fundsSource as string[]) ?? [])
+  const [fundsSourceOther, setFundsSourceOther] = useState((d.fundsSourceOther as string) ?? '')
+  const [corpSize, setCorpSize] = useState((d.corpSize as string) ?? '')
+  const [listingStatus, setListingStatus] = useState((d.listingStatus as string) ?? '')
+  const [listingOther, setListingOther] = useState((d.listingOther as string) ?? '')
+  const [establishedDate, setEstablishedDate] = useState((d.establishedDate as string) ?? '')
 
   function formatBizRegNo(v: string) {
     const d = v.replace(/\D/g, '').slice(0, 10)

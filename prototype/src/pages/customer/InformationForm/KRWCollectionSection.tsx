@@ -16,13 +16,14 @@ const SECTOR_OPTIONS = [
 ]
 
 interface Props {
+  initialData?: Record<string, unknown>
   onComplete: (data: Record<string, unknown>) => void
   onBack: () => void
   onDraftSave?: (data: Record<string, unknown>) => void
 }
 
-export default function KRWCollectionSection({ onComplete, onBack, onDraftSave }: Props) {
-  const [sector, setSector] = useState('')
+export default function KRWCollectionSection({ initialData, onComplete, onBack, onDraftSave }: Props) {
+  const [sector, setSector] = useState((initialData?.sector as string) ?? '')
   const [error, setError] = useState('')
 
   function handleNext() {
