@@ -134,6 +134,9 @@ export default function CasePage() {
   const isClosed = c.status === 'CLOSED'
   const eff = effectiveStatus(c)
   const banner = STATUS_BANNER[c.status]
+  const completedNote = isCompleted
+    ? [...c.statusHistory].reverse().find((h) => h.newStatus === 'COMPLETED')?.notes
+    : undefined
 
   const sortedHistory = [...c.statusHistory].sort((a, b) => a.changedAt - b.changedAt)
   const sortedMessages = [...c.messages].sort((a, b) => a.sentAt - b.sentAt)
@@ -277,8 +280,10 @@ export default function CasePage() {
               <p className="text-[11px] font-semibold text-sb-n400 uppercase tracking-[0.5px] mb-2">
                 계정 안내
               </p>
-              <p className="text-[13px] text-sb-n700 leading-[20px]">
-                센트비 기업 서비스 계정이 생성되었습니다. 로그인 정보는 담당자가 메시지로 별도 안내드립니다.
+              <p className="text-[13px] text-sb-n700 leading-[20px] whitespace-pre-wrap">
+                {completedNote?.trim()
+                  ? completedNote
+                  : '센트비 기업 서비스 계정이 생성되었습니다. 로그인 정보는 담당자가 메시지로 별도 안내드립니다.'}
               </p>
             </div>
             <button

@@ -145,6 +145,14 @@ export default function InternalCaseDetail() {
     })
   }
 
+  function approveAllDocs() {
+    updateCase(caseId, {
+      documents: caseObj.documents.map((d) =>
+        d.status === 'SUBMITTED' ? { ...d, status: 'APPROVED' as DocumentStatus } : d
+      ),
+    })
+  }
+
   function requestDocRevision(docId: string) {
     if (!docRevisionNote.trim()) return
     updateCase(caseId, {
@@ -321,7 +329,19 @@ export default function InternalCaseDetail() {
                 <p className="text-[14px] text-sb-n400">서류 목록이 없습니다.</p>
               </div>
             ) : (
-              c.documents.map((doc) => {
+              <>
+                {role === 'COMPLIANCE' && c.documents.some((d) => d.status === 'SUBMITTED') && (
+                  <div className="flex justify-end">
+                    <button
+                      onClick={approveAllDocs}
+                      className="flex items-center gap-1.5 px-3 py-2 rounded-[8px] text-[13px] font-medium bg-sb-positive-light text-sb-positive hover:opacity-80 transition-opacity"
+                    >
+                      <Check size={14} weight="bold" />
+                      일괄 승인 ({c.documents.filter((d) => d.status === 'SUBMITTED').length}건)
+                    </button>
+                  </div>
+                )}
+                {c.documents.map((doc) => {
                 const badge = DOC_STATUS_BADGE[doc.status]
                 const isRevisionOpen = docRevisionId === doc.id
                 return (
@@ -397,7 +417,8 @@ export default function InternalCaseDetail() {
                     )}
                   </div>
                 )
-              })
+                })}
+              </>
             )}
           </div>
         )}

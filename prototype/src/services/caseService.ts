@@ -74,26 +74,12 @@ export function createCase(formData: OnboardingFormData, session: UserSession): 
   const segmentInfo = classify(formData)
 
   if (existing && existing.firstIntake.status === 'draft') {
-    const documents = buildDocuments(existing.id, segmentInfo)
     store.updateCase(existing.id, {
-      status: 'DOCUMENT_SUBMISSION_REQUIRED',
       customerName: formData.contactName,
       segmentInfo,
       currentOwner: { role: 'CUSTOMER', name: formData.contactName },
       firstIntake: { status: 'submitted', data: formData as unknown as Record<string, unknown>, savedAt: now },
       secondIntake: { ...EMPTY_INTAKE },
-      documents,
-      statusHistory: [
-        ...existing.statusHistory,
-        {
-          id: `hist_${now}`,
-          caseId: existing.id,
-          previousStatus: existing.status,
-          newStatus: 'DOCUMENT_SUBMISSION_REQUIRED',
-          changedAt: now,
-          changedBy: { role: 'CUSTOMER', name: formData.contactName },
-        },
-      ],
     })
     return store.cases[existing.id]
   }
@@ -103,7 +89,7 @@ export function createCase(formData: OnboardingFormData, session: UserSession): 
     id: caseId,
     createdAt: now,
     updatedAt: now,
-    status: 'DOCUMENT_SUBMISSION_REQUIRED',
+    status: 'INQUIRY_RECEIVED',
     customerId: session.userId,
     customerName: formData.contactName,
     customerEmail: formData.email,
@@ -111,14 +97,14 @@ export function createCase(formData: OnboardingFormData, session: UserSession): 
     currentOwner: { role: 'CUSTOMER', name: formData.contactName },
     firstIntake: { status: 'submitted', data: formData as unknown as Record<string, unknown>, savedAt: now },
     secondIntake: { ...EMPTY_INTAKE },
-    documents: buildDocuments(caseId, segmentInfo),
+    documents: [],
     messages: [],
     statusHistory: [
       {
         id: `hist_${now}`,
         caseId,
         previousStatus: null,
-        newStatus: 'DOCUMENT_SUBMISSION_REQUIRED',
+        newStatus: 'INQUIRY_RECEIVED',
         changedAt: now,
         changedBy: { role: 'CUSTOMER', name: formData.contactName },
       },
