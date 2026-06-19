@@ -147,7 +147,8 @@ export default function InternalDashboard() {
 
             {filtered.map((c, i) => {
               const badge = STATUS_BADGE[c.status]
-              const services = c.segmentInfo.serviceSegments.join(' · ')
+              const services = (c.segmentInfo?.serviceSegments ?? []).join(' · ')
+              const entitySegment = c.segmentInfo?.entitySegment ?? ''
               return (
                 <button
                   key={c.id}
@@ -166,7 +167,7 @@ export default function InternalDashboard() {
                     </span>
                   </div>
                   <div className="flex flex-col gap-0.5">
-                    <span className="text-[13px] text-sb-n700">{SEGMENT_LABEL[c.segmentInfo.entitySegment] ?? c.segmentInfo.entitySegment}</span>
+                    <span className="text-[13px] text-sb-n700">{SEGMENT_LABEL[entitySegment] ?? entitySegment}</span>
                     {services && <span className="text-[11px] text-sb-n400">{services}</span>}
                   </div>
                   <span className="text-[13px] text-sb-n500">{formatDate(c.createdAt)}</span>
