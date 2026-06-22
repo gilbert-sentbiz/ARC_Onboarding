@@ -17,9 +17,54 @@ export default function InformationForm() {
   const c = useCaseStore((s) => (id ? s.cases[id] : null))
 
   const [stage, setStage] = useState<Stage>('entity')
-  const [accumulated, setAccumulated] = useState<Record<string, unknown>>(
-    () => (c?.secondIntake?.status === 'draft' ? (c.secondIntake.data as Record<string, unknown>) : {})
-  )
+  const [accumulated, setAccumulated] = useState<Record<string, unknown>>(() => {
+    if (c?.secondIntake?.status === 'draft') {
+      return c.secondIntake.data as Record<string, unknown>
+    }
+    // P1: 2차 첫 진입 시 1차 입력값 자동채움
+    const fi = (c?.firstIntake?.data ?? {}) as Record<string, unknown>
+    const rawSeg = (c?.segmentInfo as unknown as Record<string, unknown>) ?? {}
+    const seg = (rawSeg.entitySegment ?? rawSeg.customerType) as string | undefined
+    const fiServices = Array.isArray(fi.services) ? (fi.services as string[]) : []
+    const fiColl = Array.isArray(fi.collectionCountries) ? (fi.collectionCountries as string[]) : []
+    const fiServiceSegs = Array.isArray(rawSeg.serviceSegments) ? (rawSeg.serviceSegments as string[]) : []
+
+    const entityInit: Record<string, unknown> = {}
+    if (seg === 'SentBiz Corporate') {
+      if (fi.companyName) entityInit.companyNameKr = fi.companyName
+      if (fi.phone) entityInit.phone = fi.phone
+      if (fi.foundingCountry) entityInit.corpNationality = fi.foundingCountry
+    } else if (seg === 'SentBiz Individual') {
+      if (fi.companyName) entityInit.bizName = fi.companyName
+      if (fi.phone) entityInit.phone = fi.phone
+    } else if (seg === 'FI') {
+      if (fi.companyName) entityInit.legalName = fi.companyName
+      if (fi.foundingCountry) entityInit.incorpCountry = fi.foundingCountry
+      if (fi.phone) entityInit.repPhone = fi.phone
+      if (fi.email) entityInit.repEmail = fi.email
+      const fiBServices: string[] = []
+      if (fiServices.includes('collection')) fiBServices.push('collection')
+      if (fiServices.includes('remittance')) fiBServices.push('payout')
+      if (fiBServices.length > 0) entityInit.services = fiBServices
+      const fiCurrencies = fiColl.filter((v) => v !== 'OTHER')
+      if (fiCurrencies.length > 0) entityInit.collectionCurrencies = fiCurrencies
+      if (fi.remittanceFrom) entityInit.originCountries = fi.remittanceFrom
+    }
+
+    const result: Record<string, unknown> = {}
+    if (Object.keys(entityInit).length > 0) result.entity = entityInit
+    if (fiServiceSegs.includes('VND Collection')) {
+      const vndInit: Record<string, unknown> = {}
+      if (fi.companyName) vndInit.entityName = fi.companyName
+      if (fi.foundingCountry) vndInit.placeOfIncorp = fi.foundingCountry
+      if (fi.contactName) vndInit.contactName = fi.contactName
+      if (fi.phone) vndInit.contactPhone = fi.phone
+      if (fi.email) vndInit.contactEmail = fi.email
+      if (fi.monthlyVolume) vndInit.monthlyVolume = fi.monthlyVolume
+      if (Object.keys(vndInit).length > 0) result.vndCollection = vndInit
+    }
+    return result
+  })
 
   if (!c) {
     return (
@@ -91,7 +136,7 @@ export default function InformationForm() {
   const entityProps = {
     serviceSegments,
     initialData: (accumulated.entity as Record<string, unknown>) ?? {},
-    onDraftSave: (d: Record<string, unknown>) => saveDraft({ entity: d }),
+    onDraftSave: (d: Record<string, unknown>) => saveDraft({ ...accumulated, entity: d }),
   }
 
   if (entitySegment === 'SentBiz Corporate')
