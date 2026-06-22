@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { SignOut, Buildings } from '@phosphor-icons/react'
 import { useSessionStore } from '../../store/sessionStore'
@@ -44,7 +44,8 @@ export default function InternalDashboard() {
   const navigate = useNavigate()
   const session = useSessionStore((s) => s.session)
   const clearSession = useSessionStore((s) => s.clearSession)
-  const cases = useCaseStore((s) => Object.values(s.cases))
+  const casesMap = useCaseStore((s) => s.cases)
+  const cases = useMemo(() => Object.values(casesMap), [casesMap])
 
   const role = session?.role as UserRole
   const defaultFilter = ROLE_DEFAULT_FILTER[role] ?? 'SALES_REVIEW_REQUIRED'
