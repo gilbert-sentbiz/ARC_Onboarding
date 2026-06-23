@@ -135,9 +135,6 @@ export default function CasePage() {
   const isClosed = c.status === 'CLOSED'
   const eff = effectiveStatus(c)
   const banner = STATUS_BANNER[c.status]
-  const completedNote = isCompleted
-    ? [...c.statusHistory].reverse().find((h) => h.newStatus === 'COMPLETED')?.notes
-    : undefined
 
   const sortedHistory = [...c.statusHistory].sort((a, b) => a.changedAt - b.changedAt)
   const sortedMessages = [...c.messages].sort((a, b) => a.sentAt - b.sentAt)
@@ -300,16 +297,9 @@ export default function CasePage() {
               <CheckFat size={22} weight="fill" className="text-green-600" />
               <p className="text-[16px] font-bold text-sb-n900">온보딩이 완료되었습니다</p>
             </div>
-            <div className="p-4 bg-sb-n50 rounded-[10px] border border-sb-n200">
-              <p className="text-[11px] font-semibold text-sb-n400 uppercase tracking-[0.5px] mb-2">
-                계정 안내
-              </p>
-              <p className="text-[13px] text-sb-n700 leading-[20px] whitespace-pre-wrap">
-                {completedNote?.trim()
-                  ? completedNote
-                  : '센트비 기업 서비스 계정이 생성되었습니다. 로그인 정보는 담당자가 메시지로 별도 안내드립니다.'}
-              </p>
-            </div>
+            <p className="text-[13px] text-sb-n600 leading-[20px]">
+              계정 생성이 완료되었습니다. 담당자가 별도 채널을 통해 계정 정보를 안내드릴 예정입니다.
+            </p>
             <button
               type="button"
               onClick={() => navigate('/')}

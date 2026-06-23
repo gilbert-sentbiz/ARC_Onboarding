@@ -73,6 +73,7 @@ export interface UploadedFile {
   fileSize: number
   uploadedAt: number
   uploadedBy: string
+  isLatest?: boolean
   dataUrl?: string
 }
 

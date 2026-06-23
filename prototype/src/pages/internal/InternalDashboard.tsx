@@ -29,6 +29,12 @@ function formatDate(ts: number) {
   return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`
 }
 
+function getDaysInStatus(c: import('../../types').Case): number {
+  const entry = [...c.statusHistory].reverse().find(h => h.newStatus === c.status)
+  if (!entry) return 0
+  return Math.floor((Date.now() - entry.changedAt) / 86_400_000)
+}
+
 const STATUS_BADGE: Record<CaseStatus, { bg: string; text: string }> = {
   INQUIRY_RECEIVED:           { bg: 'bg-sb-n100', text: 'text-sb-n600' },
   DOCUMENT_SUBMISSION_REQUIRED: { bg: 'bg-blue-50', text: 'text-blue-600' },
@@ -140,8 +146,8 @@ export default function InternalDashboard() {
         ) : (
           <div className="bg-white rounded-[12px] border border-sb-n100 overflow-hidden">
             {/* Table header */}
-            <div className="grid grid-cols-[1fr_140px_160px_110px_110px] gap-4 px-5 py-3 bg-sb-n50 border-b border-sb-n100">
-              {['회사명', '상태', '세그먼트', '생성일', '최종 수정'].map((h) => (
+            <div className="grid grid-cols-[1fr_130px_150px_100px_90px_70px_110px] gap-4 px-5 py-3 bg-sb-n50 border-b border-sb-n100">
+              {['회사명', '상태', '세그먼트', '생성일', '최종 수정', '대기', '담당자'].map((h) => (
                 <span key={h} className="text-[12px] font-semibold text-sb-n500">{h}</span>
               ))}
             </div>
@@ -150,11 +156,13 @@ export default function InternalDashboard() {
               const badge = STATUS_BADGE[c.status]
               const services = (c.segmentInfo?.serviceSegments ?? []).join(' · ')
               const entitySegment = c.segmentInfo?.entitySegment ?? ''
+              const daysWaiting = getDaysInStatus(c)
+              const ownerName = c.currentOwner?.role !== 'CUSTOMER' ? c.currentOwner?.name : '—'
               return (
                 <button
                   key={c.id}
                   onClick={() => navigate(`/internal/case/${c.id}`)}
-                  className={`w-full grid grid-cols-[1fr_140px_160px_110px_110px] gap-4 px-5 py-4 text-left hover:bg-sb-n50 transition-colors ${
+                  className={`w-full grid grid-cols-[1fr_130px_150px_100px_90px_70px_110px] gap-4 px-5 py-4 text-left hover:bg-sb-n50 transition-colors ${
                     i < filtered.length - 1 ? 'border-b border-sb-n100' : ''
                   }`}
                 >
@@ -173,6 +181,10 @@ export default function InternalDashboard() {
                   </div>
                   <span className="text-[13px] text-sb-n500">{formatDate(c.createdAt)}</span>
                   <span className="text-[13px] text-sb-n500">{formatDate(c.updatedAt)}</span>
+                  <span className={`text-[13px] ${daysWaiting >= 3 ? 'text-sb-negative font-medium' : 'text-sb-n500'}`}>
+                    {daysWaiting}일
+                  </span>
+                  <span className="text-[13px] text-sb-n600 truncate">{ownerName}</span>
                 </button>
               )
             })}

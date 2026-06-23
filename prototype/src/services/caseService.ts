@@ -3,6 +3,7 @@ import { classify } from './segmentClassifier'
 import { buildDocuments } from './documentRequirements'
 import { canTransition, STATUS_LABELS, ROLE_LABELS } from './stateMachine'
 import { useCaseStore } from '../store/caseStore'
+import { useInternalStaffStore } from '../store/internalStaffStore'
 
 const EMPTY_INTAKE: IntakeRecord = { status: 'not_started', data: {}, savedAt: 0 }
 
@@ -207,13 +208,57 @@ export function transitionStatus(
   return { ok: true }
 }
 
-function resolveOwner(status: CaseStatus): { role: UserRole; name: string } {
-  switch (status) {
-    case 'DOCUMENT_SUBMISSION_REQUIRED': return { role: 'CUSTOMER', name: '고객' }
-    case 'REVISION_REQUESTED': return { role: 'CUSTOMER', name: '고객' }
-    case 'SALES_REVIEW_REQUIRED': return { role: 'SALES', name: '영업팀' }
-    case 'COMPLIANCE_REVIEW_REQUIRED': return { role: 'COMPLIANCE', name: '컴플라이언스팀' }
-    case 'OPS_REVIEW_REQUIRED': return { role: 'OPS', name: '운영팀' }
-    default: return { role: 'OPS', name: '운영팀' }
+const ROLE_FOR_STATUS: Partial<Record<CaseStatus, 'SALES' | 'COMPLIANCE' | 'OPS'>> = {
+  SALES_REVIEW_REQUIRED: 'SALES',
+  COMPLIANCE_REVIEW_REQUIRED: 'COMPLIANCE',
+  OPS_REVIEW_REQUIRED: 'OPS',
+}
+
+function resolveOwner(newStatus: CaseStatus): { role: UserRole; name: string } {
+  const targetRole = ROLE_FOR_STATUS[newStatus]
+  if (targetRole) {
+    const staff = useInternalStaffStore.getState().staff.filter(s => s.role === targetRole)
+    if (staff.length > 0) {
+      const cases = Object.values(useCaseStore.getState().cases)
+      const counts = staff.map(s =>
+        cases.filter(c => c.currentOwner.role === targetRole && c.currentOwner.name === s.name).length
+      )
+      const minIdx = counts.indexOf(Math.min(...counts))
+      return { role: targetRole, name: staff[minIdx].name }
+    }
   }
+  switch (newStatus) {
+    case 'DOCUMENT_SUBMISSION_REQUIRED':
+    case 'REVISION_REQUESTED':
+      return { role: 'CUSTOMER', name: '고객' }
+    default:
+      return { role: 'OPS', name: '운영팀' }
+  }
+}
+
+export function changeOwner(
+  caseId: string,
+  newOwnerName: string,
+  actor: { role: UserRole; name: string }
+): void {
+  const state = useCaseStore.getState()
+  const c = state.cases[caseId]
+  if (!c) return
+  const prevName = c.currentOwner.name
+  const now = Date.now()
+  state.updateCase(caseId, {
+    currentOwner: { ...c.currentOwner, name: newOwnerName },
+    statusHistory: [
+      ...c.statusHistory,
+      {
+        id: `hist_${now}`,
+        caseId,
+        previousStatus: c.status,
+        newStatus: c.status,
+        changedAt: now,
+        changedBy: actor,
+        notes: `담당자 변경: ${prevName} → ${newOwnerName}`,
+      },
+    ],
+  })
 }

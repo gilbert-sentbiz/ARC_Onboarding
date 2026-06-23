@@ -140,16 +140,18 @@ export default function DocumentUpload() {
         fileSize: file.size,
         uploadedAt: now,
         uploadedBy: session?.name || session?.email || '고객',
+        isLatest: true,
         dataUrl,
       }
       const latestCase = useCaseStore.getState().cases[id!]
       if (!latestCase) return
       const updatedDocs = latestCase.documents.map((d) => {
         if (d.id !== docId) return d
+        const prevFiles = d.uploadedFiles.map(f => ({ ...f, isLatest: false }))
         return {
           ...d,
           status: 'SUBMITTED' as const,
-          uploadedFiles: [...d.uploadedFiles, newFile],
+          uploadedFiles: [...prevFiles, newFile],
         }
       })
       updateCase(id!, { documents: updatedDocs })

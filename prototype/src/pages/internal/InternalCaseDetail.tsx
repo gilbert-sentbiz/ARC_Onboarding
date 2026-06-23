@@ -2,14 +2,15 @@ import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import {
   ArrowLeft, CheckCircle, WarningCircle, Clock, ChatCircle,
-  Note, PaperPlaneTilt, FileText, FileDashed, Check, X,
+  Note, PaperPlaneTilt, FileText, FileDashed, Check, X, CaretDown, CaretUp, Eye,
 } from '@phosphor-icons/react'
 import { useSessionStore } from '../../store/sessionStore'
 import { useCaseStore } from '../../store/caseStore'
 import { useInternalNoteStore } from '../../store/internalNoteStore'
-import { transitionStatus } from '../../services/caseService'
+import { useInternalStaffStore } from '../../store/internalStaffStore'
+import { transitionStatus, changeOwner } from '../../services/caseService'
 import { STATUS_LABELS } from '../../services/stateMachine'
-import type { CaseStatus, CloseReason, DocumentStatus, UserRole, Message } from '../../types'
+import type { CaseStatus, CloseReason, DocumentStatus, UserRole, Message, UploadedFile } from '../../types'
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -72,6 +73,7 @@ interface ActionDef {
   closeReason?: CloseReason
   variant: 'primary' | 'outline' | 'danger'
   needsNote: boolean
+  isConfirmOnly?: boolean
 }
 
 function getActions(role: UserRole, status: CaseStatus): ActionDef[] {
@@ -91,7 +93,7 @@ function getActions(role: UserRole, status: CaseStatus): ActionDef[] {
   }
   if (role === 'OPS' && status === 'OPS_REVIEW_REQUIRED') {
     return [
-      { label: '계정 생성 완료', to: 'COMPLETED', variant: 'primary', needsNote: true },
+      { label: '계정 생성', to: 'COMPLETED', variant: 'primary', needsNote: false, isConfirmOnly: true },
       { label: '컴플라이언스 반려', to: 'COMPLIANCE_REVIEW_REQUIRED', variant: 'outline', needsNote: true },
       { label: '케이스 종료', to: 'CLOSED', closeReason: 'DROPPED', variant: 'danger', needsNote: true },
     ]
@@ -111,6 +113,8 @@ export default function InternalCaseDetail() {
   const updateCase = useCaseStore((s) => s.updateCase)
   const { getNotes, addNote } = useInternalNoteStore()
 
+  const staff = useInternalStaffStore((s) => s.staff)
+
   const [tab, setTab] = useState<TabKey>('info')
   const [pendingAction, setPendingAction] = useState<ActionDef | null>(null)
   const [actionNote, setActionNote] = useState('')
@@ -118,6 +122,10 @@ export default function InternalCaseDetail() {
   const [noteInput, setNoteInput] = useState('')
   const [docRevisionId, setDocRevisionId] = useState<string | null>(null)
   const [docRevisionNote, setDocRevisionNote] = useState('')
+  const [previewFile, setPreviewFile] = useState<UploadedFile | null>(null)
+  const [expandedDocFiles, setExpandedDocFiles] = useState<Set<string>>(new Set())
+  const [ownerChangeMode, setOwnerChangeMode] = useState(false)
+  const [selectedNewOwner, setSelectedNewOwner] = useState('')
 
   if (!c || !id || !session) {
     return (
@@ -154,7 +162,7 @@ export default function InternalCaseDetail() {
   }
 
   function requestDocRevision(docId: string) {
-    if (!docRevisionNote.trim()) return
+    const now = Date.now()
     updateCase(caseId, {
       documents: caseObj.documents.map((d) =>
         d.id === docId
@@ -165,7 +173,7 @@ export default function InternalCaseDetail() {
                 ...d.revisionHistory,
                 {
                   documentId: docId,
-                  timestamp: Date.now(),
+                  timestamp: now,
                   requiredBy: sess.name,
                   reason: docRevisionNote,
                 },
@@ -174,8 +182,26 @@ export default function InternalCaseDetail() {
           : d
       ),
     })
+    if (caseObj.status === 'COMPLIANCE_REVIEW_REQUIRED') {
+      transitionStatus(caseId, 'REVISION_REQUESTED', { role, name: sess.name })
+    }
     setDocRevisionId(null)
     setDocRevisionNote('')
+  }
+
+  function toggleDocFilesExpand(docId: string) {
+    setExpandedDocFiles(prev => {
+      const next = new Set(prev)
+      next.has(docId) ? next.delete(docId) : next.add(docId)
+      return next
+    })
+  }
+
+  function confirmOwnerChange() {
+    if (!selectedNewOwner) return
+    changeOwner(caseId, selectedNewOwner, { role, name: sess.name })
+    setOwnerChangeMode(false)
+    setSelectedNewOwner('')
   }
 
   // ── case action handler ──
@@ -238,7 +264,7 @@ export default function InternalCaseDetail() {
             대시보드
           </button>
           <div className="h-4 w-px bg-sb-n200" />
-          <div className="flex items-center gap-3 min-w-0">
+          <div className="flex items-center gap-3 min-w-0 flex-1">
             <span className="text-[15px] font-semibold text-sb-n900 truncate">
               {c.customerName || c.customerEmail}
             </span>
@@ -249,6 +275,43 @@ export default function InternalCaseDetail() {
               {SEGMENT_LABEL[c.segmentInfo.entitySegment] ?? c.segmentInfo.entitySegment}
               {c.segmentInfo.serviceSegments.length > 0 && ` · ${c.segmentInfo.serviceSegments.join(' · ')}`}
             </span>
+            {/* 담당자 표시 + 변경 */}
+            {c.currentOwner.role !== 'CUSTOMER' && (
+              <div className="flex items-center gap-1.5 flex-shrink-0 ml-2">
+                <span className="text-[12px] text-sb-n400">담당자:</span>
+                {ownerChangeMode ? (
+                  <>
+                    <select
+                      value={selectedNewOwner}
+                      onChange={(e) => setSelectedNewOwner(e.target.value)}
+                      className="text-[12px] border border-sb-n200 rounded-[6px] px-2 py-0.5 text-sb-n800 focus:outline-none focus:border-sb-brand"
+                    >
+                      <option value="">선택</option>
+                      {staff.filter(s => s.role === c.currentOwner.role).map(s => (
+                        <option key={s.email} value={s.name}>{s.name}</option>
+                      ))}
+                    </select>
+                    <button
+                      onClick={confirmOwnerChange}
+                      disabled={!selectedNewOwner}
+                      className="text-[12px] text-sb-brand hover:underline disabled:opacity-40"
+                    >확인</button>
+                    <button
+                      onClick={() => { setOwnerChangeMode(false); setSelectedNewOwner('') }}
+                      className="text-[12px] text-sb-n400 hover:text-sb-n700"
+                    >취소</button>
+                  </>
+                ) : (
+                  <>
+                    <span className="text-[12px] font-medium text-sb-n800">{c.currentOwner.name}</span>
+                    <button
+                      onClick={() => setOwnerChangeMode(true)}
+                      className="text-[11px] text-sb-brand hover:underline"
+                    >변경</button>
+                  </>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
@@ -351,16 +414,46 @@ export default function InternalCaseDetail() {
                         <FileText size={18} className="text-sb-n400 flex-shrink-0 mt-0.5" />
                         <div className="flex flex-col gap-1 min-w-0">
                           <span className="text-[14px] font-medium text-sb-n900">{doc.displayName}</span>
-                          {doc.uploadedFiles.length > 0 && (
-                            <div className="flex flex-col gap-0.5">
-                              {doc.uploadedFiles.map((f) => (
-                                <span key={f.id} className="text-[12px] text-sb-n500">{f.fileName}</span>
-                              ))}
-                            </div>
-                          )}
+                          {doc.uploadedFiles.length > 0 && (() => {
+                            const latestFile = doc.uploadedFiles.find(f => f.isLatest) ?? doc.uploadedFiles[doc.uploadedFiles.length - 1]
+                            const oldFiles = doc.uploadedFiles.filter(f => f.id !== latestFile.id)
+                            const isExpanded = expandedDocFiles.has(doc.id)
+                            return (
+                              <div className="flex flex-col gap-0.5">
+                                <button
+                                  onClick={() => setPreviewFile(latestFile)}
+                                  className="flex items-center gap-1 text-[12px] text-sb-brand hover:underline text-left"
+                                >
+                                  <Eye size={12} />
+                                  {latestFile.fileName}
+                                  <span className="text-sb-n400 font-normal ml-1">{formatDate(latestFile.uploadedAt)}</span>
+                                </button>
+                                {oldFiles.length > 0 && (
+                                  <>
+                                    <button
+                                      onClick={() => toggleDocFilesExpand(doc.id)}
+                                      className="flex items-center gap-1 text-[11px] text-sb-n400 hover:text-sb-n700 text-left"
+                                    >
+                                      {isExpanded ? <CaretUp size={10} /> : <CaretDown size={10} />}
+                                      이전 제출본 {oldFiles.length}건
+                                    </button>
+                                    {isExpanded && oldFiles.map(f => (
+                                      <button
+                                        key={f.id}
+                                        onClick={() => setPreviewFile(f)}
+                                        className="text-[11px] text-sb-n400 hover:underline text-left pl-3"
+                                      >
+                                        {f.fileName} ({formatDate(f.uploadedAt)})
+                                      </button>
+                                    ))}
+                                  </>
+                                )}
+                              </div>
+                            )
+                          })()}
                           {doc.revisionHistory.length > 0 && (
                             <span className="text-[12px] text-orange-500">
-                              보완 사유: {doc.revisionHistory[doc.revisionHistory.length - 1].reason}
+                              보완 사유: {doc.revisionHistory[doc.revisionHistory.length - 1].reason || '(사유 없음)'}
                             </span>
                           )}
                         </div>
@@ -431,34 +524,39 @@ export default function InternalCaseDetail() {
               <div className="bg-white rounded-[12px] border border-sb-n100 p-6">
                 <h3 className="text-[14px] font-semibold text-sb-n900 mb-4">상태 변경 이력</h3>
                 <div className="flex flex-col gap-0">
-                  {c.statusHistory.map((h, i) => (
-                    <div key={h.id} className="flex gap-3">
-                      <div className="flex flex-col items-center">
-                        <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 ${
-                          i === 0 ? 'bg-sb-brand' : 'bg-sb-n100'
-                        }`}>
-                          {i === 0
-                            ? <CheckCircle size={14} weight="fill" className="text-white" />
-                            : <Clock size={14} className="text-sb-n400" />
-                          }
+                  {c.statusHistory.map((h, i) => {
+                    const isOwnerChange = h.previousStatus !== null && h.previousStatus === h.newStatus
+                    return (
+                      <div key={h.id} className="flex gap-3">
+                        <div className="flex flex-col items-center">
+                          <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 ${
+                            i === 0 ? 'bg-sb-brand' : isOwnerChange ? 'bg-sb-n50 border border-sb-n200' : 'bg-sb-n100'
+                          }`}>
+                            {i === 0
+                              ? <CheckCircle size={14} weight="fill" className="text-white" />
+                              : isOwnerChange
+                              ? <span className="text-[10px] text-sb-n500">↔</span>
+                              : <Clock size={14} className="text-sb-n400" />
+                            }
+                          </div>
+                          {i < c.statusHistory.length - 1 && (
+                            <div className="w-px flex-1 min-h-[20px] bg-sb-n100 my-1" />
+                          )}
                         </div>
-                        {i < c.statusHistory.length - 1 && (
-                          <div className="w-px flex-1 min-h-[20px] bg-sb-n100 my-1" />
-                        )}
+                        <div className="pb-4 min-w-0">
+                          <p className={`text-[13px] font-medium ${isOwnerChange ? 'text-sb-n500' : 'text-sb-n800'}`}>
+                            {isOwnerChange ? '담당자 변경' : (STATUS_LABELS[h.newStatus as CaseStatus] ?? h.newStatus)}
+                          </p>
+                          <p className="text-[11px] text-sb-n400">
+                            {formatDate(h.changedAt)} · {h.changedBy.name}
+                          </p>
+                          {h.notes && (
+                            <p className="text-[12px] text-sb-n600 mt-0.5 bg-sb-n50 rounded-[6px] px-2 py-1">{h.notes}</p>
+                          )}
+                        </div>
                       </div>
-                      <div className="pb-4 min-w-0">
-                        <p className="text-[13px] font-medium text-sb-n800">
-                          {STATUS_LABELS[h.newStatus as CaseStatus] ?? h.newStatus}
-                        </p>
-                        <p className="text-[11px] text-sb-n400">
-                          {formatDate(h.changedAt)} · {h.changedBy.name}
-                        </p>
-                        {h.notes && (
-                          <p className="text-[12px] text-sb-n600 mt-0.5 bg-sb-n50 rounded-[6px] px-2 py-1">{h.notes}</p>
-                        )}
-                      </div>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
               </div>
             </div>
@@ -553,33 +651,57 @@ export default function InternalCaseDetail() {
           <div className="max-w-[1200px] mx-auto px-6 py-4 flex flex-col gap-3">
             {pendingAction && (
               <div className="flex gap-2 items-start">
-                <div className="flex flex-col gap-1 flex-1">
-                  <p className="text-[12px] text-sb-n600 font-medium">
-                    {pendingAction.label} — {pendingAction.needsNote ? '사유를 입력하세요 (필수)' : '메모 (선택)'}
-                  </p>
-                  <textarea
-                    className="w-full border border-sb-n200 rounded-[8px] px-3 py-2 text-[13px] text-sb-n800 placeholder:text-sb-n400 focus:outline-none focus:border-sb-brand resize-none"
-                    rows={2}
-                    placeholder={pendingAction.to === 'COMPLETED' ? '계정 정보 및 안내 사항을 입력하세요' : '사유를 입력하세요'}
-                    value={actionNote}
-                    onChange={(e) => setActionNote(e.target.value)}
-                  />
-                </div>
-                <div className="flex flex-col gap-2 flex-shrink-0 pt-5">
-                  <button
-                    onClick={() => executeAction(pendingAction)}
-                    disabled={pendingAction.needsNote && !actionNote.trim()}
-                    className="px-4 py-2 rounded-[8px] text-[13px] font-medium bg-sb-brand text-white hover:bg-sb-brand/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                  >
-                    확인
-                  </button>
-                  <button
-                    onClick={() => { setPendingAction(null); setActionNote('') }}
-                    className="px-4 py-2 rounded-[8px] text-[13px] text-sb-n500 hover:text-sb-n800 transition-colors"
-                  >
-                    취소
-                  </button>
-                </div>
+                {pendingAction.isConfirmOnly ? (
+                  <>
+                    <p className="flex-1 text-[13px] text-sb-n700 self-center">
+                      <span className="font-medium">{pendingAction.label}</span>을 실행하시겠습니까?
+                    </p>
+                    <div className="flex gap-2 flex-shrink-0">
+                      <button
+                        onClick={() => executeAction(pendingAction)}
+                        className="px-4 py-2 rounded-[8px] text-[13px] font-medium bg-sb-brand text-white hover:bg-sb-brand/90 transition-colors"
+                      >
+                        확인
+                      </button>
+                      <button
+                        onClick={() => { setPendingAction(null); setActionNote('') }}
+                        className="px-4 py-2 rounded-[8px] text-[13px] text-sb-n500 hover:text-sb-n800 transition-colors"
+                      >
+                        취소
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="flex flex-col gap-1 flex-1">
+                      <p className="text-[12px] text-sb-n600 font-medium">
+                        {pendingAction.label} — {pendingAction.needsNote ? '사유를 입력하세요 (필수)' : '메모 (선택)'}
+                      </p>
+                      <textarea
+                        className="w-full border border-sb-n200 rounded-[8px] px-3 py-2 text-[13px] text-sb-n800 placeholder:text-sb-n400 focus:outline-none focus:border-sb-brand resize-none"
+                        rows={2}
+                        placeholder="사유를 입력하세요"
+                        value={actionNote}
+                        onChange={(e) => setActionNote(e.target.value)}
+                      />
+                    </div>
+                    <div className="flex flex-col gap-2 flex-shrink-0 pt-5">
+                      <button
+                        onClick={() => executeAction(pendingAction)}
+                        disabled={pendingAction.needsNote && !actionNote.trim()}
+                        className="px-4 py-2 rounded-[8px] text-[13px] font-medium bg-sb-brand text-white hover:bg-sb-brand/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
+                        확인
+                      </button>
+                      <button
+                        onClick={() => { setPendingAction(null); setActionNote('') }}
+                        className="px-4 py-2 rounded-[8px] text-[13px] text-sb-n500 hover:text-sb-n800 transition-colors"
+                      >
+                        취소
+                      </button>
+                    </div>
+                  </>
+                )}
               </div>
             )}
 
@@ -607,6 +729,42 @@ export default function InternalCaseDetail() {
                   {action.label}
                 </button>
               ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* File preview modal */}
+      {previewFile && (
+        <div
+          className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-6"
+          onClick={() => setPreviewFile(null)}
+        >
+          <div
+            className="bg-white rounded-[16px] max-w-[800px] w-full max-h-[90vh] overflow-hidden flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-5 py-4 border-b border-sb-n100">
+              <span className="text-[14px] font-medium text-sb-n900 truncate pr-4">{previewFile.fileName}</span>
+              <button
+                onClick={() => setPreviewFile(null)}
+                className="flex-shrink-0 text-[13px] text-sb-n500 hover:text-sb-n800 px-3 py-1.5 rounded-[6px] hover:bg-sb-n50 transition-colors"
+              >
+                닫기
+              </button>
+            </div>
+            <div className="flex-1 overflow-auto p-5 flex items-center justify-center min-h-[300px]">
+              {previewFile.dataUrl && previewFile.dataUrl.startsWith('data:image') ? (
+                <img src={previewFile.dataUrl} alt={previewFile.fileName} className="max-w-full max-h-[70vh] object-contain" />
+              ) : previewFile.dataUrl ? (
+                <iframe src={previewFile.dataUrl} title={previewFile.fileName} className="w-full h-[70vh] border-0" />
+              ) : (
+                <div className="flex flex-col items-center gap-3 text-center">
+                  <FileText size={48} className="text-sb-n300" />
+                  <p className="text-[14px] text-sb-n500">{previewFile.fileName}</p>
+                  <p className="text-[12px] text-sb-n400">미리보기를 지원하지 않는 파일입니다.</p>
+                </div>
+              )}
             </div>
           </div>
         </div>
