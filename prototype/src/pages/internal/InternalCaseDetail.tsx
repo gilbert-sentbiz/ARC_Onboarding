@@ -376,8 +376,6 @@ export default function InternalCaseDetail() {
                 <span className="text-[13px] text-sb-n800">
                   {c.segmentInfo?.monthlyVolume ? `${c.segmentInfo.monthlyVolume} ${c.segmentInfo.monthlyVolumeCurrency}` : '—'}
                 </span>
-                <span className="text-[12px] text-sb-n500">리스크</span>
-                <span className="text-[13px] text-sb-n800">{c.segmentInfo?.complianceRisk || '—'}</span>
               </div>
             </div>
           </div>

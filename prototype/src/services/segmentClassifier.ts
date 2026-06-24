@@ -1,4 +1,4 @@
-import type { EntitySegment, ServiceSegment, ComplianceRisk, SegmentInfo, OnboardingFormData } from '../types'
+import type { EntitySegment, ServiceSegment, SegmentInfo, OnboardingFormData } from '../types'
 
 const KOREA_KEYWORDS = ['한국', '대한민국', 'korea', 'kr', 'south korea']
 
@@ -23,18 +23,9 @@ export function classifyServices(services: string[], collectionCountries: string
   return result
 }
 
-// FI 또는 기타 국가 수금이면 HIGH, 일반 수금이면 MEDIUM, 송금만이면 LOW
-export function classifyComplianceRisk(entity: EntitySegment, services: ServiceSegment[]): ComplianceRisk {
-  if (entity === 'FI') return 'HIGH'
-  if (services.includes('기타 Collection')) return 'HIGH'
-  if (services.some(s => s.includes('Collection'))) return 'MEDIUM'
-  return 'LOW'
-}
-
 export function classify(formData: OnboardingFormData): SegmentInfo {
   const entitySegment = classifyEntity(formData.businessType, formData.foundingCountry)
   const serviceSegments = classifyServices(formData.services, formData.collectionCountries)
-  const complianceRisk = classifyComplianceRisk(entitySegment, serviceSegments)
 
   return {
     entitySegment,
@@ -43,6 +34,5 @@ export function classify(formData: OnboardingFormData): SegmentInfo {
     monthlyVolumeCurrency: formData.monthlyVolumeCurrency,
     monthlyVolume: formData.monthlyVolume,
     monthlyCount: formData.monthlyCount,
-    complianceRisk,
   }
 }

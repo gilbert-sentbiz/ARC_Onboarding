@@ -27,7 +27,7 @@ export type UserRole = 'CUSTOMER' | 'SALES' | 'COMPLIANCE' | 'OPS'
 export type CloseReason = 'DROPPED' | 'EXITED'
 export type EntitySegment = 'SentBiz Corporate' | 'SentBiz Individual' | 'FI'
 export type ServiceSegment = 'KRW Collection' | 'VND Collection' | '기타 Collection' | 'Remittance'
-export type ComplianceRisk = 'LOW' | 'MEDIUM' | 'HIGH'
+
 
 export interface UserSession {
   userId: string
@@ -43,7 +43,7 @@ export interface SegmentInfo {
   monthlyVolumeCurrency: string
   monthlyVolume: string
   monthlyCount: string
-  complianceRisk: ComplianceRisk
+
 }
 
 export interface OnboardingFormData {
