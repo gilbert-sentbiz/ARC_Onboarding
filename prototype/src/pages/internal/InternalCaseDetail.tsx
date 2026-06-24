@@ -20,7 +20,7 @@ function formatDate(ts: number) {
 }
 
 const DOC_STATUS_BADGE: Record<DocumentStatus, { label: string; cls: string }> = {
-  NOT_REQUESTED: { label: '요청 전',  cls: 'bg-sb-n100 text-sb-n500' },
+  NOT_REQUESTED: { label: '미제출',   cls: 'bg-sb-n100 text-sb-n500' },
   REQUESTED:     { label: '제출 요청', cls: 'bg-blue-50 text-blue-600' },
   SUBMITTED:     { label: '검토중',   cls: 'bg-amber-50 text-amber-600' },
   REVISION_REQUIRED: { label: '보완 요청', cls: 'bg-orange-50 text-orange-600' },
