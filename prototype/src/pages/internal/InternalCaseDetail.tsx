@@ -345,17 +345,17 @@ export default function InternalCaseDetail() {
           <div className="flex flex-col gap-6 max-w-[800px]">
             <div className="bg-white rounded-[12px] border border-sb-n100 p-6 flex flex-col gap-4">
               <h3 className="text-[14px] font-semibold text-sb-n900">1차 입력 정보</h3>
-              {Object.keys(c.firstIntake.data).length > 0 ? (
+              {Object.keys(c.firstIntake?.data ?? {}).length > 0 ? (
                 <IntakeDataDisplay data={c.firstIntake.data} />
               ) : (
                 <p className="text-[13px] text-sb-n400">입력 데이터가 없습니다.</p>
               )}
             </div>
 
-            {c.secondIntake.status !== 'not_started' && (
+            {c.secondIntake?.status !== 'not_started' && c.secondIntake && (
               <div className="bg-white rounded-[12px] border border-sb-n100 p-6 flex flex-col gap-4">
                 <h3 className="text-[14px] font-semibold text-sb-n900">2차 입력 정보</h3>
-                {Object.keys(c.secondIntake.data).length > 0 ? (
+                {Object.keys(c.secondIntake?.data ?? {}).length > 0 ? (
                   <IntakeDataDisplay data={c.secondIntake.data} />
                 ) : (
                   <p className="text-[13px] text-sb-n400">입력 데이터가 없습니다.</p>
@@ -367,17 +367,17 @@ export default function InternalCaseDetail() {
               <h3 className="text-[14px] font-semibold text-sb-n900">세그먼트 판단</h3>
               <div className="grid grid-cols-[180px_1fr] gap-2">
                 <span className="text-[12px] text-sb-n500">Entity</span>
-                <span className="text-[13px] text-sb-n800">{c.segmentInfo.entitySegment}</span>
+                <span className="text-[13px] text-sb-n800">{c.segmentInfo?.entitySegment || '—'}</span>
                 <span className="text-[12px] text-sb-n500">Service</span>
-                <span className="text-[13px] text-sb-n800">{c.segmentInfo.serviceSegments.join(', ') || '—'}</span>
+                <span className="text-[13px] text-sb-n800">{(c.segmentInfo?.serviceSegments ?? []).join(', ') || '—'}</span>
                 <span className="text-[12px] text-sb-n500">설립 국가</span>
-                <span className="text-[13px] text-sb-n800">{c.segmentInfo.foundingCountry || '—'}</span>
+                <span className="text-[13px] text-sb-n800">{c.segmentInfo?.foundingCountry || '—'}</span>
                 <span className="text-[12px] text-sb-n500">월간 거래 규모</span>
                 <span className="text-[13px] text-sb-n800">
-                  {c.segmentInfo.monthlyVolume ? `${c.segmentInfo.monthlyVolume} ${c.segmentInfo.monthlyVolumeCurrency}` : '—'}
+                  {c.segmentInfo?.monthlyVolume ? `${c.segmentInfo.monthlyVolume} ${c.segmentInfo.monthlyVolumeCurrency}` : '—'}
                 </span>
                 <span className="text-[12px] text-sb-n500">리스크</span>
-                <span className="text-[13px] text-sb-n800">{c.segmentInfo.complianceRisk}</span>
+                <span className="text-[13px] text-sb-n800">{c.segmentInfo?.complianceRisk || '—'}</span>
               </div>
             </div>
           </div>
@@ -386,25 +386,25 @@ export default function InternalCaseDetail() {
         {/* ── 서류 탭 ── */}
         {tab === 'docs' && (
           <div className="flex flex-col gap-4 max-w-[800px]">
-            {c.documents.length === 0 ? (
+            {(c.documents ?? []).length === 0 ? (
               <div className="bg-white rounded-[12px] border border-sb-n100 p-12 flex flex-col items-center gap-3 text-center">
                 <FileDashed size={36} className="text-sb-n300" />
                 <p className="text-[14px] text-sb-n400">서류 목록이 없습니다.</p>
               </div>
             ) : (
               <>
-                {role === 'COMPLIANCE' && c.documents.some((d) => d.status === 'SUBMITTED') && (
+                {role === 'COMPLIANCE' && (c.documents ?? []).some((d) => d.status === 'SUBMITTED') && (
                   <div className="flex justify-end">
                     <button
                       onClick={approveAllDocs}
                       className="flex items-center gap-1.5 px-3 py-2 rounded-[8px] text-[13px] font-medium bg-sb-positive-light text-sb-positive hover:opacity-80 transition-opacity"
                     >
                       <Check size={14} weight="bold" />
-                      일괄 승인 ({c.documents.filter((d) => d.status === 'SUBMITTED').length}건)
+                      일괄 승인 ({(c.documents ?? []).filter((d) => d.status === 'SUBMITTED').length}건)
                     </button>
                   </div>
                 )}
-                {c.documents.map((doc) => {
+                {(c.documents ?? []).map((doc) => {
                 const badge = DOC_STATUS_BADGE[doc.status]
                 const isRevisionOpen = docRevisionId === doc.id
                 return (
@@ -524,7 +524,7 @@ export default function InternalCaseDetail() {
               <div className="bg-white rounded-[12px] border border-sb-n100 p-6">
                 <h3 className="text-[14px] font-semibold text-sb-n900 mb-4">상태 변경 이력</h3>
                 <div className="flex flex-col gap-0">
-                  {c.statusHistory.map((h, i) => {
+                  {(c.statusHistory ?? []).map((h, i) => {
                     const isOwnerChange = h.previousStatus !== null && h.previousStatus === h.newStatus
                     return (
                       <div key={h.id} className="flex gap-3">
@@ -539,7 +539,7 @@ export default function InternalCaseDetail() {
                               : <Clock size={14} className="text-sb-n400" />
                             }
                           </div>
-                          {i < c.statusHistory.length - 1 && (
+                          {i < (c.statusHistory ?? []).length - 1 && (
                             <div className="w-px flex-1 min-h-[20px] bg-sb-n100 my-1" />
                           )}
                         </div>
@@ -570,10 +570,10 @@ export default function InternalCaseDetail() {
                   고객 채팅
                 </h3>
                 <div className="flex flex-col gap-2 max-h-[240px] overflow-y-auto">
-                  {c.messages.length === 0 ? (
+                  {(c.messages ?? []).length === 0 ? (
                     <p className="text-[12px] text-sb-n400 text-center py-4">메시지가 없습니다.</p>
                   ) : (
-                    c.messages.map((msg) => {
+                    (c.messages ?? []).map((msg) => {
                       const isMe = msg.sender.role !== 'CUSTOMER'
                       return (
                         <div key={msg.id} className={`flex flex-col gap-0.5 ${isMe ? 'items-end' : 'items-start'}`}>
