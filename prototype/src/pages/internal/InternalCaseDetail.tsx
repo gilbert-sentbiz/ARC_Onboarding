@@ -272,11 +272,11 @@ export default function InternalCaseDetail() {
               {STATUS_LABELS[c.status]}
             </span>
             <span className="text-[12px] text-sb-n400 flex-shrink-0">
-              {SEGMENT_LABEL[c.segmentInfo.entitySegment] ?? c.segmentInfo.entitySegment}
-              {c.segmentInfo.serviceSegments.length > 0 && ` · ${c.segmentInfo.serviceSegments.join(' · ')}`}
+              {SEGMENT_LABEL[c.segmentInfo?.entitySegment] ?? c.segmentInfo?.entitySegment}
+              {(c.segmentInfo?.serviceSegments?.length ?? 0) > 0 && ` · ${c.segmentInfo.serviceSegments.join(' · ')}`}
             </span>
             {/* 담당자 표시 + 변경 */}
-            {c.currentOwner.role !== 'CUSTOMER' && (
+            {c.currentOwner?.role !== 'CUSTOMER' && c.currentOwner && (
               <div className="flex items-center gap-1.5 flex-shrink-0 ml-2">
                 <span className="text-[12px] text-sb-n400">담당자:</span>
                 {ownerChangeMode ? (
@@ -287,7 +287,7 @@ export default function InternalCaseDetail() {
                       className="text-[12px] border border-sb-n200 rounded-[6px] px-2 py-0.5 text-sb-n800 focus:outline-none focus:border-sb-brand"
                     >
                       <option value="">선택</option>
-                      {staff.filter(s => s.role === c.currentOwner.role).map(s => (
+                      {staff.filter(s => s.role === c.currentOwner?.role).map(s => (
                         <option key={s.email} value={s.name}>{s.name}</option>
                       ))}
                     </select>
