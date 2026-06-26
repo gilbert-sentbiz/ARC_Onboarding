@@ -190,6 +190,22 @@ export const INITIAL_RULESET: RuleSet = {
       ],
     },
   ],
+
+  // ── Entity classification rules ───────────────────────────────────────────
+  entityClassificationRules: [
+    { id: 'ecr_1', conditionLabel: 'businessType = financial',   conditionType: 'businessType',      conditionValue: 'financial',   result: 'ENTITY_FI'   },
+    { id: 'ecr_2', conditionLabel: '설립 국가 = 해외',             conditionType: 'isForeignFounding',                               result: 'ENTITY_FI'   },
+    { id: 'ecr_3', conditionLabel: 'businessType = corporation', conditionType: 'businessType',      conditionValue: 'corporation', result: 'ENTITY_CORP'  },
+    { id: 'ecr_4', conditionLabel: '(기본값)',                    conditionType: 'default',                                         result: 'ENTITY_INDIV' },
+  ],
+
+  // ── Service classification rules ──────────────────────────────────────────
+  serviceClassificationRules: [
+    { serviceCode: 'SVC_REMITTANCE',  triggerServices: ['remittance'], triggerCurrencies: []        },
+    { serviceCode: 'SVC_KRW',         triggerServices: ['collection'], triggerCurrencies: ['KRW']   },
+    { serviceCode: 'SVC_VND',         triggerServices: ['collection'], triggerCurrencies: ['VND']   },
+    { serviceCode: 'SVC_OTHER_COLL',  triggerServices: ['collection'], triggerCurrencies: ['OTHER'] },
+  ],
 }
 
 // ── Store ─────────────────────────────────────────────────────────────────────

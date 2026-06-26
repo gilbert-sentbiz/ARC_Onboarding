@@ -104,6 +104,14 @@ export default function InternalDashboard() {
                   CRM
                 </button>
               )}
+              {role === 'COMPLIANCE' && (
+                <button
+                  className="px-3 py-1.5 rounded-[6px] text-[13px] font-medium text-sb-n500 hover:text-sb-n800 hover:bg-sb-n50 transition-colors"
+                  onClick={() => navigate('/internal/rules')}
+                >
+                  Rule 관리
+                </button>
+              )}
             </nav>
           </div>
           <div className="flex items-center gap-3">

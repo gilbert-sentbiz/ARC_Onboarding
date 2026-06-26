@@ -55,12 +55,28 @@ export interface DocumentRule {
   docs: DocTemplateRule[]
 }
 
+export interface EntityClassificationRule {
+  id: string
+  conditionLabel: string
+  conditionType: 'businessType' | 'isForeignFounding' | 'default'
+  conditionValue?: string
+  result: EntityCode
+}
+
+export interface ServiceClassificationRule {
+  serviceCode: ServiceCode
+  triggerServices: string[]
+  triggerCurrencies: string[]
+}
+
 export interface RuleSet {
   version: string
   entityLabels: Record<EntityCode, string>
   serviceLabels: Record<ServiceCode, string>
   sectorLabels: Record<SectorCode, string>
   documentRules: DocumentRule[]
+  entityClassificationRules: EntityClassificationRule[]
+  serviceClassificationRules: ServiceClassificationRule[]
 }
 
 export interface RuleSetHistoryEntry {

@@ -1,4 +1,5 @@
 import type { EntityCode, ServiceCode, SectorCode, SegmentInfo, OnboardingFormData } from '../types'
+import { getRuleSet } from '../store/ruleStore'
 
 const KOREA_KEYWORDS = ['한국', '대한민국', 'korea', 'kr', 'south korea']
 
@@ -18,23 +19,31 @@ const SECTOR_CODE_MAP: Record<string, SectorCode> = {
 }
 
 export function classifyEntity(businessType: string, foundingCountry: string): EntityCode {
-  if (businessType === 'financial') return 'ENTITY_FI'
-  if (foundingCountry && !isKorea(foundingCountry)) return 'ENTITY_FI'
-  return businessType === 'corporation' ? 'ENTITY_CORP' : 'ENTITY_INDIV'
+  const rules = getRuleSet().entityClassificationRules
+  for (const rule of rules) {
+    if (rule.conditionType === 'default') continue
+    if (rule.conditionType === 'businessType' && businessType === rule.conditionValue) return rule.result
+    if (rule.conditionType === 'isForeignFounding' && foundingCountry && !isKorea(foundingCountry)) return rule.result
+  }
+  const defaultRule = rules.find(r => r.conditionType === 'default')
+  return defaultRule?.result ?? 'ENTITY_INDIV'
 }
 
 export function classifyServices(services: string[], collectionCountries: string[]): ServiceCode[] {
+  const rules = getRuleSet().serviceClassificationRules
   const result: ServiceCode[] = []
-  if (services.includes('remittance')) result.push('SVC_REMITTANCE')
-  if (services.includes('collection')) {
-    if (collectionCountries.includes('KRW')) result.push('SVC_KRW')
-    if (collectionCountries.includes('VND')) result.push('SVC_VND')
-    if (collectionCountries.includes('OTHER')) result.push('SVC_OTHER_COLL')
+  for (const rule of rules) {
+    const serviceMatch = rule.triggerServices.every(s => services.includes(s))
+    if (!serviceMatch) continue
+    if (rule.triggerCurrencies.length > 0) {
+      const currencyMatch = rule.triggerCurrencies.some(c => collectionCountries.includes(c))
+      if (!currencyMatch) continue
+    }
+    result.push(rule.serviceCode)
   }
   return result
 }
 
-// Extracts SectorCodes from second-intake data (KRW collection sector)
 export function classifySectors(secondIntakeData?: Record<string, unknown>): SectorCode[] {
   const krwData = secondIntakeData?.krwCollection as Record<string, unknown> | undefined
   const sectorKey = krwData?.sector as string | undefined
