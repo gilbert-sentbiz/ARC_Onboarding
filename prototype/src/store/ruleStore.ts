@@ -252,9 +252,8 @@ export const INITIAL_RULESET: RuleSet = {
     { key: 'entity:ENTITY_FI',    enabledCommonQuestionIds: ['q_business_purpose','q_source_of_funds','q_counterparty_country','q_transaction_nature'], ownQuestions: [] },
     { key: 'service:SVC_KRW',          enabledCommonQuestionIds: ['q_business_purpose','q_counterparty_country'], ownQuestions: [] },
     { key: 'service:SVC_VND',          enabledCommonQuestionIds: ['q_business_purpose','q_counterparty_country'], ownQuestions: [] },
-    { key: 'service:SVC_PAYOUT',        enabledCommonQuestionIds: ['q_business_purpose','q_source_of_funds'],      ownQuestions: [] },
+    { key: 'service:SVC_PAYOUT',       enabledCommonQuestionIds: ['q_business_purpose','q_source_of_funds'],      ownQuestions: [] },
     { key: 'service:SVC_OTHER_COLL',   enabledCommonQuestionIds: ['q_business_purpose','q_source_of_funds'],      ownQuestions: [] },
-    { key: 'service:SVC_PAYOUT',       enabledCommonQuestionIds: [],                                              ownQuestions: [] },
   ],
 }
 
