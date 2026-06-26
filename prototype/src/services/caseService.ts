@@ -1,9 +1,10 @@
 import type { Case, CaseStatus, IntakeRecord, UserRole, UserSession, OnboardingFormData } from '../types'
-import { classify } from './segmentClassifier'
+import { classify, classifySectors } from './segmentClassifier'
 import { buildDocuments } from './documentRequirements'
 import { canTransition, STATUS_LABELS, ROLE_LABELS } from './stateMachine'
 import { useCaseStore } from '../store/caseStore'
 import { useInternalStaffStore } from '../store/internalStaffStore'
+import { getRuleSet } from '../store/ruleStore'
 
 const EMPTY_INTAKE: IntakeRecord = { status: 'not_started', data: {}, savedAt: 0 }
 
@@ -67,6 +68,7 @@ export function saveFirstIntakeDraft(
     customerName: formData.contactName ?? '',
     customerEmail: formData.email ?? session.email,
     segmentInfo,
+    ruleSetVersion: getRuleSet().version,
     currentOwner: { role: 'CUSTOMER', name: formData.contactName ?? '' },
     firstIntake: { status: 'draft', data: formData as Record<string, unknown>, savedAt: now },
     secondIntake: { ...EMPTY_INTAKE },
@@ -115,6 +117,7 @@ export function createCase(formData: OnboardingFormData, session: UserSession): 
     customerName: formData.contactName,
     customerEmail: formData.email,
     segmentInfo,
+    ruleSetVersion: getRuleSet().version,
     currentOwner: { role: 'CUSTOMER', name: formData.contactName },
     firstIntake: { status: 'submitted', data: formData as unknown as Record<string, unknown>, savedAt: now },
     secondIntake: { ...EMPTY_INTAKE },
@@ -145,11 +148,15 @@ export function confirmSecondIntake(
   if (!c) return { ok: false, error: '케이스를 찾을 수 없습니다.' }
 
   const now = Date.now()
-  const documents = buildDocuments(caseId, c.segmentInfo, c.secondIntake.data as Record<string, unknown>)
+  const secondData = c.secondIntake.data as Record<string, unknown>
+  const sectors = classifySectors(secondData)
+  const segmentInfo = { ...c.segmentInfo, sectors }
+  const documents = buildDocuments(caseId, segmentInfo)
 
   store.updateCase(caseId, {
     status: 'DOCUMENT_SUBMISSION_REQUIRED',
     currentOwner: { role: 'CUSTOMER', name: '고객' },
+    segmentInfo,
     secondIntake: { status: 'submitted', data: c.secondIntake.data, savedAt: now },
     documents,
     statusHistory: [

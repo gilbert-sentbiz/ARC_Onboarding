@@ -246,9 +246,21 @@ export default function InternalCaseDetail() {
 
   // ── render ──
   const SEGMENT_LABEL: Record<string, string> = {
+    // PI-38 codes
+    'ENTITY_CORP': '법인',
+    'ENTITY_INDIV': '개인사업자',
+    'ENTITY_FI': 'FI',
+    // Legacy (backward compat)
     'SentBiz Corporate': '법인',
     'SentBiz Individual': '개인사업자',
     'FI': 'FI',
+  }
+  const SERVICE_LABEL: Record<string, string> = {
+    'SVC_KRW': 'KRW Collection',
+    'SVC_VND': 'VND Collection',
+    'SVC_REMITTANCE': 'Remittance',
+    'SVC_OTHER_COLL': '기타 Collection',
+    'SVC_PAYOUT': 'Payout',
   }
 
   return (
@@ -272,8 +284,12 @@ export default function InternalCaseDetail() {
               {STATUS_LABELS[c.status]}
             </span>
             <span className="text-[12px] text-sb-n400 flex-shrink-0">
-              {SEGMENT_LABEL[c.segmentInfo?.entitySegment] ?? c.segmentInfo?.entitySegment}
-              {(c.segmentInfo?.serviceSegments?.length ?? 0) > 0 && ` · ${c.segmentInfo.serviceSegments.join(' · ')}`}
+              {SEGMENT_LABEL[c.segmentInfo?.entity ?? c.segmentInfo?.entitySegment ?? ''] ?? (c.segmentInfo?.entity ?? c.segmentInfo?.entitySegment)}
+              {(() => {
+                const svcs = c.segmentInfo?.services ?? c.segmentInfo?.serviceSegments ?? []
+                if (svcs.length === 0) return null
+                return ` · ${svcs.map((s: string) => SERVICE_LABEL[s] ?? s).join(' · ')}`
+              })()}
             </span>
             {/* 담당자 표시 + 변경 */}
             {c.currentOwner?.role !== 'CUSTOMER' && c.currentOwner && (
@@ -367,9 +383,13 @@ export default function InternalCaseDetail() {
               <h3 className="text-[14px] font-semibold text-sb-n900">세그먼트 판단</h3>
               <div className="grid grid-cols-[180px_1fr] gap-2">
                 <span className="text-[12px] text-sb-n500">Entity</span>
-                <span className="text-[13px] text-sb-n800">{c.segmentInfo?.entitySegment || '—'}</span>
+                <span className="text-[13px] text-sb-n800">{SEGMENT_LABEL[c.segmentInfo?.entity ?? c.segmentInfo?.entitySegment ?? ''] ?? (c.segmentInfo?.entity ?? c.segmentInfo?.entitySegment) ?? '—'}</span>
                 <span className="text-[12px] text-sb-n500">Service</span>
-                <span className="text-[13px] text-sb-n800">{(c.segmentInfo?.serviceSegments ?? []).join(', ') || '—'}</span>
+                <span className="text-[13px] text-sb-n800">{(c.segmentInfo?.services ?? c.segmentInfo?.serviceSegments ?? []).map((s: string) => SERVICE_LABEL[s] ?? s).join(', ') || '—'}</span>
+                {(c.segmentInfo?.sectors?.length ?? 0) > 0 && (<>
+                  <span className="text-[12px] text-sb-n500">Sector</span>
+                  <span className="text-[13px] text-sb-n800">{c.segmentInfo.sectors.join(', ')}</span>
+                </>)}
                 <span className="text-[12px] text-sb-n500">설립 국가</span>
                 <span className="text-[13px] text-sb-n800">{c.segmentInfo?.foundingCountry || '—'}</span>
                 <span className="text-[12px] text-sb-n500">월간 거래 규모</span>

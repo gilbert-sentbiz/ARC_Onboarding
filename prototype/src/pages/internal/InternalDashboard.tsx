@@ -19,9 +19,22 @@ const ROLE_VIEWABLE_STATUSES: Record<string, CaseStatus[]> = {
 }
 
 const SEGMENT_LABEL: Record<string, string> = {
+  // PI-38 codes
+  'ENTITY_CORP': '법인',
+  'ENTITY_INDIV': '개인사업자',
+  'ENTITY_FI': 'FI',
+  // Legacy (backward compat)
   'SentBiz Corporate': '법인',
   'SentBiz Individual': '개인사업자',
   'FI': 'FI',
+}
+
+const SERVICE_LABEL: Record<string, string> = {
+  'SVC_KRW': 'KRW Collection',
+  'SVC_VND': 'VND Collection',
+  'SVC_REMITTANCE': 'Remittance',
+  'SVC_OTHER_COLL': '기타 Collection',
+  'SVC_PAYOUT': 'Payout',
 }
 
 function formatDate(ts: number) {
@@ -154,8 +167,9 @@ export default function InternalDashboard() {
 
             {filtered.map((c, i) => {
               const badge = STATUS_BADGE[c.status]
-              const services = (c.segmentInfo?.serviceSegments ?? []).join(' · ')
-              const entitySegment = c.segmentInfo?.entitySegment ?? ''
+              const rawServices = c.segmentInfo?.services ?? c.segmentInfo?.serviceSegments ?? []
+              const services = rawServices.map((s: string) => SERVICE_LABEL[s] ?? s).join(' · ')
+              const entitySegment = c.segmentInfo?.entity ?? c.segmentInfo?.entitySegment ?? ''
               const daysWaiting = getDaysInStatus(c)
               const ownerName = c.currentOwner?.role !== 'CUSTOMER' ? c.currentOwner?.name : '—'
               return (

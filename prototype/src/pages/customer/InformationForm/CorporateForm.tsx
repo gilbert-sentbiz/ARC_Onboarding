@@ -8,10 +8,8 @@ import CheckboxGroup from '../../../components/ui/CheckboxGroup'
 import Button from '../../../components/ui/Button'
 import FormShell from './FormShell'
 import { COUNTRIES } from '../../../constants/countries'
-import type { ServiceSegment } from '../../../types'
-
 interface Props {
-  serviceSegments: ServiceSegment[]
+  serviceSegments: string[]
   initialData?: Record<string, unknown>
   onComplete: (data: Record<string, unknown>) => void
   onDraftSave?: (data: Record<string, unknown>) => void

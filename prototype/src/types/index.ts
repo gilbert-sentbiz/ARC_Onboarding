@@ -25,9 +25,49 @@ export type DocumentStatus =
 
 export type UserRole = 'CUSTOMER' | 'SALES' | 'COMPLIANCE' | 'OPS'
 export type CloseReason = 'DROPPED' | 'EXITED'
+
+// PI-38: 3-axis segment codes
+export type EntityCode = 'ENTITY_CORP' | 'ENTITY_INDIV' | 'ENTITY_FI'
+export type ServiceCode = 'SVC_KRW' | 'SVC_VND' | 'SVC_REMITTANCE' | 'SVC_OTHER_COLL' | 'SVC_PAYOUT'
+export type SectorCode =
+  | 'SEC_TRADING_B2B' | 'SEC_TRADING_B2C' | 'SEC_CONSULTING'
+  | 'SEC_DEV_DESIGN' | 'SEC_ADVERTISING' | 'SEC_RESEARCH'
+  | 'SEC_IT_COMPUTER' | 'SEC_COUPANG'
+
+// Deprecated — kept for backward compat with old localStorage cases
 export type EntitySegment = 'SentBiz Corporate' | 'SentBiz Individual' | 'FI'
 export type ServiceSegment = 'KRW Collection' | 'VND Collection' | '기타 Collection' | 'Remittance'
 
+// PI-38: RuleSet types (stored in localStorage under 'rule_set')
+export interface DocTemplateRule {
+  type: string
+  displayName: string
+  isRequired: boolean
+  isConditional: boolean
+}
+
+export interface DocumentRule {
+  match: {
+    entity?: EntityCode
+    service?: ServiceCode
+    sector?: SectorCode
+  }
+  docs: DocTemplateRule[]
+}
+
+export interface RuleSet {
+  version: string
+  entityLabels: Record<EntityCode, string>
+  serviceLabels: Record<ServiceCode, string>
+  sectorLabels: Record<SectorCode, string>
+  documentRules: DocumentRule[]
+}
+
+export interface RuleSetHistoryEntry {
+  version: string
+  savedAt: number
+  ruleSet: RuleSet
+}
 
 export interface UserSession {
   userId: string
@@ -37,13 +77,17 @@ export interface UserSession {
 }
 
 export interface SegmentInfo {
-  entitySegment: EntitySegment
-  serviceSegments: ServiceSegment[]
+  // PI-38: 3-axis model
+  entity: EntityCode
+  services: ServiceCode[]
+  sectors: SectorCode[]
   foundingCountry: string
   monthlyVolumeCurrency: string
   monthlyVolume: string
   monthlyCount: string
-
+  // Legacy fields (old localStorage cases may have these)
+  entitySegment?: string
+  serviceSegments?: string[]
 }
 
 export interface OnboardingFormData {
@@ -128,6 +172,7 @@ export interface Case {
   customerName: string
   customerEmail: string
   segmentInfo: SegmentInfo
+  ruleSetVersion?: string
   currentOwner: { role: UserRole; name: string }
   firstIntake: IntakeRecord
   secondIntake: IntakeRecord

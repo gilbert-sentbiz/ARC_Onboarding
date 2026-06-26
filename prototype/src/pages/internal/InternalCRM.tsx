@@ -18,6 +18,11 @@ const CLOSE_REASON_LABEL: Record<string, string> = {
 }
 
 const SEGMENT_LABEL: Record<string, string> = {
+  // PI-38 codes
+  'ENTITY_CORP': '법인',
+  'ENTITY_INDIV': '개인사업자',
+  'ENTITY_FI': 'FI',
+  // Legacy (backward compat)
   'SentBiz Corporate': '법인',
   'SentBiz Individual': '개인사업자',
   'FI': 'FI',
@@ -145,7 +150,7 @@ export default function InternalCRM() {
                       {c.closeReason ? CLOSE_REASON_LABEL[c.closeReason] : '—'}
                     </span>
                     <div className="flex flex-col gap-0.5">
-                      <span className="text-[12px] text-sb-n600">{SEGMENT_LABEL[c.segmentInfo.entitySegment] ?? c.segmentInfo.entitySegment}</span>
+                      <span className="text-[12px] text-sb-n600">{SEGMENT_LABEL[c.segmentInfo?.entity ?? c.segmentInfo?.entitySegment ?? ''] ?? (c.segmentInfo?.entity ?? c.segmentInfo?.entitySegment)}</span>
                       {beforeClose && (
                         <span className="text-[11px] text-sb-n400">{STATUS_LABELS[beforeClose]}</span>
                       )}

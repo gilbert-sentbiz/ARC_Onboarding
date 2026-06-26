@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useCaseStore } from '../../../store/caseStore'
-import type { ServiceSegment } from '../../../types'
+import type { ServiceCode } from '../../../types'
 import CorporateForm from './CorporateForm'
 import IndividualForm from './IndividualForm'
 import FIForm from './FIForm'
@@ -24,20 +24,22 @@ export default function InformationForm() {
     // P1: 2차 첫 진입 시 1차 입력값 자동채움
     const fi = (c?.firstIntake?.data ?? {}) as Record<string, unknown>
     const rawSeg = (c?.segmentInfo as unknown as Record<string, unknown>) ?? {}
-    const seg = (rawSeg.entitySegment ?? rawSeg.customerType) as string | undefined
+    // Handle both new codes (entity) and legacy (entitySegment)
+    const seg = (rawSeg.entity ?? rawSeg.entitySegment ?? rawSeg.customerType) as string | undefined
     const fiServices = Array.isArray(fi.services) ? (fi.services as string[]) : []
     const fiColl = Array.isArray(fi.collectionCountries) ? (fi.collectionCountries as string[]) : []
+    const fiServiceCodes = Array.isArray(rawSeg.services) ? (rawSeg.services as string[]) : []
     const fiServiceSegs = Array.isArray(rawSeg.serviceSegments) ? (rawSeg.serviceSegments as string[]) : []
 
     const entityInit: Record<string, unknown> = {}
-    if (seg === 'SentBiz Corporate') {
+    if (seg === 'ENTITY_CORP' || seg === 'SentBiz Corporate') {
       if (fi.companyName) entityInit.companyNameKr = fi.companyName
       if (fi.phone) entityInit.phone = fi.phone
       if (fi.foundingCountry) entityInit.corpNationality = fi.foundingCountry
-    } else if (seg === 'SentBiz Individual') {
+    } else if (seg === 'ENTITY_INDIV' || seg === 'SentBiz Individual') {
       if (fi.companyName) entityInit.bizName = fi.companyName
       if (fi.phone) entityInit.phone = fi.phone
-    } else if (seg === 'FI') {
+    } else if (seg === 'ENTITY_FI' || seg === 'FI') {
       if (fi.companyName) entityInit.legalName = fi.companyName
       if (fi.foundingCountry) entityInit.incorpCountry = fi.foundingCountry
       if (fi.phone) entityInit.repPhone = fi.phone
@@ -53,7 +55,7 @@ export default function InformationForm() {
 
     const result: Record<string, unknown> = {}
     if (Object.keys(entityInit).length > 0) result.entity = entityInit
-    if (fiServiceSegs.includes('VND Collection')) {
+    if (fiServiceCodes.includes('SVC_VND') || fiServiceSegs.includes('VND Collection')) {
       const vndInit: Record<string, unknown> = {}
       if (fi.companyName) vndInit.entityName = fi.companyName
       if (fi.foundingCountry) vndInit.placeOfIncorp = fi.foundingCountry
@@ -75,10 +77,11 @@ export default function InformationForm() {
   }
 
   const raw = c.segmentInfo as unknown as Record<string, unknown>
-  const entitySegment = (raw.entitySegment ?? raw.customerType) as string | undefined
-  const serviceSegments = (raw.serviceSegments ?? []) as ServiceSegment[]
-  const needsKRW = serviceSegments.includes('KRW Collection')
-  const needsVND = serviceSegments.includes('VND Collection')
+  const entitySegment = (raw.entity ?? raw.entitySegment ?? raw.customerType) as string | undefined
+  const serviceCodes = Array.isArray(raw.services) ? raw.services as ServiceCode[] : []
+  const serviceSegsLegacy = Array.isArray(raw.serviceSegments) ? raw.serviceSegments as string[] : []
+  const needsKRW = serviceCodes.includes('SVC_KRW') || serviceSegsLegacy.includes('KRW Collection')
+  const needsVND = serviceCodes.includes('SVC_VND') || serviceSegsLegacy.includes('VND Collection')
 
   function saveDraft(partial: Record<string, unknown>) {
     if (!id) return
@@ -133,17 +136,22 @@ export default function InformationForm() {
     )
 
   // entity stage
+  // Pass service codes in both formats so sub-forms can render the right sections
+  const serviceSegmentsForForm = serviceCodes.length > 0
+    ? serviceCodes.map(c => ({ 'SVC_KRW': 'KRW Collection', 'SVC_VND': 'VND Collection', 'SVC_REMITTANCE': 'Remittance', 'SVC_OTHER_COLL': '기타 Collection', 'SVC_PAYOUT': 'Payout' }[c] ?? c))
+    : serviceSegsLegacy
+
   const entityProps = {
-    serviceSegments,
+    serviceSegments: serviceSegmentsForForm as string[],
     initialData: (accumulated.entity as Record<string, unknown>) ?? {},
     onDraftSave: (d: Record<string, unknown>) => saveDraft({ ...accumulated, entity: d }),
   }
 
-  if (entitySegment === 'SentBiz Corporate')
+  if (entitySegment === 'ENTITY_CORP' || entitySegment === 'SentBiz Corporate')
     return <CorporateForm {...entityProps} onComplete={handleEntityComplete} />
-  if (entitySegment === 'SentBiz Individual')
+  if (entitySegment === 'ENTITY_INDIV' || entitySegment === 'SentBiz Individual')
     return <IndividualForm {...entityProps} onComplete={handleEntityComplete} />
-  if (entitySegment === 'FI')
+  if (entitySegment === 'ENTITY_FI' || entitySegment === 'FI')
     return <FIForm {...entityProps} onComplete={handleEntityComplete} />
 
   navigate('/customer/onboarding', { replace: true })
