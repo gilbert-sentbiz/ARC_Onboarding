@@ -206,6 +206,51 @@ export const INITIAL_RULESET: RuleSet = {
     { serviceCode: 'SVC_VND',         triggerServices: ['collection'], triggerCurrencies: ['VND']   },
     { serviceCode: 'SVC_OTHER_COLL',  triggerServices: ['collection'], triggerCurrencies: ['OTHER'] },
   ],
+
+  // ── Question pool (PRD 9.6–9.10) ─────────────────────────────────────────
+  questionPool: [
+    // Common — apply to all segments (9.6)
+    { id: 'q_business_purpose',    label: '사업 목적 및 거래 배경',    inputType: 'textarea', isRequired: true, classification: 'common' },
+    { id: 'q_source_of_funds',     label: '자금 출처',                 inputType: 'select',   isRequired: true, classification: 'common',
+      options: [
+        { value: 'export_proceeds', label: '수출 대금' },
+        { value: 'service_income',  label: '서비스 수익' },
+        { value: 'investment',      label: '투자금' },
+        { value: 'loan',            label: '대출' },
+        { value: 'other',           label: '기타' },
+      ],
+    },
+    { id: 'q_counterparty_country', label: '주요 거래 상대방 국가',    inputType: 'text',    isRequired: true,  classification: 'common' },
+    { id: 'q_transaction_nature',   label: '예상 거래 성격',           inputType: 'radio',   isRequired: true,  classification: 'common',
+      options: [
+        { value: 'regular',    label: '정기적 (월정기)' },
+        { value: 'occasional', label: '비정기적 (건별)' },
+      ],
+    },
+    // Entity-specific, FI only (9.7) — fixed
+    { id: 'q_fi_license_number', label: '인허가 번호',          inputType: 'text', isRequired: true, classification: 'entity', scopeEntity: 'ENTITY_FI',   isFixed: true },
+    { id: 'q_fi_regulator',      label: '감독기관명',            inputType: 'text', isRequired: true, classification: 'entity', scopeEntity: 'ENTITY_FI',   isFixed: true },
+    { id: 'q_fi_license_type',   label: '인허가 유형',          inputType: 'text', isRequired: true, classification: 'entity', scopeEntity: 'ENTITY_FI',   isFixed: true },
+    // Entity-specific, CORP (9.8) — fixed
+    { id: 'q_corp_ubo_name',  label: 'UBO 성명 (지분 25% 이상)', inputType: 'text',   isRequired: true, classification: 'entity', scopeEntity: 'ENTITY_CORP', isFixed: true },
+    { id: 'q_corp_ubo_share', label: 'UBO 지분율 (%)',           inputType: 'number', isRequired: true, classification: 'entity', scopeEntity: 'ENTITY_CORP', isFixed: true },
+    // Service-specific, SVC_KRW (9.9) — fixed
+    { id: 'q_krw_business_line', label: '주요 거래 업종/품목', inputType: 'text', isRequired: true, classification: 'service', scopeService: 'SVC_KRW', isFixed: true },
+    // Service-specific, SVC_VND (9.10) — fixed
+    { id: 'q_vnd_export_goods', label: '수출 상품/서비스 유형', inputType: 'text', isRequired: true, classification: 'service', scopeService: 'SVC_VND', isFixed: true },
+  ],
+
+  // ── Segment question configs ────────────────────────────────────────────
+  segmentQuestionConfigs: [
+    { key: 'entity:ENTITY_CORP',  enabledCommonQuestionIds: ['q_business_purpose','q_source_of_funds','q_counterparty_country','q_transaction_nature'], ownQuestions: [] },
+    { key: 'entity:ENTITY_INDIV', enabledCommonQuestionIds: ['q_business_purpose','q_source_of_funds','q_counterparty_country','q_transaction_nature'], ownQuestions: [] },
+    { key: 'entity:ENTITY_FI',    enabledCommonQuestionIds: ['q_business_purpose','q_source_of_funds','q_counterparty_country','q_transaction_nature'], ownQuestions: [] },
+    { key: 'service:SVC_KRW',          enabledCommonQuestionIds: ['q_business_purpose','q_counterparty_country'], ownQuestions: [] },
+    { key: 'service:SVC_VND',          enabledCommonQuestionIds: ['q_business_purpose','q_counterparty_country'], ownQuestions: [] },
+    { key: 'service:SVC_REMITTANCE',   enabledCommonQuestionIds: ['q_business_purpose','q_source_of_funds'],      ownQuestions: [] },
+    { key: 'service:SVC_OTHER_COLL',   enabledCommonQuestionIds: ['q_business_purpose','q_source_of_funds'],      ownQuestions: [] },
+    { key: 'service:SVC_PAYOUT',       enabledCommonQuestionIds: [],                                              ownQuestions: [] },
+  ],
 }
 
 // ── Store ─────────────────────────────────────────────────────────────────────
@@ -234,5 +279,10 @@ export const useRuleStore = create<RuleStoreState>()(
 )
 
 export function getRuleSet(): RuleSet {
-  return useRuleStore.getState().currentRuleSet
+  const rs = useRuleStore.getState().currentRuleSet
+  return {
+    ...rs,
+    questionPool: rs.questionPool?.length ? rs.questionPool : INITIAL_RULESET.questionPool,
+    segmentQuestionConfigs: rs.segmentQuestionConfigs?.length ? rs.segmentQuestionConfigs : INITIAL_RULESET.segmentQuestionConfigs,
+  }
 }

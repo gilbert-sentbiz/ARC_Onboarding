@@ -69,6 +69,33 @@ export interface ServiceClassificationRule {
   triggerCurrencies: string[]
 }
 
+// PI-41: Question rule types
+export type QuestionInputType = 'text' | 'select' | 'radio' | 'textarea' | 'number'
+export type QuestionClassification = 'common' | 'entity' | 'service'
+
+export interface QuestionOption {
+  value: string
+  label: string
+}
+
+export interface QuestionRule {
+  id: string
+  label: string
+  inputType: QuestionInputType
+  options?: QuestionOption[]
+  isRequired: boolean
+  classification: QuestionClassification
+  scopeEntity?: EntityCode
+  scopeService?: ServiceCode
+  isFixed?: boolean  // true = read-only in panel (seed questions)
+}
+
+export interface SegmentQuestionConfig {
+  key: string                        // 'entity:ENTITY_CORP' | 'service:SVC_KRW' etc.
+  enabledCommonQuestionIds: string[]
+  ownQuestions: QuestionRule[]
+}
+
 export interface RuleSet {
   version: string
   entityLabels: Record<EntityCode, string>
@@ -77,6 +104,8 @@ export interface RuleSet {
   documentRules: DocumentRule[]
   entityClassificationRules: EntityClassificationRule[]
   serviceClassificationRules: ServiceClassificationRule[]
+  questionPool: QuestionRule[]
+  segmentQuestionConfigs: SegmentQuestionConfig[]
 }
 
 export interface RuleSetHistoryEntry {

@@ -2,15 +2,15 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { SignOut, TreeStructure, Plus, Trash } from '@phosphor-icons/react'
 import { useSessionStore } from '../../store/sessionStore'
-import { useRuleStore } from '../../store/ruleStore'
-import type { EntityCode, ServiceCode, SectorCode, EntityClassificationRule, ServiceClassificationRule, DocTemplateRule } from '../../types'
+import { useRuleStore, getRuleSet } from '../../store/ruleStore'
+import type { EntityCode, ServiceCode, SectorCode, EntityClassificationRule, ServiceClassificationRule, DocTemplateRule, QuestionRule, SegmentQuestionConfig, QuestionInputType } from '../../types'
 
 type Selection =
   | { type: 'entity'; code: EntityCode }
   | { type: 'service'; code: ServiceCode }
 
-type EntityTab = 'classification' | 'documents'
-type ServiceTab = 'condition' | 'documents'
+type EntityTab = 'classification' | 'documents' | 'questions'
+type ServiceTab = 'condition' | 'documents' | 'questions'
 
 const ENTITY_ORDER: EntityCode[] = ['ENTITY_CORP', 'ENTITY_INDIV', 'ENTITY_FI']
 const SERVICE_ORDER: ServiceCode[] = ['SVC_KRW', 'SVC_VND', 'SVC_REMITTANCE', 'SVC_OTHER_COLL', 'SVC_PAYOUT']
@@ -20,6 +20,211 @@ function nextVersion(current: string): string {
   const m = current.match(/^v(\d+)\.(\d+)\.(\d+)$/)
   if (!m) return current + '.1'
   return `v${m[1]}.${m[2]}.${parseInt(m[3]) + 1}`
+}
+
+// ── Questions editor ──────────────────────────────────────────────────────────
+
+const INPUT_TYPE_OPTIONS: { value: QuestionInputType; label: string }[] = [
+  { value: 'text',     label: 'text' },
+  { value: 'textarea', label: 'textarea' },
+  { value: 'select',   label: 'select' },
+  { value: 'radio',    label: 'radio' },
+  { value: 'number',   label: 'number' },
+]
+
+function AddQuestionForm({ onAdd }: { onAdd: (q: QuestionRule) => void }) {
+  const [form, setForm] = useState({ label: '', inputType: 'text' as QuestionInputType, isRequired: true })
+
+  function submit() {
+    if (!form.label) return
+    const id = `q_own_${Date.now()}`
+    onAdd({ id, label: form.label, inputType: form.inputType, isRequired: form.isRequired, classification: 'service' })
+    setForm({ label: '', inputType: 'text', isRequired: true })
+  }
+
+  return (
+    <div className="flex items-end gap-2 pt-3 border-t border-sb-n100 mt-1">
+      <div className="flex-1">
+        <p className="text-[11px] text-sb-n400 mb-1">질문 레이블</p>
+        <input
+          placeholder="예: 주요 수출 품목"
+          value={form.label}
+          onChange={(e) => setForm(p => ({ ...p, label: e.target.value }))}
+          className="w-full text-[12px] border border-sb-n200 rounded-[6px] px-2 py-1.5 text-sb-n800 focus:outline-none focus:border-sb-brand"
+        />
+      </div>
+      <div className="w-24">
+        <p className="text-[11px] text-sb-n400 mb-1">입력 유형</p>
+        <select
+          value={form.inputType}
+          onChange={(e) => setForm(p => ({ ...p, inputType: e.target.value as QuestionInputType }))}
+          className="w-full text-[12px] border border-sb-n200 rounded-[6px] px-2 py-1.5 bg-white focus:outline-none focus:border-sb-brand"
+        >
+          {INPUT_TYPE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+        </select>
+      </div>
+      <label className="flex items-center gap-1.5 cursor-pointer flex-shrink-0 mb-1.5">
+        <input
+          type="checkbox"
+          checked={form.isRequired}
+          onChange={(e) => setForm(p => ({ ...p, isRequired: e.target.checked }))}
+          className="rounded border-sb-n300 text-sb-brand focus:ring-sb-brand"
+        />
+        <span className="text-[12px] text-sb-n600">필수</span>
+      </label>
+      <button
+        onClick={submit}
+        disabled={!form.label}
+        className="flex items-center gap-1 px-3 py-1.5 rounded-[6px] text-[12px] font-medium bg-sb-brand text-white disabled:opacity-40 mb-px"
+      >
+        <Plus size={12} />
+        추가
+      </button>
+    </div>
+  )
+}
+
+function QuestionsEditor({ selected }: { selected: Selection }) {
+  const { currentRuleSet, updateRuleSet } = useRuleStore()
+
+  const configKey = selected.type === 'entity' ? `entity:${selected.code}` : `service:${selected.code}`
+  const rs = getRuleSet()
+
+  const config: SegmentQuestionConfig = rs.segmentQuestionConfigs.find(c => c.key === configKey)
+    ?? { key: configKey, enabledCommonQuestionIds: [], ownQuestions: [] }
+
+  const commonQuestions = rs.questionPool.filter(q => q.classification === 'common')
+  const scopedFixedQuestions = rs.questionPool.filter(q => {
+    if (selected.type === 'entity') return q.classification === 'entity' && q.scopeEntity === selected.code
+    return q.classification === 'service' && q.scopeService === selected.code
+  })
+
+  function saveConfig(patch: Partial<SegmentQuestionConfig>) {
+    const fullRs = getRuleSet()
+    const exists = fullRs.segmentQuestionConfigs.some(c => c.key === configKey)
+    const updated: SegmentQuestionConfig[] = exists
+      ? fullRs.segmentQuestionConfigs.map(c => c.key === configKey ? { ...c, ...patch } : c)
+      : [...fullRs.segmentQuestionConfigs, { ...config, ...patch }]
+    updateRuleSet({ ...currentRuleSet, version: nextVersion(currentRuleSet.version), segmentQuestionConfigs: updated, questionPool: fullRs.questionPool })
+  }
+
+  function toggleCommon(qId: string, enabled: boolean) {
+    const next = enabled
+      ? [...config.enabledCommonQuestionIds, qId]
+      : config.enabledCommonQuestionIds.filter(id => id !== qId)
+    saveConfig({ enabledCommonQuestionIds: next })
+  }
+
+  function addOwn(q: QuestionRule) {
+    saveConfig({ ownQuestions: [...config.ownQuestions, q] })
+  }
+
+  function removeOwn(idx: number) {
+    saveConfig({ ownQuestions: config.ownQuestions.filter((_, i) => i !== idx) })
+  }
+
+  const classificationBadge = (cls: string) => (
+    <span className={`inline-block text-[10px] font-medium px-1.5 py-0.5 rounded-full ${cls === 'common' ? 'bg-blue-50 text-blue-600' : cls === 'entity' ? 'bg-purple-50 text-purple-600' : 'bg-amber-50 text-amber-600'}`}>
+      {cls}
+    </span>
+  )
+
+  return (
+    <div className="flex flex-col gap-4">
+      {/* Common question pool */}
+      <div className="bg-white rounded-[10px] border border-sb-n100 p-4">
+        <p className="text-[12px] font-semibold text-sb-n500 uppercase tracking-[0.5px] mb-3">공통 질문 풀</p>
+        <p className="text-[12px] text-sb-n400 mb-3">이 세그먼트에서 고객에게 표시할 공통 질문을 선택합니다.</p>
+        <div className="flex flex-col divide-y divide-sb-n100">
+          {commonQuestions.map(q => {
+            const isEnabled = config.enabledCommonQuestionIds.includes(q.id)
+            return (
+              <div key={q.id} className="flex items-center gap-3 py-2.5">
+                <input
+                  type="checkbox"
+                  checked={isEnabled}
+                  onChange={(e) => toggleCommon(q.id, e.target.checked)}
+                  className="rounded border-sb-n300 text-sb-brand focus:ring-sb-brand"
+                />
+                <div className="flex-1 min-w-0">
+                  <p className="text-[13px] text-sb-n800">{q.label}</p>
+                  <p className="text-[11px] font-mono text-sb-n400">{q.id}</p>
+                </div>
+                <div className="flex items-center gap-1.5 flex-shrink-0">
+                  {classificationBadge(q.classification)}
+                  <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${q.isRequired ? 'bg-red-50 text-sb-negative' : 'bg-sb-n50 text-sb-n400'}`}>
+                    {q.isRequired ? '필수' : '선택'}
+                  </span>
+                  <span className="text-[10px] font-mono text-sb-n400 px-1.5 py-0.5 border border-sb-n100 rounded">{q.inputType}</span>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* Fixed scoped questions (read-only) */}
+      {scopedFixedQuestions.length > 0 && (
+        <div className="bg-white rounded-[10px] border border-sb-n100 p-4">
+          <p className="text-[12px] font-semibold text-sb-n500 uppercase tracking-[0.5px] mb-1">고유 질문 (고정)</p>
+          <p className="text-[12px] text-sb-n400 mb-3">이 세그먼트에 항상 표시되는 고정 질문입니다 (PRD 정의, 수정 불가).</p>
+          <div className="flex flex-col divide-y divide-sb-n100">
+            {scopedFixedQuestions.map(q => (
+              <div key={q.id} className="flex items-center gap-3 py-2.5 opacity-70">
+                <input type="checkbox" checked readOnly className="rounded border-sb-n300 text-sb-brand" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-[13px] text-sb-n800">{q.label}</p>
+                  <p className="text-[11px] font-mono text-sb-n400">{q.id}</p>
+                </div>
+                <div className="flex items-center gap-1.5 flex-shrink-0">
+                  {classificationBadge(q.classification)}
+                  <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-sb-n50 text-sb-n500">고정</span>
+                  <span className="text-[10px] font-mono text-sb-n400 px-1.5 py-0.5 border border-sb-n100 rounded">{q.inputType}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Own questions */}
+      <div className="bg-white rounded-[10px] border border-sb-n100 p-4">
+        <p className="text-[12px] font-semibold text-sb-n500 uppercase tracking-[0.5px] mb-1">자체 질문</p>
+        <p className="text-[12px] text-sb-n400 mb-3">이 세그먼트에만 추가되는 커스텀 질문입니다.</p>
+        {config.ownQuestions.length === 0 && (
+          <p className="text-[12px] text-sb-n400 py-2">추가된 자체 질문 없음</p>
+        )}
+        <div className="flex flex-col divide-y divide-sb-n100">
+          {config.ownQuestions.map((q, i) => (
+            <div key={q.id} className="flex items-center gap-3 py-2.5">
+              <div className="flex-1 min-w-0">
+                <p className="text-[13px] text-sb-n800">{q.label}</p>
+                <p className="text-[11px] font-mono text-sb-n400">{q.id}</p>
+              </div>
+              <div className="flex items-center gap-1.5 flex-shrink-0">
+                <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${q.isRequired ? 'bg-red-50 text-sb-negative' : 'bg-sb-n50 text-sb-n400'}`}>
+                  {q.isRequired ? '필수' : '선택'}
+                </span>
+                <span className="text-[10px] font-mono text-sb-n400 px-1.5 py-0.5 border border-sb-n100 rounded">{q.inputType}</span>
+                <button
+                  onClick={() => removeOwn(i)}
+                  className="flex items-center justify-center w-7 h-7 rounded-[6px] text-sb-n400 hover:text-sb-negative hover:bg-red-50 transition-colors"
+                >
+                  <Trash size={13} />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+        <AddQuestionForm onAdd={addOwn} />
+      </div>
+
+      <p className="text-[11px] text-sb-n400">
+        버전: <span className="font-mono font-medium text-sb-n700">{currentRuleSet.version}</span>
+        &nbsp;— 변경 시 자동으로 버전이 올라갑니다.
+      </p>
+    </div>
+  )
 }
 
 // ── Documents editor ──────────────────────────────────────────────────────────
@@ -556,6 +761,7 @@ export default function InternalRulesPanel() {
                 tabs={[
                   { id: 'classification' as EntityTab, label: 'Classification' },
                   { id: 'documents' as EntityTab, label: 'Documents' },
+                  { id: 'questions' as EntityTab, label: 'Questions' },
                 ]}
                 active={entityTab}
                 onChange={setEntityTab}
@@ -563,6 +769,7 @@ export default function InternalRulesPanel() {
 
               {entityTab === 'classification' && <EntityClassificationEditor />}
               {entityTab === 'documents' && <DocumentsEditor selected={selected} />}
+              {entityTab === 'questions' && <QuestionsEditor selected={selected} />}
             </div>
           )}
 
@@ -582,6 +789,7 @@ export default function InternalRulesPanel() {
                 tabs={[
                   { id: 'condition' as ServiceTab, label: 'Condition' },
                   { id: 'documents' as ServiceTab, label: 'Documents' },
+                  { id: 'questions' as ServiceTab, label: 'Questions' },
                 ]}
                 active={serviceTab}
                 onChange={setServiceTab}
@@ -589,6 +797,7 @@ export default function InternalRulesPanel() {
 
               {serviceTab === 'condition' && <ServiceConditionEditor code={selected.code} />}
               {serviceTab === 'documents' && <DocumentsEditor selected={selected} />}
+              {serviceTab === 'questions' && <QuestionsEditor selected={selected} />}
             </div>
           )}
         </main>
