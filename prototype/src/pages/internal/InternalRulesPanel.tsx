@@ -13,7 +13,6 @@ type EntityTab = 'classification' | 'documents' | 'questions'
 type ServiceTab = 'condition' | 'documents' | 'questions'
 
 const ENTITY_ORDER: EntityCode[] = ['ENTITY_CORP', 'ENTITY_INDIV', 'ENTITY_FI']
-const SERVICE_ORDER: ServiceCode[] = ['SVC_KRW', 'SVC_VND', 'SVC_REMITTANCE', 'SVC_OTHER_COLL', 'SVC_PAYOUT']
 const SECTOR_ORDER: SectorCode[] = ['SEC_TRADING_B2B', 'SEC_TRADING_B2C', 'SEC_CONSULTING', 'SEC_DEV_DESIGN', 'SEC_ADVERTISING', 'SEC_RESEARCH', 'SEC_IT_COMPUTER', 'SEC_COUPANG']
 
 function nextVersion(current: string): string {
@@ -573,6 +572,260 @@ function ServiceConditionEditor({ code }: { code: ServiceCode }) {
   )
 }
 
+// ── Add-country wizard (PI-42) ────────────────────────────────────────────────
+
+interface WizardData {
+  serviceCode: string
+  displayName: string
+  triggerServices: string[]
+  triggerCurrencies: string[]
+  enabledCommonQuestionIds: string[]
+  ownQuestions: QuestionRule[]
+  baseDocs: DocTemplateRule[]
+}
+
+function AddCountryWizard({ onFinish, onCancel }: {
+  onFinish: (data: WizardData) => void
+  onCancel: () => void
+}) {
+  const rs = getRuleSet()
+  const [step, setStep] = useState<1 | 2 | 3 | 4>(1)
+  const [d, setD] = useState<WizardData>({
+    serviceCode: 'SVC_',
+    displayName: '',
+    triggerServices: ['collection'],
+    triggerCurrencies: [],
+    enabledCommonQuestionIds: ['q_business_purpose', 'q_counterparty_country'],
+    ownQuestions: [],
+    baseDocs: [],
+  })
+  const [errors, setErrors] = useState<Record<string, string>>({})
+  const [currencyInput, setCurrencyInput] = useState('')
+
+  const existingCodes = Object.keys(rs.serviceLabels)
+  const commonQuestions = rs.questionPool.filter(q => q.classification === 'common')
+
+  function validateStep1() {
+    const errs: Record<string, string> = {}
+    if (!d.serviceCode || d.serviceCode === 'SVC_') errs.serviceCode = '코드를 입력하세요 (예: SVC_IDR)'
+    else if (!d.serviceCode.startsWith('SVC_')) errs.serviceCode = 'SVC_로 시작해야 합니다'
+    else if (existingCodes.includes(d.serviceCode)) errs.serviceCode = '이미 존재하는 코드입니다'
+    if (!d.displayName) errs.displayName = '표시명을 입력하세요'
+    setErrors(errs)
+    return Object.keys(errs).length === 0
+  }
+
+  function validateStep2() {
+    const errs: Record<string, string> = {}
+    if (d.triggerServices.length === 0) errs.triggerServices = '최소 하나의 서비스 조건이 필요합니다'
+    setErrors(errs)
+    return Object.keys(errs).length === 0
+  }
+
+  function addCurrency() {
+    if (currencyInput && !d.triggerCurrencies.includes(currencyInput)) {
+      setD(p => ({ ...p, triggerCurrencies: [...p.triggerCurrencies, currencyInput] }))
+      setCurrencyInput('')
+    }
+  }
+
+  const STEP_TITLES = ['기본 정보', '분류 조건', '질문 설정', '서류 설정']
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+      <div className="bg-white rounded-[16px] shadow-xl w-full max-w-[560px] mx-4 flex flex-col max-h-[90vh]">
+        {/* Wizard header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-sb-n100">
+          <div>
+            <p className="text-[11px] text-sb-n400 font-medium uppercase tracking-[0.5px]">국가 추가 ({step}/4)</p>
+            <h3 className="text-[17px] font-semibold text-sb-n900">{STEP_TITLES[step - 1]}</h3>
+          </div>
+          <div className="flex gap-1.5 items-center">
+            {([1, 2, 3, 4] as const).map(s => (
+              <div key={s} className={`rounded-full transition-all ${s === step ? 'w-5 h-2 bg-sb-brand' : s < step ? 'w-2 h-2 bg-sb-brand/40' : 'w-2 h-2 bg-sb-n200'}`} />
+            ))}
+          </div>
+        </div>
+
+        {/* Body */}
+        <div className="flex-1 overflow-y-auto px-6 py-5">
+          {/* ── Step 1: Basics ── */}
+          {step === 1 && (
+            <div className="flex flex-col gap-5">
+              <div>
+                <label className="block text-[13px] font-medium text-sb-n700 mb-1.5">
+                  서비스 코드 <span className="text-sb-negative">*</span>
+                </label>
+                <input
+                  value={d.serviceCode}
+                  onChange={(e) => setD(p => ({ ...p, serviceCode: e.target.value.toUpperCase() }))}
+                  placeholder="SVC_IDR"
+                  className={`w-full font-mono border rounded-[8px] px-3 py-2.5 text-[14px] focus:outline-none focus:border-sb-brand ${errors.serviceCode ? 'border-sb-negative' : 'border-sb-n200'}`}
+                />
+                {errors.serviceCode
+                  ? <p className="text-[12px] text-sb-negative mt-1">{errors.serviceCode}</p>
+                  : <p className="text-[12px] text-sb-n400 mt-1">SVC_로 시작하는 고유 코드. 예: SVC_IDR, SVC_CNY, SVC_PHP</p>
+                }
+              </div>
+              <div>
+                <label className="block text-[13px] font-medium text-sb-n700 mb-1.5">
+                  표시명 <span className="text-sb-negative">*</span>
+                </label>
+                <input
+                  value={d.displayName}
+                  onChange={(e) => setD(p => ({ ...p, displayName: e.target.value }))}
+                  placeholder="IDR Collection"
+                  className={`w-full border rounded-[8px] px-3 py-2.5 text-[14px] focus:outline-none focus:border-sb-brand ${errors.displayName ? 'border-sb-negative' : 'border-sb-n200'}`}
+                />
+                {errors.displayName && <p className="text-[12px] text-sb-negative mt-1">{errors.displayName}</p>}
+              </div>
+            </div>
+          )}
+
+          {/* ── Step 2: Classification ── */}
+          {step === 2 && (
+            <div className="flex flex-col gap-5">
+              <div>
+                <label className="block text-[13px] font-semibold text-sb-n700 mb-1.5">서비스 선택 조건</label>
+                <p className="text-[12px] text-sb-n400 mb-3">1차 인테이크에서 어떤 서비스가 선택될 때 이 세그먼트가 트리거되는지 설정합니다.</p>
+                <div className="flex gap-5">
+                  {['remittance', 'collection'].map(svc => (
+                    <label key={svc} className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={d.triggerServices.includes(svc)}
+                        onChange={(e) => {
+                          const next = e.target.checked
+                            ? [...d.triggerServices, svc]
+                            : d.triggerServices.filter(s => s !== svc)
+                          setD(p => ({ ...p, triggerServices: next }))
+                        }}
+                        className="rounded border-sb-n300 text-sb-brand focus:ring-sb-brand"
+                      />
+                      <span className="text-[13px] font-mono text-sb-n700">{svc}</span>
+                    </label>
+                  ))}
+                </div>
+                {errors.triggerServices && <p className="text-[12px] text-sb-negative mt-1">{errors.triggerServices}</p>}
+              </div>
+
+              <div>
+                <label className="block text-[13px] font-semibold text-sb-n700 mb-1.5">수금 통화</label>
+                <p className="text-[12px] text-sb-n400 mb-3">이 세그먼트를 트리거할 통화 코드를 추가합니다. 비어 있으면 통화 무관.</p>
+                <div className="flex gap-2 mb-3">
+                  <input
+                    value={currencyInput}
+                    onChange={(e) => setCurrencyInput(e.target.value.toUpperCase())}
+                    onKeyDown={(e) => e.key === 'Enter' && addCurrency()}
+                    placeholder="IDR"
+                    className="flex-1 font-mono border border-sb-n200 rounded-[8px] px-3 py-2 text-[14px] focus:outline-none focus:border-sb-brand"
+                  />
+                  <button
+                    onClick={addCurrency}
+                    disabled={!currencyInput}
+                    className="px-4 py-2 rounded-[8px] text-[13px] font-medium bg-sb-brand text-white disabled:opacity-40"
+                  >
+                    추가
+                  </button>
+                </div>
+                <div className="flex flex-wrap gap-1.5 min-h-[28px]">
+                  {d.triggerCurrencies.map(cur => (
+                    <span key={cur} className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-sb-blue-100 text-sb-brand text-[12px] font-mono font-medium">
+                      {cur}
+                      <button onClick={() => setD(p => ({ ...p, triggerCurrencies: p.triggerCurrencies.filter(c => c !== cur) }))} className="ml-0.5 hover:text-sb-negative leading-none">×</button>
+                    </span>
+                  ))}
+                  {d.triggerCurrencies.length === 0 && <p className="text-[12px] text-sb-n400">추가된 통화 없음</p>}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ── Step 3: Questions ── */}
+          {step === 3 && (
+            <div className="flex flex-col gap-4">
+              <p className="text-[13px] text-sb-n600">이 세그먼트에서 고객에게 표시할 공통 질문을 선택합니다. 세그먼트 고유 질문은 완료 후 Questions 탭에서 추가할 수 있습니다.</p>
+              <div className="rounded-[10px] border border-sb-n100 overflow-hidden">
+                {commonQuestions.map((q, i) => (
+                  <label key={q.id} className={`flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-sb-n50 ${i > 0 ? 'border-t border-sb-n100' : ''}`}>
+                    <input
+                      type="checkbox"
+                      checked={d.enabledCommonQuestionIds.includes(q.id)}
+                      onChange={(e) => {
+                        const next = e.target.checked
+                          ? [...d.enabledCommonQuestionIds, q.id]
+                          : d.enabledCommonQuestionIds.filter(id => id !== q.id)
+                        setD(p => ({ ...p, enabledCommonQuestionIds: next }))
+                      }}
+                      className="rounded border-sb-n300 text-sb-brand focus:ring-sb-brand"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[13px] text-sb-n800">{q.label}</p>
+                      <p className="text-[11px] font-mono text-sb-n400">{q.id}</p>
+                    </div>
+                    <span className="text-[10px] font-mono text-sb-n400 px-1.5 py-0.5 border border-sb-n100 rounded bg-white flex-shrink-0">{q.inputType}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* ── Step 4: Documents ── */}
+          {step === 4 && (
+            <div className="flex flex-col gap-4">
+              <p className="text-[13px] text-sb-n600">기본 서류 목록을 입력합니다. 완료 후 Documents 탭에서 언제든 수정할 수 있습니다.</p>
+              <div className="rounded-[10px] border border-sb-n100 p-4">
+                {d.baseDocs.length === 0 && <p className="text-[12px] text-sb-n400 py-1">추가된 서류 없음</p>}
+                <div className="flex flex-col divide-y divide-sb-n100 mb-1">
+                  {d.baseDocs.map((doc, i) => (
+                    <div key={doc.type} className="flex items-center gap-3 py-2">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[13px] text-sb-n800">{doc.displayName}</p>
+                        <p className="text-[11px] font-mono text-sb-n400">{doc.type}</p>
+                      </div>
+                      <span className={`text-[10px] rounded-full px-2 py-0.5 flex-shrink-0 ${doc.isRequired ? 'bg-red-50 text-sb-negative' : 'bg-sb-n50 text-sb-n500'}`}>
+                        {doc.isRequired ? '필수' : '선택'}
+                      </span>
+                      <button
+                        onClick={() => setD(p => ({ ...p, baseDocs: p.baseDocs.filter((_, idx) => idx !== i) }))}
+                        className="w-7 h-7 flex items-center justify-center rounded-[6px] text-sb-n400 hover:text-sb-negative hover:bg-red-50"
+                      >
+                        <Trash size={13} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                <AddDocForm onAdd={(doc) => setD(p => ({ ...p, baseDocs: [...p.baseDocs, doc] }))} />
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Wizard footer */}
+        <div className="flex justify-between px-6 py-4 border-t border-sb-n100">
+          <button
+            onClick={() => { if (step === 1) onCancel(); else setStep(s => (s - 1) as 1 | 2 | 3 | 4) }}
+            className="px-4 py-2.5 rounded-[8px] text-[13px] font-medium text-sb-n600 border border-sb-n200 hover:bg-sb-n50"
+          >
+            {step === 1 ? '취소' : '← 이전'}
+          </button>
+          <button
+            onClick={() => {
+              if (step === 1 && validateStep1()) setStep(2)
+              else if (step === 2 && validateStep2()) setStep(3)
+              else if (step === 3) setStep(4)
+              else if (step === 4) onFinish(d)
+            }}
+            className="px-5 py-2.5 rounded-[8px] text-[13px] font-medium bg-sb-brand text-white"
+          >
+            {step === 4 ? '완료 →' : '다음 →'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── Tab bar ───────────────────────────────────────────────────────────────────
 
 function TabBar<T extends string>({
@@ -609,12 +862,41 @@ export default function InternalRulesPanel() {
   const navigate = useNavigate()
   const session = useSessionStore((s) => s.session)
   const clearSession = useSessionStore((s) => s.clearSession)
-  const { currentRuleSet } = useRuleStore()
+  const { currentRuleSet, updateRuleSet } = useRuleStore()
   const rs = currentRuleSet
 
   const [selected, setSelected] = useState<Selection>({ type: 'entity', code: 'ENTITY_CORP' })
   const [entityTab, setEntityTab] = useState<EntityTab>('classification')
   const [serviceTab, setServiceTab] = useState<ServiceTab>('condition')
+  const [wizardOpen, setWizardOpen] = useState(false)
+
+  // Dynamic service order: seeded + wizard-created codes
+  const serviceOrder = Object.keys(rs.serviceLabels) as ServiceCode[]
+
+  function handleWizardFinish(data: WizardData) {
+    const newCode = data.serviceCode as ServiceCode
+    const fullRs = getRuleSet()
+    updateRuleSet({
+      ...fullRs,
+      version: nextVersion(fullRs.version),
+      serviceLabels: { ...fullRs.serviceLabels, [newCode]: data.displayName },
+      serviceClassificationRules: [
+        ...fullRs.serviceClassificationRules,
+        { serviceCode: newCode, triggerServices: data.triggerServices, triggerCurrencies: data.triggerCurrencies },
+      ],
+      segmentQuestionConfigs: [
+        ...fullRs.segmentQuestionConfigs,
+        { key: `service:${newCode}`, enabledCommonQuestionIds: data.enabledCommonQuestionIds, ownQuestions: data.ownQuestions },
+      ],
+      documentRules: [
+        ...fullRs.documentRules,
+        { match: { service: newCode }, docs: data.baseDocs },
+      ],
+    })
+    setSelected({ type: 'service', code: newCode })
+    setServiceTab('condition')
+    setWizardOpen(false)
+  }
 
   // COMPLIANCE-only guard
   if (!session || session.role !== 'COMPLIANCE') {
@@ -712,10 +994,10 @@ export default function InternalRulesPanel() {
               ))}
             </div>
 
-            {/* Service codes */}
+            {/* Service codes — dynamic */}
             <div className="px-3 pt-2 pb-2 border-t border-sb-n100">
               <p className="text-[11px] text-sb-n400 uppercase tracking-[0.5px] px-1 mb-1">Service</p>
-              {SERVICE_ORDER.map(code => (
+              {serviceOrder.map(code => (
                 <button
                   key={code}
                   onClick={() => selectService(code)}
@@ -732,16 +1014,20 @@ export default function InternalRulesPanel() {
             </div>
           </div>
 
-          {/* Add country — wired in PI-42 */}
+          {/* Add country wizard */}
           <button
-            disabled
-            className="flex items-center gap-2 px-4 py-2.5 rounded-[8px] border border-dashed border-sb-n200 text-[13px] text-sb-n400 cursor-not-allowed"
-            title="PI-42에서 구현 예정"
+            onClick={() => setWizardOpen(true)}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-[8px] border border-dashed border-sb-brand text-[13px] text-sb-brand font-medium hover:bg-sb-blue-100 transition-colors"
           >
             <Plus size={13} />
             국가 추가
           </button>
         </aside>
+
+        {/* Wizard modal */}
+        {wizardOpen && (
+          <AddCountryWizard onFinish={handleWizardFinish} onCancel={() => setWizardOpen(false)} />
+        )}
 
         {/* ── Content area ─────────────────────────────────────────────────── */}
         <main className="flex-1 bg-white rounded-[12px] border border-sb-n100 p-6 overflow-auto">
