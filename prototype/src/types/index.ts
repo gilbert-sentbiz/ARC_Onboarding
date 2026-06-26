@@ -28,7 +28,7 @@ export type CloseReason = 'DROPPED' | 'EXITED'
 
 // PI-38: 3-axis segment codes
 export type EntityCode = 'ENTITY_CORP' | 'ENTITY_INDIV' | 'ENTITY_FI'
-export type ServiceCode = 'SVC_KRW' | 'SVC_VND' | 'SVC_REMITTANCE' | 'SVC_OTHER_COLL' | 'SVC_PAYOUT'
+export type ServiceCode = 'SVC_KRW' | 'SVC_VND' | 'SVC_OTHER_COLL' | 'SVC_PAYOUT'
 export type SectorCode =
   | 'SEC_TRADING_B2B' | 'SEC_TRADING_B2C' | 'SEC_CONSULTING'
   | 'SEC_DEV_DESIGN' | 'SEC_ADVERTISING' | 'SEC_RESEARCH'

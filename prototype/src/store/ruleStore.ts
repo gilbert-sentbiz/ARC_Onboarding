@@ -14,7 +14,6 @@ export const INITIAL_RULESET: RuleSet = {
   serviceLabels: {
     SVC_KRW: 'KRW Collection',
     SVC_VND: 'VND Collection',
-    SVC_REMITTANCE: 'Remittance',
     SVC_OTHER_COLL: '기타 Collection',
     SVC_PAYOUT: 'Payout',
   },
@@ -175,9 +174,9 @@ export const INITIAL_RULESET: RuleSet = {
       ],
     },
 
-    // ── Remittance / Other ──────────────────────────────────────────────────
+    // ── Payout / Other ──────────────────────────────────────────────────────
     {
-      match: { service: 'SVC_REMITTANCE' },
+      match: { service: 'SVC_PAYOUT' },
       docs: [
         { type: 'remittance_contract', displayName: '해외 송금 계약서 또는 거래 계획서', isRequired: false, isConditional: true },
       ],
@@ -201,7 +200,7 @@ export const INITIAL_RULESET: RuleSet = {
 
   // ── Service classification rules ──────────────────────────────────────────
   serviceClassificationRules: [
-    { serviceCode: 'SVC_REMITTANCE',  triggerServices: ['remittance'], triggerCurrencies: []        },
+    { serviceCode: 'SVC_PAYOUT',      triggerServices: ['remittance'], triggerCurrencies: []        },
     { serviceCode: 'SVC_KRW',         triggerServices: ['collection'], triggerCurrencies: ['KRW']   },
     { serviceCode: 'SVC_VND',         triggerServices: ['collection'], triggerCurrencies: ['VND']   },
     { serviceCode: 'SVC_OTHER_COLL',  triggerServices: ['collection'], triggerCurrencies: ['OTHER'] },
@@ -247,7 +246,7 @@ export const INITIAL_RULESET: RuleSet = {
     { key: 'entity:ENTITY_FI',    enabledCommonQuestionIds: ['q_business_purpose','q_source_of_funds','q_counterparty_country','q_transaction_nature'], ownQuestions: [] },
     { key: 'service:SVC_KRW',          enabledCommonQuestionIds: ['q_business_purpose','q_counterparty_country'], ownQuestions: [] },
     { key: 'service:SVC_VND',          enabledCommonQuestionIds: ['q_business_purpose','q_counterparty_country'], ownQuestions: [] },
-    { key: 'service:SVC_REMITTANCE',   enabledCommonQuestionIds: ['q_business_purpose','q_source_of_funds'],      ownQuestions: [] },
+    { key: 'service:SVC_PAYOUT',        enabledCommonQuestionIds: ['q_business_purpose','q_source_of_funds'],      ownQuestions: [] },
     { key: 'service:SVC_OTHER_COLL',   enabledCommonQuestionIds: ['q_business_purpose','q_source_of_funds'],      ownQuestions: [] },
     { key: 'service:SVC_PAYOUT',       enabledCommonQuestionIds: [],                                              ownQuestions: [] },
   ],

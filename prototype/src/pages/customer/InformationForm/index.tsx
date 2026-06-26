@@ -235,7 +235,7 @@ export default function InformationForm() {
 
   // entity stage (default)
   const serviceSegmentsForForm = serviceCodes.length > 0
-    ? serviceCodes.map(c => ({ 'SVC_KRW': 'KRW Collection', 'SVC_VND': 'VND Collection', 'SVC_REMITTANCE': 'Remittance', 'SVC_OTHER_COLL': '기타 Collection', 'SVC_PAYOUT': 'Payout' }[c] ?? c))
+    ? serviceCodes.map(c => ({ 'SVC_KRW': 'KRW Collection', 'SVC_VND': 'VND Collection', 'SVC_OTHER_COLL': '기타 Collection', 'SVC_PAYOUT': 'Payout' }[c] ?? c))
     : serviceSegsLegacy
 
   const entityProps = {
