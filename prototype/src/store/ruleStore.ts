@@ -69,7 +69,13 @@ export const INITIAL_RULESET: RuleSet = {
         { type: 'wolfsberg',           displayName: 'Wolfsberg AML Questionnaire',                   isRequired: true,  isConditional: false },
         { type: 'board_resolution',    displayName: 'Board Resolution (서명 권한 위임)',              isRequired: true,  isConditional: false },
         { type: 'bank_proof',          displayName: 'Proof of Bank Account (최근 3개월 내)',          isRequired: true,  isConditional: false },
-        { type: 'kyc_merchants',       displayName: 'KYC Documents for Sample Merchants (2건)',      isRequired: false, isConditional: true  },
+      ],
+    },
+    // PRD §9.12 #13: kyc_merchants is scoped to KRW Collection FI only
+    {
+      match: { entity: 'ENTITY_FI', service: 'SVC_KRW' },
+      docs: [
+        { type: 'kyc_merchants', displayName: 'KYC Documents for Sample Merchants (2건)', isRequired: false, isConditional: true },
       ],
     },
 
