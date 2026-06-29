@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { SignOut, TreeStructure, Plus, Trash } from '@phosphor-icons/react'
 import { useSessionStore } from '../../store/sessionStore'
 import { useRuleStore, getRuleSet } from '../../store/ruleStore'
-import type { EntityCode, ServiceCode, SectorCode, EntityClassificationRule, ServiceClassificationRule, DocTemplateRule, QuestionRule, SegmentQuestionConfig, QuestionInputType } from '../../types'
+import type { EntityCode, ServiceCode, SectorCode, ServiceClassificationRule, DocTemplateRule, QuestionRule, SegmentQuestionConfig, QuestionInputType } from '../../types'
 
 type Selection =
   | { type: 'entity'; code: EntityCode }
@@ -436,52 +436,52 @@ function DocumentsEditor({ selected }: { selected: Selection }) {
 
 // ── Entity classification editor ──────────────────────────────────────────────
 
-function EntityClassificationEditor() {
-  const { currentRuleSet, updateRuleSet } = useRuleStore()
-  const rs = currentRuleSet
+function EntityClassificationEditor({ code }: { code: EntityCode }) {
+  const rs = getRuleSet()
 
-  function handleResultChange(ruleId: string, newResult: EntityCode) {
-    const updated: EntityClassificationRule[] = rs.entityClassificationRules.map(r =>
-      r.id === ruleId ? { ...r, result: newResult } : r
-    )
-    updateRuleSet({ ...rs, version: nextVersion(rs.version), entityClassificationRules: updated })
-  }
+  const rule = [...rs.entityClassificationRules]
+    .sort((a, b) => a.priority - b.priority)
+    .find(r => r.result === code)
 
-  const entityOptions: EntityCode[] = ['ENTITY_CORP', 'ENTITY_INDIV', 'ENTITY_FI']
+  const fieldLabel = (f: string) => f === 'businessType' ? '사업자 유형' : '설립국가'
+  const opLabel = (op: string) => op === 'eq' ? '=' : '≠'
 
   return (
     <div className="flex flex-col gap-4">
-      <div>
-        <p className="text-[12px] text-sb-n400">조건(Condition)은 읽기 전용입니다. 결과(Result)를 변경하면 이후 신규 케이스에 즉시 적용됩니다.</p>
-      </div>
+      <p className="text-[12px] text-sb-n400">이 세그먼트로 분류되는 조건입니다. (읽기 전용)</p>
 
-      <div className="bg-white rounded-[10px] border border-sb-n100 overflow-hidden">
-        <div className="grid grid-cols-[1fr_180px] gap-0 bg-sb-n50 border-b border-sb-n100 px-4 py-2.5">
-          <span className="text-[12px] font-semibold text-sb-n500">조건 (Condition)</span>
-          <span className="text-[12px] font-semibold text-sb-n500">결과 세그먼트 (Result)</span>
+      {!rule ? (
+        <div className="bg-sb-n50 rounded-[10px] border border-sb-n100 px-4 py-6 text-center text-[13px] text-sb-n400">
+          이 세그먼트에 해당하는 분류 조건이 없습니다.
         </div>
-        {rs.entityClassificationRules.map((rule, i) => (
-          <div
-            key={rule.id}
-            className={`grid grid-cols-[1fr_180px] gap-0 px-4 py-3 items-center ${i < rs.entityClassificationRules.length - 1 ? 'border-b border-sb-n100' : ''}`}
-          >
-            <span className="text-[13px] text-sb-n700 font-mono">{rule.conditionLabel}</span>
-            <select
-              value={rule.result}
-              onChange={(e) => handleResultChange(rule.id, e.target.value as EntityCode)}
-              className="text-[13px] border border-sb-n200 rounded-[6px] px-2 py-1 text-sb-n800 bg-white focus:outline-none focus:border-sb-brand"
-            >
-              {entityOptions.map(opt => (
-                <option key={opt} value={opt}>{rs.entityLabels[opt]} ({opt})</option>
-              ))}
-            </select>
+      ) : (
+        <div className="bg-white rounded-[10px] border border-sb-n100 overflow-hidden">
+          <div className="bg-sb-n50 border-b border-sb-n100 px-4 py-2.5 flex items-center justify-between">
+            <span className="text-[12px] font-semibold text-sb-n500">분류 조건</span>
+            <span className="text-[11px] font-mono text-sb-n400">priority {rule.priority} · {rule.conditionLogic}</span>
           </div>
-        ))}
-      </div>
+          <div className="px-4 py-4 flex flex-col gap-2">
+            {rule.conditions.map((c, i) => (
+              <div key={i} className="flex items-center gap-2">
+                {i > 0 && (
+                  <span className="text-[11px] font-semibold text-sb-brand w-7 text-center">{rule.conditionLogic}</span>
+                )}
+                {i === 0 && <span className="w-7" />}
+                <span className="text-[13px] text-sb-n700 font-mono bg-sb-n50 border border-sb-n100 rounded px-2 py-1">
+                  {fieldLabel(c.field)} {opLabel(c.op)} <strong>{c.value}</strong>
+                </span>
+              </div>
+            ))}
+          </div>
+          <div className="border-t border-sb-n100 px-4 py-2.5">
+            <span className="text-[12px] text-sb-n500">conditionLabel: </span>
+            <span className="text-[12px] font-mono text-sb-n700">{rule.conditionLabel}</span>
+          </div>
+        </div>
+      )}
 
       <p className="text-[11px] text-sb-n400">
         버전: <span className="font-mono font-medium text-sb-n700">{rs.version}</span>
-        &nbsp;— 변경 시 자동으로 버전이 올라갑니다.
       </p>
     </div>
   )
@@ -1046,16 +1046,16 @@ export default function InternalRulesPanel() {
               <TabBar
                 tabs={[
                   { id: 'classification' as EntityTab, label: 'Classification' },
-                  { id: 'documents' as EntityTab, label: 'Documents' },
                   { id: 'questions' as EntityTab, label: 'Questions' },
+                  { id: 'documents' as EntityTab, label: 'Documents' },
                 ]}
                 active={entityTab}
                 onChange={setEntityTab}
               />
 
-              {entityTab === 'classification' && <EntityClassificationEditor />}
-              {entityTab === 'documents' && <DocumentsEditor selected={selected} />}
+              {entityTab === 'classification' && <EntityClassificationEditor code={selected.code} />}
               {entityTab === 'questions' && <QuestionsEditor selected={selected} />}
+              {entityTab === 'documents' && <DocumentsEditor selected={selected} />}
             </div>
           )}
 
