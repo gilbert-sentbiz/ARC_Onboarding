@@ -56,7 +56,8 @@ export default function InformationForm() {
     const result: Record<string, unknown> = {}
     if (Object.keys(entityInit).length > 0) result.entity = entityInit
 
-    if (fiServiceCodes.includes('SVC_VND') || fiServiceSegs.includes('VND Collection')) {
+    const fiSvcSet = new Set(fiServiceCodes as string[])
+    if (fiSvcSet.has('SVC_COL_VND') || fiSvcSet.has('SVC_VND') || fiServiceSegs.includes('VND Collection')) {
       const vndInit: Record<string, string> = {}
       if (fi.companyName) vndInit['qs_vnd_entity_name'] = fi.companyName as string
       if (fi.foundingCountry) vndInit['qs_vnd_incorp_country'] = fi.foundingCountry as string
@@ -81,8 +82,9 @@ export default function InformationForm() {
   const entitySegment = (raw.entity ?? raw.entitySegment ?? raw.customerType) as string | undefined
   const serviceCodes = Array.isArray(raw.services) ? raw.services as ServiceCode[] : []
   const serviceSegsLegacy = Array.isArray(raw.serviceSegments) ? raw.serviceSegments as string[] : []
-  const needsKRW = serviceCodes.includes('SVC_KRW') || serviceSegsLegacy.includes('KRW Collection')
-  const needsVND = serviceCodes.includes('SVC_VND') || serviceSegsLegacy.includes('VND Collection')
+  const svcSet = new Set(serviceCodes as string[])
+  const needsKRW = svcSet.has('SVC_COL_KRW') || svcSet.has('SVC_KRW') || serviceSegsLegacy.includes('KRW Collection')
+  const needsVND = svcSet.has('SVC_COL_VND') || svcSet.has('SVC_VND') || serviceSegsLegacy.includes('VND Collection')
 
   const entityCode = entitySegment as EntityCode | undefined
 
@@ -95,8 +97,8 @@ export default function InformationForm() {
   const entityFixedQs  = getEntityFixedQuestions(entityCode)
   const entityQuestions = [...entityCommonQs, ...entityFixedQs]
 
-  const krwQuestions = needsKRW ? getSegmentQuestions('service:SVC_KRW') : []
-  const vndQuestions = needsVND ? getSegmentQuestions('service:SVC_VND') : []
+  const krwQuestions = needsKRW ? getSegmentQuestions('service:SVC_COL_KRW') : []
+  const vndQuestions = needsVND ? getSegmentQuestions('service:SVC_COL_VND') : []
 
   function saveDraft(data: Record<string, unknown>) {
     if (!id) return

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { SignOut, TreeStructure, Plus, Trash, CaretDown, CaretRight } from '@phosphor-icons/react'
+import { SignOut, TreeStructure, Plus, Trash, CaretDown, CaretRight, PencilSimple } from '@phosphor-icons/react'
 import { useSessionStore } from '../../store/sessionStore'
 import { useRuleStore, getRuleSet } from '../../store/ruleStore'
 import type { EntityCode, ServiceCode, SectorCode, ServiceClassificationRule, DocTemplateRule, QuestionRule, SegmentQuestionConfig, QuestionInputType, EntityClassificationRule, EntityClassificationCondition } from '../../types'
@@ -71,27 +71,55 @@ function QuestionRowFixed({ q, depth = 0 }: { q: QuestionRule; depth?: number })
   )
 }
 
-function AddOwnQuestionForm({ parentOptions, onAdd }: { parentOptions: QuestionRule[]; onAdd: (q: QuestionRule) => void }) {
+function AddOwnQuestionForm({
+  parentOptions,
+  onAdd,
+  editTarget,
+  onUpdate,
+  onCancelEdit,
+}: {
+  parentOptions: QuestionRule[]
+  onAdd: (q: QuestionRule) => void
+  editTarget?: QuestionRule
+  onUpdate?: (q: QuestionRule) => void
+  onCancelEdit?: () => void
+}) {
   const [form, setForm] = useState({
-    label: '', inputType: 'text' as QuestionInputType, isRequired: true, parentId: '', parentValue: '',
+    label: editTarget?.label ?? '',
+    inputType: (editTarget?.inputType ?? 'text') as QuestionInputType,
+    isRequired: editTarget?.isRequired ?? true,
+    parentId: editTarget?.showWhen?.parentId ?? '',
+    parentValue: editTarget?.showWhen?.value ?? '',
   })
+
+  const isEditing = !!editTarget
 
   function submit() {
     if (!form.label) return
     const q: QuestionRule = {
-      id: `q_own_${Date.now()}`,
+      id: editTarget?.id ?? `q_own_${Date.now()}`,
       label: form.label,
       inputType: form.inputType,
       isRequired: form.isRequired,
       classification: 'service-own',
       ...(form.parentId ? { showWhen: { parentId: form.parentId, value: form.parentValue } } : {}),
     }
-    onAdd(q)
+    if (isEditing && onUpdate) {
+      onUpdate(q)
+    } else {
+      onAdd(q)
+    }
     setForm({ label: '', inputType: 'text', isRequired: true, parentId: '', parentValue: '' })
   }
 
   return (
     <div className="pt-3 border-t border-sb-n100 mt-1 flex flex-col gap-2">
+      {isEditing && (
+        <div className="flex items-center justify-between">
+          <p className="text-[11px] font-medium text-sb-brand">질문 편집 중</p>
+          <button onClick={onCancelEdit} className="text-[11px] text-sb-n400 hover:text-sb-n700">취소</button>
+        </div>
+      )}
       <div className="flex items-end gap-2">
         <div className="flex-1">
           <p className="text-[11px] text-sb-n400 mb-1">질문 레이블</p>
@@ -126,8 +154,8 @@ function AddOwnQuestionForm({ parentOptions, onAdd }: { parentOptions: QuestionR
           disabled={!form.label}
           className="flex items-center gap-1 px-3 py-1.5 rounded-[6px] text-[12px] font-medium bg-sb-brand text-white disabled:opacity-40 mb-px"
         >
-          <Plus size={12} />
-          추가
+          {isEditing ? <PencilSimple size={12} /> : <Plus size={12} />}
+          {isEditing ? '저장' : '추가'}
         </button>
       </div>
       {/* Conditional parent setting */}
@@ -163,6 +191,7 @@ function AddOwnQuestionForm({ parentOptions, onAdd }: { parentOptions: QuestionR
 
 function QuestionsEditor({ selected }: { selected: Selection }) {
   const { currentRuleSet, updateRuleSet } = useRuleStore()
+  const [editIdx, setEditIdx] = useState<number | null>(null)
 
   const configKey = selected.type === 'entity' ? `entity:${selected.code}` : `service:${selected.code}`
   const rs = getRuleSet()
@@ -189,7 +218,14 @@ function QuestionsEditor({ selected }: { selected: Selection }) {
     saveConfig({ ownQuestions: [...config.ownQuestions, q] })
   }
 
+  function updateOwn(q: QuestionRule) {
+    if (editIdx === null) return
+    saveConfig({ ownQuestions: config.ownQuestions.map((old, i) => i === editIdx ? q : old) })
+    setEditIdx(null)
+  }
+
   function removeOwn(idx: number) {
+    if (editIdx === idx) setEditIdx(null)
     saveConfig({ ownQuestions: config.ownQuestions.filter((_, i) => i !== idx) })
   }
 
@@ -234,7 +270,7 @@ function QuestionsEditor({ selected }: { selected: Selection }) {
           ))}
           {/* Admin-added own questions */}
           {config.ownQuestions.map((q, i) => (
-            <div key={q.id} className="flex items-center gap-3 px-4 py-3 border-t border-sb-n100">
+            <div key={q.id} className={`flex items-center gap-3 px-4 py-3 border-t border-sb-n100 ${editIdx === i ? 'bg-sb-blue-50' : ''}`}>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5">
                   <p className="text-[13px] text-sb-n800">{q.label}</p>
@@ -252,6 +288,12 @@ function QuestionsEditor({ selected }: { selected: Selection }) {
                 </span>
                 <span className="text-[10px] font-mono text-sb-n400 px-1.5 py-0.5 border border-sb-n100 rounded">{q.inputType}</span>
                 <button
+                  onClick={() => setEditIdx(editIdx === i ? null : i)}
+                  className="flex items-center justify-center w-7 h-7 rounded-[6px] text-sb-n400 hover:text-sb-brand hover:bg-sb-blue-100 transition-colors"
+                >
+                  <PencilSimple size={13} />
+                </button>
+                <button
                   onClick={() => removeOwn(i)}
                   className="flex items-center justify-center w-7 h-7 rounded-[6px] text-sb-n400 hover:text-sb-negative hover:bg-red-50 transition-colors"
                 >
@@ -261,7 +303,14 @@ function QuestionsEditor({ selected }: { selected: Selection }) {
             </div>
           ))}
           <div className="px-4 pb-4">
-            <AddOwnQuestionForm parentOptions={allOwnForParent} onAdd={addOwn} />
+            <AddOwnQuestionForm
+              key={editIdx ?? 'add'}
+              parentOptions={allOwnForParent}
+              onAdd={addOwn}
+              editTarget={editIdx !== null ? config.ownQuestions[editIdx] : undefined}
+              onUpdate={updateOwn}
+              onCancelEdit={() => setEditIdx(null)}
+            />
           </div>
         </div>
       </div>
@@ -462,7 +511,7 @@ function DocumentsEditor({ selected }: { selected: Selection }) {
   // Base rule: service-only (no entity, no sector)
   const baseRule = rs.documentRules.find(r => r.match.service === code && !r.match.sector && !r.match.entity)
   const baseDocs = baseRule?.docs ?? []
-  const hasKRWSectors = code === 'SVC_KRW'
+  const hasKRWSectors = code === 'SVC_COL_KRW'
   // Entity-intersection rules for this service
   const serviceIntersectionRules = rs.documentRules.filter(r => r.match.service === code && !!r.match.entity && !r.match.sector)
 
@@ -1338,8 +1387,8 @@ export default function InternalRulesPanel() {
               <TabBar
                 tabs={[
                   { id: 'condition' as ServiceTab, label: 'Condition' },
-                  { id: 'documents' as ServiceTab, label: 'Documents' },
                   { id: 'questions' as ServiceTab, label: 'Questions' },
+                  { id: 'documents' as ServiceTab, label: 'Documents' },
                 ]}
                 active={serviceTab}
                 onChange={setServiceTab}

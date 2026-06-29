@@ -28,7 +28,7 @@ export type CloseReason = 'DROPPED' | 'EXITED'
 
 // PI-38: 3-axis segment codes
 export type EntityCode = 'ENTITY_CORP' | 'ENTITY_INDIV' | 'ENTITY_FI'
-export type ServiceCode = 'SVC_KRW' | 'SVC_VND' | 'SVC_ETC' | 'SVC_PAYOUT'
+export type ServiceCode = 'SVC_COL_KRW' | 'SVC_COL_VND' | 'SVC_COL_ETC' | 'SVC_PAYOUT'
 export type SectorCode =
   | 'SEC_TRADING_B2B' | 'SEC_TRADING_B2C' | 'SEC_CONSULTING'
   | 'SEC_DEV_DESIGN' | 'SEC_ADVERTISING' | 'SEC_RESEARCH'
@@ -104,7 +104,7 @@ export interface QuestionRule {
 }
 
 export interface SegmentQuestionConfig {
-  key: string                        // 'entity:ENTITY_CORP' | 'service:SVC_KRW' etc.
+  key: string                        // 'entity:ENTITY_CORP' | 'service:SVC_COL_KRW' etc.
   enabledCommonQuestionIds: string[]
   ownQuestions: QuestionRule[]
 }

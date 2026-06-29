@@ -53,7 +53,7 @@ export function classifyServices(services: string[], collectionCountries: string
     }
     result.push(rule.serviceCode)
   }
-  // SVC_ETC fallback: collection selected but country is 'OTHER' or unregistered
+  // SVC_COL_ETC fallback: collection selected but country is 'OTHER' or unregistered
   if (services.includes('collection') && normalized.length > 0) {
     const registeredCountries = new Set(
       rules
@@ -61,7 +61,7 @@ export function classifyServices(services: string[], collectionCountries: string
         .flatMap(r => r.triggerCountries)
     )
     const hasEtc = normalized.some(c => c === 'OTHER' || !registeredCountries.has(c))
-    if (hasEtc && !result.includes('SVC_ETC')) result.push('SVC_ETC')
+    if (hasEtc && !result.includes('SVC_COL_ETC')) result.push('SVC_COL_ETC')
   }
   return result
 }

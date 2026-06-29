@@ -256,10 +256,14 @@ export default function InternalCaseDetail() {
     'FI': 'FI',
   }
   const SERVICE_LABEL: Record<string, string> = {
+    'SVC_COL_KRW': 'KRW Collection',
+    'SVC_COL_VND': 'VND Collection',
+    'SVC_COL_ETC': '기타 Collection',
+    'SVC_PAYOUT': 'Payout',
+    // backward compat for pre-rename cases in localStorage
     'SVC_KRW': 'KRW Collection',
     'SVC_VND': 'VND Collection',
     'SVC_ETC': '기타 Collection',
-    'SVC_PAYOUT': 'Payout',
   }
 
   return (

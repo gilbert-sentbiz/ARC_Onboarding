@@ -8,10 +8,14 @@ const LEGACY_ENTITY: Record<string, EntityCode> = {
   'FI': 'ENTITY_FI',
 }
 const LEGACY_SERVICE: Record<string, ServiceCode> = {
-  'KRW Collection': 'SVC_KRW',
-  'VND Collection': 'SVC_VND',
+  'KRW Collection': 'SVC_COL_KRW',
+  'VND Collection': 'SVC_COL_VND',
   'Remittance': 'SVC_PAYOUT',
-  '기타 Collection': 'SVC_ETC',
+  '기타 Collection': 'SVC_COL_ETC',
+}
+// Migration guard: normalize old SVC_* codes stored in pre-rename cases
+const SVC_MIGRATION: Record<string, ServiceCode> = {
+  SVC_KRW: 'SVC_COL_KRW', SVC_VND: 'SVC_COL_VND', SVC_ETC: 'SVC_COL_ETC',
 }
 
 function resolveEntity(seg: SegmentInfo): EntityCode {
@@ -23,8 +27,12 @@ function resolveServices(seg: SegmentInfo): ServiceCode[] {
   const codes = seg.services?.length
     ? seg.services
     : (seg.serviceSegments ?? []).map(s => LEGACY_SERVICE[s]).filter(Boolean) as ServiceCode[]
-  // Normalize legacy SVC_REMITTANCE stored in old localStorage cases
-  return codes.map(c => (c as string) === 'SVC_REMITTANCE' ? 'SVC_PAYOUT' : c)
+  // Normalize legacy SVC_REMITTANCE and pre-rename SVC_* codes stored in old localStorage cases
+  return codes.map(c => {
+    const s = c as string
+    if (s === 'SVC_REMITTANCE') return 'SVC_PAYOUT'
+    return SVC_MIGRATION[s] ?? c
+  })
 }
 
 export function buildDocuments(

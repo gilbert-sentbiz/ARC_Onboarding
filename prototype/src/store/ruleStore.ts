@@ -12,9 +12,9 @@ export const INITIAL_RULESET: RuleSet = {
     ENTITY_FI: 'FI',
   },
   serviceLabels: {
-    SVC_KRW: 'KRW Collection',
-    SVC_VND: 'VND Collection',
-    SVC_ETC: '기타 Collection',
+    SVC_COL_KRW: 'KRW Collection',
+    SVC_COL_VND: 'VND Collection',
+    SVC_COL_ETC: '기타 Collection',
     SVC_PAYOUT: 'Payout',
   },
   sectorLabels: {
@@ -73,7 +73,7 @@ export const INITIAL_RULESET: RuleSet = {
     },
     // PRD §9.12 #13: kyc_merchants is scoped to KRW Collection FI only
     {
-      match: { entity: 'ENTITY_FI', service: 'SVC_KRW' },
+      match: { entity: 'ENTITY_FI', service: 'SVC_COL_KRW' },
       docs: [
         { type: 'kyc_merchants', displayName: 'KYC Documents for Sample Merchants (2건)', isRequired: false, isConditional: true },
       ],
@@ -81,7 +81,7 @@ export const INITIAL_RULESET: RuleSet = {
 
     // ── KRW Collection base ─────────────────────────────────────────────────
     {
-      match: { service: 'SVC_KRW' },
+      match: { service: 'SVC_COL_KRW' },
       docs: [
         { type: 'krw_biz_registration', displayName: 'Certificate of Business Registration', isRequired: true, isConditional: false },
         { type: 'krw_directors',        displayName: 'List of Directors',                    isRequired: true, isConditional: false },
@@ -94,7 +94,7 @@ export const INITIAL_RULESET: RuleSet = {
 
     // ── KRW sector-specific ─────────────────────────────────────────────────
     {
-      match: { service: 'SVC_KRW', sector: 'SEC_TRADING_B2B' },
+      match: { service: 'SVC_COL_KRW', sector: 'SEC_TRADING_B2B' },
       docs: [
         { type: 'krw_sec_shipping',  displayName: '선적서류 (B/L 등)',              isRequired: true, isConditional: false },
         { type: 'krw_sec_trade_lic', displayName: '수출입 신고서 / 라이센스',        isRequired: true, isConditional: false },
@@ -102,7 +102,7 @@ export const INITIAL_RULESET: RuleSet = {
       ],
     },
     {
-      match: { service: 'SVC_KRW', sector: 'SEC_TRADING_B2C' },
+      match: { service: 'SVC_COL_KRW', sector: 'SEC_TRADING_B2C' },
       docs: [
         { type: 'krw_sec_logistics', displayName: '물류 전표',                     isRequired: true, isConditional: false },
         { type: 'krw_sec_platform',  displayName: '온라인 플랫폼 판매 기록 스크린샷', isRequired: true, isConditional: false },
@@ -110,7 +110,7 @@ export const INITIAL_RULESET: RuleSet = {
       ],
     },
     {
-      match: { service: 'SVC_KRW', sector: 'SEC_CONSULTING' },
+      match: { service: 'SVC_COL_KRW', sector: 'SEC_CONSULTING' },
       docs: [
         { type: 'krw_sec_contract',  displayName: '고객 계약서 (업무범위)',           isRequired: true, isConditional: false },
         { type: 'krw_sec_report',    displayName: '컨설팅 보고서 / 산출물 샘플',     isRequired: true, isConditional: false },
@@ -118,7 +118,7 @@ export const INITIAL_RULESET: RuleSet = {
       ],
     },
     {
-      match: { service: 'SVC_KRW', sector: 'SEC_DEV_DESIGN' },
+      match: { service: 'SVC_COL_KRW', sector: 'SEC_DEV_DESIGN' },
       docs: [
         { type: 'krw_sec_contract',  displayName: '고객 계약서 (기술 스펙)',          isRequired: true, isConditional: false },
         { type: 'krw_sec_project',   displayName: '프로젝트 기획서 또는 진행 스크린샷', isRequired: true, isConditional: false },
@@ -126,7 +126,7 @@ export const INITIAL_RULESET: RuleSet = {
       ],
     },
     {
-      match: { service: 'SVC_KRW', sector: 'SEC_ADVERTISING' },
+      match: { service: 'SVC_COL_KRW', sector: 'SEC_ADVERTISING' },
       docs: [
         { type: 'krw_sec_contract',  displayName: '고객 계약서',                    isRequired: true, isConditional: false },
         { type: 'krw_sec_ad_output', displayName: '광고 산출물 또는 광고 플랫폼 스크린샷', isRequired: true, isConditional: false },
@@ -134,14 +134,14 @@ export const INITIAL_RULESET: RuleSet = {
       ],
     },
     {
-      match: { service: 'SVC_KRW', sector: 'SEC_RESEARCH' },
+      match: { service: 'SVC_COL_KRW', sector: 'SEC_RESEARCH' },
       docs: [
         { type: 'krw_sec_contract',  displayName: '고객 계약서',                    isRequired: true, isConditional: false },
         { type: 'krw_sec_output',    displayName: '연구 산출물 (보고서, 분석, 데이터)', isRequired: true, isConditional: false },
       ],
     },
     {
-      match: { service: 'SVC_KRW', sector: 'SEC_IT_COMPUTER' },
+      match: { service: 'SVC_COL_KRW', sector: 'SEC_IT_COMPUTER' },
       docs: [
         { type: 'krw_sec_contract',  displayName: '고객 계약서 (기술 스펙)',          isRequired: true, isConditional: false },
         { type: 'krw_sec_sw_doc',    displayName: '소프트웨어 / 시스템 문서',         isRequired: true, isConditional: false },
@@ -149,7 +149,7 @@ export const INITIAL_RULESET: RuleSet = {
       ],
     },
     {
-      match: { service: 'SVC_KRW', sector: 'SEC_COUPANG' },
+      match: { service: 'SVC_COL_KRW', sector: 'SEC_COUPANG' },
       docs: [
         { type: 'krw_sec_seller_url',    displayName: 'Coupang 셀러 URL / 판매이력',  isRequired: true, isConditional: false },
         { type: 'krw_sec_settlement',    displayName: 'Coupang 정산서',              isRequired: true, isConditional: false },
@@ -159,7 +159,7 @@ export const INITIAL_RULESET: RuleSet = {
 
     // ── VND Collection ──────────────────────────────────────────────────────
     {
-      match: { service: 'SVC_VND' },
+      match: { service: 'SVC_COL_VND' },
       docs: [
         { type: 'vnd_biz_registration', displayName: 'Business Registration Certificate',                 isRequired: true,  isConditional: false },
         { type: 'vnd_company_charter',  displayName: 'Company Charter',                                   isRequired: false, isConditional: true  },
@@ -188,7 +188,7 @@ export const INITIAL_RULESET: RuleSet = {
       ],
     },
     {
-      match: { service: 'SVC_ETC' },
+      match: { service: 'SVC_COL_ETC' },
       docs: [
         { type: 'other_account',         displayName: '해외 수금 계좌 정보', isRequired: true, isConditional: false },
         { type: 'transaction_structure', displayName: '거래 구조 설명서',    isRequired: true, isConditional: false },
@@ -246,8 +246,8 @@ export const INITIAL_RULESET: RuleSet = {
   // ── Service classification rules ──────────────────────────────────────────
   serviceClassificationRules: [
     { serviceCode: 'SVC_PAYOUT', triggerServices: ['remittance'], triggerCountries: [] },
-    { serviceCode: 'SVC_KRW',   triggerServices: ['collection'], triggerCountries: ['KR'] },
-    { serviceCode: 'SVC_VND',   triggerServices: ['collection'], triggerCountries: ['VN'] },
+    { serviceCode: 'SVC_COL_KRW',   triggerServices: ['collection'], triggerCountries: ['KR'] },
+    { serviceCode: 'SVC_COL_VND',   triggerServices: ['collection'], triggerCountries: ['VN'] },
   ],
 
   // ── Question pool (PRD 9.6–9.10) ─────────────────────────────────────────
@@ -498,7 +498,7 @@ export const INITIAL_RULESET: RuleSet = {
     {
       id: 'qs_krw_sector',
       label: '업종을 선택해주세요',
-      inputType: 'select', isRequired: true, classification: 'service-own', scope: 'SVC_KRW', isFixed: true,
+      inputType: 'select', isRequired: true, classification: 'service-own', scope: 'SVC_COL_KRW', isFixed: true,
       options: [
         { value: 'trading_b2b', label: 'Trading(B2B)' },
         { value: 'trading_b2c', label: 'Trading(B2C)' },
@@ -512,24 +512,24 @@ export const INITIAL_RULESET: RuleSet = {
     },
 
     // ── VND service-own (PRD 9.10) ──────────────────────────────────────────
-    { id: 'qs_vnd_entity_name',    label: '회사 명칭을 입력해주세요',                        inputType: 'text',   isRequired: true,  classification: 'service-own', scope: 'SVC_VND', isFixed: true },
-    { id: 'qs_vnd_biz_reg_no',     label: '사업자등록번호를 입력해주세요 (UEN/NIB/ERC)',     inputType: 'text',   isRequired: true,  classification: 'service-own', scope: 'SVC_VND', isFixed: true },
-    { id: 'qs_vnd_address',        label: '등록 사업장 주소를 입력해주세요',                 inputType: 'text',   isRequired: true,  classification: 'service-own', scope: 'SVC_VND', isFixed: true },
-    { id: 'qs_vnd_incorp_country', label: '설립 국가를 입력해주세요',                       inputType: 'text',   isRequired: true,  classification: 'service-own', scope: 'SVC_VND', isFixed: true },
-    { id: 'qs_vnd_website',        label: '회사 웹사이트를 입력해주세요',                   inputType: 'text',   isRequired: true,  classification: 'service-own', scope: 'SVC_VND', isFixed: true },
-    { id: 'qs_vnd_contact_name',   label: '담당자 이름을 입력해주세요',                     inputType: 'text',   isRequired: true,  classification: 'service-own', scope: 'SVC_VND', isFixed: true },
-    { id: 'qs_vnd_contact_phone',  label: '담당자 연락처를 입력해주세요',                   inputType: 'text',   isRequired: true,  classification: 'service-own', scope: 'SVC_VND', isFixed: true },
-    { id: 'qs_vnd_contact_email',  label: '담당자 이메일을 입력해주세요',                   inputType: 'text',   isRequired: true,  classification: 'service-own', scope: 'SVC_VND', isFixed: true },
-    { id: 'qs_vnd_biz_entity_type',label: '사업자 유형을 선택해주세요',                     inputType: 'text',   isRequired: true,  classification: 'service-own', scope: 'SVC_VND', isFixed: true },
-    { id: 'qs_vnd_biz_type',       label: '업종을 입력해주세요',                            inputType: 'text',   isRequired: true,  classification: 'service-own', scope: 'SVC_VND', isFixed: true },
-    { id: 'qs_vnd_biz_activity',   label: '주요 사업 활동을 입력해주세요',                  inputType: 'textarea',isRequired: true,  classification: 'service-own', scope: 'SVC_VND', isFixed: true },
-    { id: 'qs_vnd_monthly_volume', label: '예상 월간 거래 규모를 입력해주세요',             inputType: 'text',   isRequired: true,  classification: 'service-own', scope: 'SVC_VND', isFixed: true },
-    { id: 'qs_vnd_account_purpose',label: '계좌 개설 목적을 입력해주세요',                  inputType: 'textarea',isRequired: true,  classification: 'service-own', scope: 'SVC_VND', isFixed: true },
-    { id: 'qs_vnd_payer_relation', label: '입금자와의 관계를 입력해주세요',                 inputType: 'text',   isRequired: true,  classification: 'service-own', scope: 'SVC_VND', isFixed: true },
+    { id: 'qs_vnd_entity_name',    label: '회사 명칭을 입력해주세요',                        inputType: 'text',   isRequired: true,  classification: 'service-own', scope: 'SVC_COL_VND', isFixed: true },
+    { id: 'qs_vnd_biz_reg_no',     label: '사업자등록번호를 입력해주세요 (UEN/NIB/ERC)',     inputType: 'text',   isRequired: true,  classification: 'service-own', scope: 'SVC_COL_VND', isFixed: true },
+    { id: 'qs_vnd_address',        label: '등록 사업장 주소를 입력해주세요',                 inputType: 'text',   isRequired: true,  classification: 'service-own', scope: 'SVC_COL_VND', isFixed: true },
+    { id: 'qs_vnd_incorp_country', label: '설립 국가를 입력해주세요',                       inputType: 'text',   isRequired: true,  classification: 'service-own', scope: 'SVC_COL_VND', isFixed: true },
+    { id: 'qs_vnd_website',        label: '회사 웹사이트를 입력해주세요',                   inputType: 'text',   isRequired: true,  classification: 'service-own', scope: 'SVC_COL_VND', isFixed: true },
+    { id: 'qs_vnd_contact_name',   label: '담당자 이름을 입력해주세요',                     inputType: 'text',   isRequired: true,  classification: 'service-own', scope: 'SVC_COL_VND', isFixed: true },
+    { id: 'qs_vnd_contact_phone',  label: '담당자 연락처를 입력해주세요',                   inputType: 'text',   isRequired: true,  classification: 'service-own', scope: 'SVC_COL_VND', isFixed: true },
+    { id: 'qs_vnd_contact_email',  label: '담당자 이메일을 입력해주세요',                   inputType: 'text',   isRequired: true,  classification: 'service-own', scope: 'SVC_COL_VND', isFixed: true },
+    { id: 'qs_vnd_biz_entity_type',label: '사업자 유형을 선택해주세요',                     inputType: 'text',   isRequired: true,  classification: 'service-own', scope: 'SVC_COL_VND', isFixed: true },
+    { id: 'qs_vnd_biz_type',       label: '업종을 입력해주세요',                            inputType: 'text',   isRequired: true,  classification: 'service-own', scope: 'SVC_COL_VND', isFixed: true },
+    { id: 'qs_vnd_biz_activity',   label: '주요 사업 활동을 입력해주세요',                  inputType: 'textarea',isRequired: true,  classification: 'service-own', scope: 'SVC_COL_VND', isFixed: true },
+    { id: 'qs_vnd_monthly_volume', label: '예상 월간 거래 규모를 입력해주세요',             inputType: 'text',   isRequired: true,  classification: 'service-own', scope: 'SVC_COL_VND', isFixed: true },
+    { id: 'qs_vnd_account_purpose',label: '계좌 개설 목적을 입력해주세요',                  inputType: 'textarea',isRequired: true,  classification: 'service-own', scope: 'SVC_COL_VND', isFixed: true },
+    { id: 'qs_vnd_payer_relation', label: '입금자와의 관계를 입력해주세요',                 inputType: 'text',   isRequired: true,  classification: 'service-own', scope: 'SVC_COL_VND', isFixed: true },
     {
       id: 'qs_vnd_payer_type',
       label: '입금자가 법인인가요, 개인인가요?',
-      inputType: 'radio', isRequired: true, classification: 'service-own', scope: 'SVC_VND', isFixed: true,
+      inputType: 'radio', isRequired: true, classification: 'service-own', scope: 'SVC_COL_VND', isFixed: true,
       options: [{ value: 'corp', label: '법인' }, { value: 'individual', label: '개인' }],
     },
   ],
@@ -539,8 +539,8 @@ export const INITIAL_RULESET: RuleSet = {
     { key: 'entity:ENTITY_CORP',  enabledCommonQuestionIds: ['qc_biz_reg_no','qc_biz_type','qc_biz_category','qc_virtual_asset','qc_fund_source'], ownQuestions: [] },
     { key: 'entity:ENTITY_INDIV', enabledCommonQuestionIds: ['qc_biz_reg_no','qc_biz_type','qc_biz_category','qc_virtual_asset','qc_fund_source'], ownQuestions: [] },
     { key: 'entity:ENTITY_FI',    enabledCommonQuestionIds: [], ownQuestions: [] },
-    { key: 'service:SVC_KRW',     enabledCommonQuestionIds: [], ownQuestions: [
-      { id: 'qs_krw_sector', label: '업종을 선택해주세요', inputType: 'select', isRequired: true, classification: 'service-own', scope: 'SVC_KRW', isFixed: true,
+    { key: 'service:SVC_COL_KRW',     enabledCommonQuestionIds: [], ownQuestions: [
+      { id: 'qs_krw_sector', label: '업종을 선택해주세요', inputType: 'select', isRequired: true, classification: 'service-own', scope: 'SVC_COL_KRW', isFixed: true,
         options: [
           { value: 'trading_b2b', label: 'Trading(B2B)' },
           { value: 'trading_b2c', label: 'Trading(B2C)' },
@@ -553,25 +553,25 @@ export const INITIAL_RULESET: RuleSet = {
         ],
       },
     ]},
-    { key: 'service:SVC_VND', enabledCommonQuestionIds: [], ownQuestions: [
-      { id: 'qs_vnd_entity_name',    label: '회사 명칭',        inputType: 'text',    isRequired: true,  classification: 'service-own', scope: 'SVC_VND', isFixed: true },
-      { id: 'qs_vnd_biz_reg_no',     label: '사업자등록번호 (UEN/NIB/ERC)', inputType: 'text', isRequired: true, classification: 'service-own', scope: 'SVC_VND', isFixed: true },
-      { id: 'qs_vnd_address',        label: '등록 사업장 주소', inputType: 'text',    isRequired: true,  classification: 'service-own', scope: 'SVC_VND', isFixed: true },
-      { id: 'qs_vnd_incorp_country', label: '설립 국가',        inputType: 'text',    isRequired: true,  classification: 'service-own', scope: 'SVC_VND', isFixed: true },
-      { id: 'qs_vnd_website',        label: '회사 웹사이트',    inputType: 'text',    isRequired: true,  classification: 'service-own', scope: 'SVC_VND', isFixed: true },
-      { id: 'qs_vnd_contact_name',   label: '담당자 이름',      inputType: 'text',    isRequired: true,  classification: 'service-own', scope: 'SVC_VND', isFixed: true },
-      { id: 'qs_vnd_contact_phone',  label: '담당자 연락처',    inputType: 'text',    isRequired: true,  classification: 'service-own', scope: 'SVC_VND', isFixed: true },
-      { id: 'qs_vnd_contact_email',  label: '담당자 이메일',    inputType: 'text',    isRequired: true,  classification: 'service-own', scope: 'SVC_VND', isFixed: true },
-      { id: 'qs_vnd_biz_entity_type',label: '사업자 유형',      inputType: 'text',    isRequired: true,  classification: 'service-own', scope: 'SVC_VND', isFixed: true },
-      { id: 'qs_vnd_biz_type',       label: '업종',             inputType: 'text',    isRequired: true,  classification: 'service-own', scope: 'SVC_VND', isFixed: true },
-      { id: 'qs_vnd_biz_activity',   label: '주요 사업 활동',   inputType: 'textarea',isRequired: true,  classification: 'service-own', scope: 'SVC_VND', isFixed: true },
-      { id: 'qs_vnd_monthly_volume', label: '예상 월간 거래 규모', inputType: 'text', isRequired: true,  classification: 'service-own', scope: 'SVC_VND', isFixed: true },
-      { id: 'qs_vnd_account_purpose',label: '계좌 개설 목적',   inputType: 'textarea',isRequired: true,  classification: 'service-own', scope: 'SVC_VND', isFixed: true },
-      { id: 'qs_vnd_payer_relation', label: '입금자와의 관계',  inputType: 'text',    isRequired: true,  classification: 'service-own', scope: 'SVC_VND', isFixed: true },
-      { id: 'qs_vnd_payer_type',     label: '입금자 유형',      inputType: 'radio',   isRequired: true,  classification: 'service-own', scope: 'SVC_VND', isFixed: true, options: [{ value: 'corp', label: '법인' }, { value: 'individual', label: '개인' }] },
+    { key: 'service:SVC_COL_VND', enabledCommonQuestionIds: [], ownQuestions: [
+      { id: 'qs_vnd_entity_name',    label: '회사 명칭',        inputType: 'text',    isRequired: true,  classification: 'service-own', scope: 'SVC_COL_VND', isFixed: true },
+      { id: 'qs_vnd_biz_reg_no',     label: '사업자등록번호 (UEN/NIB/ERC)', inputType: 'text', isRequired: true, classification: 'service-own', scope: 'SVC_COL_VND', isFixed: true },
+      { id: 'qs_vnd_address',        label: '등록 사업장 주소', inputType: 'text',    isRequired: true,  classification: 'service-own', scope: 'SVC_COL_VND', isFixed: true },
+      { id: 'qs_vnd_incorp_country', label: '설립 국가',        inputType: 'text',    isRequired: true,  classification: 'service-own', scope: 'SVC_COL_VND', isFixed: true },
+      { id: 'qs_vnd_website',        label: '회사 웹사이트',    inputType: 'text',    isRequired: true,  classification: 'service-own', scope: 'SVC_COL_VND', isFixed: true },
+      { id: 'qs_vnd_contact_name',   label: '담당자 이름',      inputType: 'text',    isRequired: true,  classification: 'service-own', scope: 'SVC_COL_VND', isFixed: true },
+      { id: 'qs_vnd_contact_phone',  label: '담당자 연락처',    inputType: 'text',    isRequired: true,  classification: 'service-own', scope: 'SVC_COL_VND', isFixed: true },
+      { id: 'qs_vnd_contact_email',  label: '담당자 이메일',    inputType: 'text',    isRequired: true,  classification: 'service-own', scope: 'SVC_COL_VND', isFixed: true },
+      { id: 'qs_vnd_biz_entity_type',label: '사업자 유형',      inputType: 'text',    isRequired: true,  classification: 'service-own', scope: 'SVC_COL_VND', isFixed: true },
+      { id: 'qs_vnd_biz_type',       label: '업종',             inputType: 'text',    isRequired: true,  classification: 'service-own', scope: 'SVC_COL_VND', isFixed: true },
+      { id: 'qs_vnd_biz_activity',   label: '주요 사업 활동',   inputType: 'textarea',isRequired: true,  classification: 'service-own', scope: 'SVC_COL_VND', isFixed: true },
+      { id: 'qs_vnd_monthly_volume', label: '예상 월간 거래 규모', inputType: 'text', isRequired: true,  classification: 'service-own', scope: 'SVC_COL_VND', isFixed: true },
+      { id: 'qs_vnd_account_purpose',label: '계좌 개설 목적',   inputType: 'textarea',isRequired: true,  classification: 'service-own', scope: 'SVC_COL_VND', isFixed: true },
+      { id: 'qs_vnd_payer_relation', label: '입금자와의 관계',  inputType: 'text',    isRequired: true,  classification: 'service-own', scope: 'SVC_COL_VND', isFixed: true },
+      { id: 'qs_vnd_payer_type',     label: '입금자 유형',      inputType: 'radio',   isRequired: true,  classification: 'service-own', scope: 'SVC_COL_VND', isFixed: true, options: [{ value: 'corp', label: '법인' }, { value: 'individual', label: '개인' }] },
     ]},
     { key: 'service:SVC_PAYOUT',     enabledCommonQuestionIds: [], ownQuestions: [] },
-    { key: 'service:SVC_ETC', enabledCommonQuestionIds: [], ownQuestions: [] },
+    { key: 'service:SVC_COL_ETC', enabledCommonQuestionIds: [], ownQuestions: [] },
   ],
 }
 
