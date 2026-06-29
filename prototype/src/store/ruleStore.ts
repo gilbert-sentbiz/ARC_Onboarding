@@ -273,6 +273,14 @@ export const INITIAL_RULESET: RuleSet = {
       label: '가상자산 취급업소에 해당하나요?',
       inputType: 'radio', isRequired: true, classification: 'common',
       options: [{ value: 'yes', label: '예' }, { value: 'no', label: '아니오' }],
+      children: [
+        {
+          id: 'qc_virtual_asset_reg_no',
+          label: '가상자산사업자 신고번호를 입력해주세요',
+          inputType: 'text', isRequired: true, classification: 'common',
+          showWhen: { parentId: 'qc_virtual_asset', value: 'yes' },
+        },
+      ],
     },
     {
       id: 'qc_fund_source',
@@ -321,7 +329,7 @@ export const INITIAL_RULESET: RuleSet = {
       id: 'qe_corp_rep_group',
       label: '대표자 정보를 입력해주세요',
       inputType: 'text', isRequired: true, classification: 'entity-own', scope: 'ENTITY_CORP', isFixed: true,
-      repeat: true,
+      repeat: true, addButtonLabel: '대표자 추가하기',
       children: [
         { id: 'qe_corp_rep_name_kr', label: '성명 (한글)', inputType: 'text',   isRequired: true, classification: 'entity-own', scope: 'ENTITY_CORP' },
         { id: 'qe_corp_rep_name_en', label: '성명 (영문)', inputType: 'text',   isRequired: true, classification: 'entity-own', scope: 'ENTITY_CORP' },
@@ -334,7 +342,7 @@ export const INITIAL_RULESET: RuleSet = {
     {
       id: 'qe_corp_bo_exempt',
       label: '회사가 다음에 해당하면 선택해주세요',
-      inputType: 'select', isRequired: false, classification: 'entity-own', scope: 'ENTITY_CORP', isFixed: true,
+      inputType: 'radio', isRequired: false, classification: 'entity-own', scope: 'ENTITY_CORP', isFixed: true,
       options: [
         { value: 'gov',     label: '국가/지자체' },
         { value: 'public',  label: '공공기관' },
@@ -354,7 +362,7 @@ export const INITIAL_RULESET: RuleSet = {
       id: 'qe_corp_bo_group',
       label: '실제 소유자(BO) 정보를 입력해주세요',
       inputType: 'text', isRequired: true, classification: 'entity-own', scope: 'ENTITY_CORP', isFixed: true,
-      repeat: true,
+      repeat: true, addButtonLabel: '실제 소유자(BO) 추가하기',
       children: [
         { id: 'qe_corp_bo_name_kr', label: '성명 (한글)', inputType: 'text', isRequired: true, classification: 'entity-own', scope: 'ENTITY_CORP' },
         { id: 'qe_corp_bo_name_en', label: '성명 (영문)', inputType: 'text', isRequired: true, classification: 'entity-own', scope: 'ENTITY_CORP' },
@@ -368,6 +376,14 @@ export const INITIAL_RULESET: RuleSet = {
       label: '센트비를 이용한 거래 목적을 선택해주세요',
       inputType: 'select', isRequired: true, classification: 'entity-own', scope: 'ENTITY_CORP', isFixed: true,
       options: [{ value: 'settlement', label: '판매대금 정산대행' }, { value: 'other', label: '기타(직접 입력)' }],
+      children: [
+        {
+          id: 'qe_corp_purpose_other',
+          label: '거래 목적을 직접 입력해주세요',
+          inputType: 'text', isRequired: true, classification: 'entity-own', scope: 'ENTITY_CORP',
+          showWhen: { parentId: 'qe_corp_purpose', value: 'other' },
+        },
+      ],
     },
     {
       id: 'qe_corp_size',
@@ -421,6 +437,14 @@ export const INITIAL_RULESET: RuleSet = {
       label: '센트비를 이용한 거래 목적을 선택해주세요',
       inputType: 'select', isRequired: true, classification: 'entity-own', scope: 'ENTITY_INDIV', isFixed: true,
       options: [{ value: 'settlement', label: '판매대금 정산대행' }, { value: 'other', label: '기타(직접 입력)' }],
+      children: [
+        {
+          id: 'qe_indiv_purpose_other',
+          label: '거래 목적을 직접 입력해주세요',
+          inputType: 'text', isRequired: true, classification: 'entity-own', scope: 'ENTITY_INDIV',
+          showWhen: { parentId: 'qe_indiv_purpose', value: 'other' },
+        },
+      ],
     },
 
     // ── FI entity-own (PRD 9.8) — Section A ────────────────────────────────

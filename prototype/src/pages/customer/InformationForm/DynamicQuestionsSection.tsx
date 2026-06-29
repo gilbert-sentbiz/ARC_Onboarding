@@ -203,7 +203,7 @@ export default function DynamicQuestionsSection({ title, questions, initialData,
               className="flex items-center gap-1.5 text-[13px] text-sb-brand font-medium self-start px-3 py-1.5 rounded-[6px] border border-sb-brand hover:bg-sb-blue-100 transition-colors"
             >
               <Plus size={13} />
-              {q.label} 추가
+              {q.addButtonLabel ?? `${q.label} 추가`}
             </button>
           </div>
         ) : (

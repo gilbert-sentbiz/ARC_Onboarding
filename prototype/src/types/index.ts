@@ -96,6 +96,7 @@ export interface QuestionRule {
   scopeEntity?: EntityCode           // kept for backward compat
   scopeService?: ServiceCode         // kept for backward compat
   isFixed?: boolean
+  addButtonLabel?: string            // custom label for repeat-input add button
   // PI-48: tree fields
   repeat?: boolean                   // true = group can be repeated N times
   children?: QuestionRule[]          // conditional tail questions

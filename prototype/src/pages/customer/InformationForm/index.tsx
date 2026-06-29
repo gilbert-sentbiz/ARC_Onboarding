@@ -5,7 +5,7 @@ import { getRuleSet } from '../../../store/ruleStore'
 import type { ServiceCode, EntityCode, QuestionRule } from '../../../types'
 import DynamicQuestionsSection from './DynamicQuestionsSection'
 
-type Stage = 'entity_questions' | 'krw_questions' | 'vnd_questions'
+type Stage = 'entity_questions' | 'vnd_questions'
 
 function getSegmentQuestions(configKey: string): QuestionRule[] {
   const rs = getRuleSet()
@@ -95,9 +95,9 @@ export default function InformationForm() {
 
   const entityCommonQs = getSegmentQuestions(`entity:${entityCode}`)
   const entityFixedQs  = getEntityFixedQuestions(entityCode)
-  const entityQuestions = [...entityCommonQs, ...entityFixedQs]
+  const krwQuestions   = needsKRW ? getSegmentQuestions('service:SVC_COL_KRW') : []
+  const entityQuestions = [...entityCommonQs, ...entityFixedQs, ...krwQuestions]
 
-  const krwQuestions = needsKRW ? getSegmentQuestions('service:SVC_COL_KRW') : []
   const vndQuestions = needsVND ? getSegmentQuestions('service:SVC_COL_VND') : []
 
   function saveDraft(data: Record<string, unknown>) {
@@ -111,13 +111,18 @@ export default function InformationForm() {
     navigate(`/customer/case/${id}/review/second`)
   }
 
-  function afterEntity(next: Record<string, unknown>) {
-    if (needsKRW) { setStage('krw_questions'); window.scrollTo({ top: 0 }) }
-    else if (needsVND) { setStage('vnd_questions'); window.scrollTo({ top: 0 }) }
-    else saveAndNavigate(next)
-  }
-
-  function afterKRW(next: Record<string, unknown>) {
+  function afterEntity(entityData: Record<string, unknown>, allData: Record<string, unknown>) {
+    let next = allData
+    if (needsKRW) {
+      const krwIds = new Set(krwQuestions.map(q => q.id))
+      const krwData: Record<string, unknown> = {}
+      for (const [k, v] of Object.entries(entityData)) {
+        if (krwIds.has(k)) krwData[k] = v
+      }
+      const sector = krwData['qs_krw_sector'] as string | undefined
+      next = { ...allData, krwCollection: { sector, ...krwData } }
+      setAccumulated(next)
+    }
     if (needsVND) { setStage('vnd_questions'); window.scrollTo({ top: 0 }) }
     else saveAndNavigate(next)
   }
@@ -131,37 +136,25 @@ export default function InformationForm() {
     FI: '금융기관 정보 입력',
   }
 
-  if (stage === 'entity_questions')
+  if (stage === 'entity_questions') {
+    const entityInitial = {
+      ...((accumulated.entity as Record<string, unknown>) ?? {}),
+      ...((accumulated.krwCollection as Record<string, unknown>) ?? {}),
+    }
     return (
       <DynamicQuestionsSection
         title={entityTitle[entitySegment ?? ''] ?? '정보 입력'}
         questions={entityQuestions}
-        initialData={(accumulated.entity as Record<string, unknown>) ?? {}}
+        initialData={entityInitial}
         onComplete={(d) => {
           const next = { ...accumulated, entity: d }
-          setAccumulated(next)
-          afterEntity(next)
+          afterEntity(d, next)
         }}
         onBack={() => navigate(-1)}
         onDraftSave={(d) => saveDraft({ ...accumulated, entity: d })}
       />
     )
-
-  if (stage === 'krw_questions')
-    return (
-      <DynamicQuestionsSection
-        title="KRW Collection 정보"
-        questions={krwQuestions}
-        initialData={(accumulated.krw as Record<string, unknown>) ?? {}}
-        onComplete={(d) => {
-          const next = { ...accumulated, krw: d }
-          setAccumulated(next)
-          afterKRW(next)
-        }}
-        onBack={() => { setStage('entity_questions'); window.scrollTo({ top: 0 }) }}
-        onDraftSave={(d) => saveDraft({ ...accumulated, krw: d })}
-      />
-    )
+  }
 
   if (stage === 'vnd_questions')
     return (
@@ -174,10 +167,7 @@ export default function InformationForm() {
           setAccumulated(next)
           saveAndNavigate(next)
         }}
-        onBack={() => {
-          if (needsKRW) { setStage('krw_questions'); window.scrollTo({ top: 0 }) }
-          else { setStage('entity_questions'); window.scrollTo({ top: 0 }) }
-        }}
+        onBack={() => { setStage('entity_questions'); window.scrollTo({ top: 0 }) }}
         onDraftSave={(d) => saveDraft({ ...accumulated, vnd: d })}
       />
     )
