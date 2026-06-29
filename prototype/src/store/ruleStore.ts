@@ -35,11 +35,11 @@ export const INITIAL_RULESET: RuleSet = {
         { type: 'biz_registration',   displayName: '사업자등록증 (Business Registration Certificate)', isRequired: true,  isConditional: false },
         { type: 'corporate_registry', displayName: '법인등기부등본 (Corporate Registry Extract)',       isRequired: true,  isConditional: false },
         { type: 'shareholder_list',   displayName: '주주명부 (Shareholder List)',                      isRequired: true,  isConditional: false },
-        { type: 'id_card',            displayName: '대표자 신분증 사본 (CEO ID Copy, 공동대표 전원)',    isRequired: true,  isConditional: false },
+        { type: 'id_copy',             displayName: '대표자 신분증 사본 (CEO ID Copy, 공동대표 전원)',    isRequired: true,  isConditional: false },
         { type: 'seal_certificate',   displayName: '법인인감증명서 (Corporate Seal Certificate)',      isRequired: true,  isConditional: false },
         { type: 'bank_account',       displayName: '은행계좌 사본 (Bank Account Copy)',                isRequired: true,  isConditional: false },
         { type: 'contract',           displayName: '계약서 — 거래처 (Contract)',                       isRequired: true,  isConditional: false },
-        { type: 'invoice_shipping',   displayName: '샘플 인보이스 및 선적자료 (Sample Invoice & Shipping Docs)', isRequired: true, isConditional: false },
+        { type: 'sample_invoice_shipping', displayName: '샘플 인보이스 및 선적자료 (Sample Invoice & Shipping Docs)', isRequired: true, isConditional: false },
         { type: 'website_url',        displayName: '홈페이지 주소 (Website URL)',                      isRequired: false, isConditional: true  },
       ],
     },
@@ -47,25 +47,25 @@ export const INITIAL_RULESET: RuleSet = {
       match: { entity: 'ENTITY_INDIV' },
       docs: [
         { type: 'biz_registration',   displayName: '사업자등록증 (Business Registration Certificate)', isRequired: true,  isConditional: false },
-        { type: 'id_card',            displayName: '대표자 신분증 사본 (Representative ID Copy)',      isRequired: true,  isConditional: false },
+        { type: 'id_copy',             displayName: '대표자 신분증 사본 (Representative ID Copy)',      isRequired: true,  isConditional: false },
         { type: 'bank_account',       displayName: '은행계좌 사본 (Bank Account Copy)',                isRequired: true,  isConditional: false },
         { type: 'contract',           displayName: '계약서 (Contract)',                                isRequired: true,  isConditional: false },
-        { type: 'invoice_shipping',   displayName: '샘플 인보이스 및 선적자료 (Sample Invoice & Shipping Docs)', isRequired: true, isConditional: false },
+        { type: 'sample_invoice_shipping', displayName: '샘플 인보이스 및 선적자료 (Sample Invoice & Shipping Docs)', isRequired: true, isConditional: false },
         { type: 'website_url',        displayName: '홈페이지 주소 (Website URL)',                      isRequired: false, isConditional: true  },
       ],
     },
     {
       match: { entity: 'ENTITY_FI' },
       docs: [
-        { type: 'fi_biz_registration', displayName: 'Business Registration',                         isRequired: true,  isConditional: false },
+        { type: 'biz_registration',    displayName: 'Business Registration Certificate',              isRequired: true,  isConditional: false },
         { type: 'remittance_license',  displayName: 'Remittance License (또는 동등 인허가)',           isRequired: true,  isConditional: false },
         { type: 'internal_policies',   displayName: 'Internal Policies (Compliance/Risk)',            isRequired: true,  isConditional: false },
         { type: 'financial_statements',displayName: 'Audited Financial Statements (최근 3년)',        isRequired: true,  isConditional: false },
         { type: 'aml_audit',           displayName: 'Latest AML Audit Report',                       isRequired: true,  isConditional: false },
         { type: 'org_chart',           displayName: 'Organisational Chart',                          isRequired: true,  isConditional: false },
         { type: 'ownership_chart',     displayName: 'Ownership Chart',                               isRequired: true,  isConditional: false },
-        { type: 'directors_list',      displayName: 'Official Document — List of Directors',         isRequired: true,  isConditional: false },
-        { type: 'id_copies',           displayName: 'Certified ID Copies — 이사 전원 + UBO 25%+',    isRequired: true,  isConditional: false },
+        { type: 'director_list',       displayName: 'List of Directors',                              isRequired: true,  isConditional: false },
+        { type: 'id_copy',            displayName: 'Certified ID Copies — 이사 전원 + UBO 25%+',     isRequired: true,  isConditional: false },
         { type: 'wolfsberg',           displayName: 'Wolfsberg AML Questionnaire',                   isRequired: true,  isConditional: false },
         { type: 'board_resolution',    displayName: 'Board Resolution (서명 권한 위임)',              isRequired: true,  isConditional: false },
         { type: 'bank_proof',          displayName: 'Proof of Bank Account (최근 3개월 내)',          isRequired: true,  isConditional: false },
@@ -83,11 +83,11 @@ export const INITIAL_RULESET: RuleSet = {
     {
       match: { service: 'SVC_COL_KRW' },
       docs: [
-        { type: 'krw_biz_registration', displayName: 'Certificate of Business Registration', isRequired: true, isConditional: false },
-        { type: 'krw_directors',        displayName: 'List of Directors',                    isRequired: true, isConditional: false },
-        { type: 'krw_shareholders',     displayName: 'List of Shareholders',                 isRequired: true, isConditional: false },
-        { type: 'krw_articles',         displayName: 'Articles of Incorporation',            isRequired: true, isConditional: false },
-        { type: 'krw_id_copies',        displayName: 'ID Copies — CEO, 이사, UBO 25%+',     isRequired: true, isConditional: false },
+        { type: 'biz_registration',     displayName: 'Certificate of Business Registration', isRequired: true, isConditional: false },
+        { type: 'director_list',        displayName: 'List of Directors',                    isRequired: true, isConditional: false },
+        { type: 'shareholder_list',     displayName: 'List of Shareholders',                 isRequired: true, isConditional: false },
+        { type: 'articles_of_incorp',   displayName: 'Articles of Incorporation',            isRequired: true, isConditional: false },
+        { type: 'id_copy',              displayName: 'ID Copies — CEO, 이사, UBO 25%+',      isRequired: true, isConditional: false },
         { type: 'krw_bank_statement',   displayName: 'Bank/E-wallet Statement (회사명 기재)', isRequired: true, isConditional: false },
       ],
     },
@@ -161,18 +161,18 @@ export const INITIAL_RULESET: RuleSet = {
     {
       match: { service: 'SVC_COL_VND' },
       docs: [
-        { type: 'vnd_biz_registration', displayName: 'Business Registration Certificate',                 isRequired: true,  isConditional: false },
+        { type: 'biz_registration',     displayName: 'Business Registration Certificate',                 isRequired: true,  isConditional: false },
         { type: 'vnd_company_charter',  displayName: 'Company Charter',                                   isRequired: false, isConditional: true  },
         { type: 'vnd_incorporation',    displayName: 'Certificate of Incorporation',                      isRequired: true,  isConditional: false },
-        { type: 'vnd_directors',        displayName: 'List of Directors',                                 isRequired: true,  isConditional: false },
-        { type: 'vnd_shareholders',     displayName: "Shareholders' Chart (25%+ 전원)",                   isRequired: true,  isConditional: false },
-        { type: 'vnd_id_copies',        displayName: 'Passport/ID Copy — UBO, 이사, 대표자',              isRequired: true,  isConditional: false },
+        { type: 'director_list',        displayName: 'List of Directors',                                 isRequired: true,  isConditional: false },
+        { type: 'shareholder_list',     displayName: "Shareholders' Chart (25%+ 전원)",                   isRequired: true,  isConditional: false },
+        { type: 'id_copy',             displayName: 'Passport/ID Copy — UBO, 이사, 대표자',               isRequired: true,  isConditional: false },
         { type: 'vnd_board_resolution', displayName: 'Board Resolution (서명자가 법적 대표가 아닌 경우)',  isRequired: false, isConditional: true  },
         { type: 'vnd_licenses',         displayName: 'Licenses (해당 시)',                                isRequired: false, isConditional: true  },
         { type: 'vnd_address',          displayName: 'Address of UBOs, Directors, Reps, Shareholders',   isRequired: true,  isConditional: false },
         { type: 'vnd_bank_statement',   displayName: 'Bank Statement (SentBe App 사용자만)',              isRequired: false, isConditional: true  },
-        { type: 'vnd_sample_contract',  displayName: 'Sample Contract',                                  isRequired: true,  isConditional: false },
-        { type: 'vnd_shipping_docs',    displayName: 'Sample Shipping Documents',                        isRequired: true,  isConditional: false },
+        { type: 'contract',            displayName: 'Sample Contract',                                    isRequired: true,  isConditional: false },
+        { type: 'sample_invoice_shipping', displayName: 'Sample Shipping Documents',                     isRequired: true,  isConditional: false },
         { type: 'vnd_accountant_id',    displayName: "Accountant's ID (베트남 법인만)",                  isRequired: false, isConditional: true  },
         { type: 'vnd_accountant_addr',  displayName: "Accountant's Proof of Address (베트남 법인만)",    isRequired: false, isConditional: true  },
         { type: 'vnd_office_photo',     displayName: 'Office Photo with Company Logo',                   isRequired: false, isConditional: true  },
@@ -630,11 +630,14 @@ export function getRuleSet(): RuleSet {
   const hasNewEntityRules = rs.entityClassificationRules?.length > 0 && 'conditions' in (rs.entityClassificationRules[0] ?? {})
   // Detect new-format service rules (have 'triggerCountries'); fall back if old localStorage format
   const hasNewServiceRules = rs.serviceClassificationRules?.length > 0 && 'triggerCountries' in (rs.serviceClassificationRules[0] ?? {})
+  // Detect canonical document types; fall back if old localStorage still has pre-canonical codes
+  const hasCanonicalDocTypes = !rs.documentRules?.some(r => r.docs.some(d => d.type === 'id_card' || d.type === 'fi_biz_registration'))
   return {
     ...rs,
     entityClassificationRules: hasNewEntityRules ? rs.entityClassificationRules : INITIAL_RULESET.entityClassificationRules,
     serviceClassificationRules: hasNewServiceRules ? rs.serviceClassificationRules : INITIAL_RULESET.serviceClassificationRules,
     questionPool: rs.questionPool?.length ? rs.questionPool : INITIAL_RULESET.questionPool,
     segmentQuestionConfigs: rs.segmentQuestionConfigs?.length ? rs.segmentQuestionConfigs : INITIAL_RULESET.segmentQuestionConfigs,
+    documentRules: hasCanonicalDocTypes ? rs.documentRules : INITIAL_RULESET.documentRules,
   }
 }

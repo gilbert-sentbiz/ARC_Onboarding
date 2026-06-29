@@ -1,12 +1,62 @@
 import { useRef, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { CheckCircle, CloudArrowUp, Warning, ArrowRight, Clock } from '@phosphor-icons/react'
+import { CheckCircle, CloudArrowUp, Warning, ArrowRight, Clock, Link } from '@phosphor-icons/react'
 import { useCaseStore } from '../../store/caseStore'
 import { useSessionStore } from '../../store/sessionStore'
 import { transitionStatus } from '../../services/caseService'
 import type { Document, UploadedFile } from '../../types'
 import Button from '../../components/ui/Button'
 import TabBar from '../../components/customer/TabBar'
+
+function UrlRow({ doc, onSave }: { doc: Document; onSave: (docId: string, url: string) => void }) {
+  const isSubmitted = doc.status === 'SUBMITTED' || doc.status === 'APPROVED'
+  const needsRevision = doc.status === 'REVISION_REQUIRED'
+  const savedUrl = doc.uploadedFiles[doc.uploadedFiles.length - 1]?.fileName ?? ''
+  const [url, setUrl] = useState(savedUrl)
+
+  return (
+    <div
+      className={`flex flex-col gap-3 p-4 rounded-[10px] border transition-colors ${
+        needsRevision ? 'border-amber-300 bg-amber-50' : isSubmitted ? 'border-sb-positive bg-green-50' : 'border-sb-n200 bg-white'
+      }`}
+    >
+      <div className="flex items-start gap-3 min-w-0">
+        <div className="flex-shrink-0 mt-0.5">
+          {isSubmitted ? (
+            <CheckCircle size={18} weight="fill" className="text-sb-positive" />
+          ) : needsRevision ? (
+            <Warning size={18} weight="fill" className="text-amber-500" />
+          ) : (
+            <Link size={18} className="text-sb-n400" />
+          )}
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-[14px] font-medium text-sb-n800 leading-[20px]">{doc.displayName}</p>
+          {doc.isConditional && !doc.isRequired && (
+            <p className="text-[11px] text-sb-n400 mt-0.5">조건부 제출</p>
+          )}
+        </div>
+      </div>
+      <div className="flex gap-2">
+        <input
+          type="url"
+          value={url}
+          onChange={(e) => setUrl(e.target.value)}
+          placeholder="https://example.com"
+          className="flex-1 text-[13px] border border-sb-n200 rounded-[6px] px-3 py-1.5 outline-none focus:border-sb-brand"
+        />
+        <button
+          type="button"
+          onClick={() => { if (url.trim()) onSave(doc.id, url.trim()) }}
+          disabled={!url.trim()}
+          className="flex-shrink-0 px-3 py-1.5 rounded-[6px] border text-[13px] font-medium transition-colors border-sb-brand text-sb-brand hover:bg-sb-blue-100 disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          확인
+        </button>
+      </div>
+    </div>
+  )
+}
 
 function DocRow({
   doc,
@@ -159,6 +209,26 @@ export default function DocumentUpload() {
     reader.readAsDataURL(file)
   }
 
+  function handleUrlSave(docId: string, url: string) {
+    const now = Date.now()
+    const newFile: UploadedFile = {
+      id: `file_${now}`,
+      documentId: docId,
+      fileName: url,
+      fileSize: 0,
+      uploadedAt: now,
+      uploadedBy: session?.name || session?.email || '고객',
+      isLatest: true,
+    }
+    const latestCase = useCaseStore.getState().cases[id!]
+    if (!latestCase) return
+    const updatedDocs = latestCase.documents.map((d) => {
+      if (d.id !== docId) return d
+      return { ...d, status: 'SUBMITTED' as const, uploadedFiles: [...d.uploadedFiles, newFile] }
+    })
+    updateCase(id!, { documents: updatedDocs })
+  }
+
   function handleSubmit() {
     if (!session || !canSubmit) return
     const nextStatus = isRevision ? 'COMPLIANCE_REVIEW_REQUIRED' : 'SALES_REVIEW_REQUIRED'
@@ -206,9 +276,13 @@ export default function DocumentUpload() {
           </div>
 
           <div className="flex flex-col gap-3">
-            {displayDocs.map((doc) => (
-              <DocRow key={doc.id} doc={doc} onUpload={handleUpload} />
-            ))}
+            {displayDocs.map((doc) =>
+              doc.type === 'website_url' ? (
+                <UrlRow key={doc.id} doc={doc} onSave={handleUrlSave} />
+              ) : (
+                <DocRow key={doc.id} doc={doc} onUpload={handleUpload} />
+              )
+            )}
           </div>
         </div>
 
