@@ -55,11 +55,18 @@ export interface DocumentRule {
   docs: DocTemplateRule[]
 }
 
+export interface EntityClassificationCondition {
+  field: 'businessType' | 'foundingCountry'
+  op: 'eq' | 'neq'
+  value: string
+}
+
 export interface EntityClassificationRule {
   id: string
   conditionLabel: string
-  conditionType: 'businessType' | 'isForeignFounding' | 'default'
-  conditionValue?: string
+  priority: number
+  conditions: EntityClassificationCondition[]
+  conditionLogic: 'AND' | 'OR'
   result: EntityCode
 }
 

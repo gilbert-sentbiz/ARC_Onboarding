@@ -1,10 +1,13 @@
 import type { EntityCode, ServiceCode, SectorCode, SegmentInfo, OnboardingFormData } from '../types'
 import { getRuleSet } from '../store/ruleStore'
 
-const KOREA_KEYWORDS = ['한국', '대한민국', 'korea', 'kr', 'south korea']
-
-function isKorea(country: string): boolean {
-  return KOREA_KEYWORDS.some(k => country.toLowerCase().includes(k))
+// Normalize legacy free-text Korea inputs (pre-E2) to canonical 'KR'
+const LEGACY_KOREA_PATTERNS = ['한국', '대한민국', 'korea', 'south korea']
+function normalizeLegacyCountry(country: string): string {
+  if (!country) return country
+  const lower = country.toLowerCase()
+  if (lower === 'kr' || LEGACY_KOREA_PATTERNS.some(p => lower.includes(p))) return 'KR'
+  return country
 }
 
 const SECTOR_CODE_MAP: Record<string, SectorCode> = {
@@ -19,14 +22,19 @@ const SECTOR_CODE_MAP: Record<string, SectorCode> = {
 }
 
 export function classifyEntity(businessType: string, foundingCountry: string): EntityCode {
-  const rules = getRuleSet().entityClassificationRules
+  const country = normalizeLegacyCountry(foundingCountry)
+  const rules = [...getRuleSet().entityClassificationRules].sort((a, b) => a.priority - b.priority)
   for (const rule of rules) {
-    if (rule.conditionType === 'default') continue
-    if (rule.conditionType === 'businessType' && businessType === rule.conditionValue) return rule.result
-    if (rule.conditionType === 'isForeignFounding' && foundingCountry && !isKorea(foundingCountry)) return rule.result
+    const results = rule.conditions.map(c => {
+      const val = c.field === 'businessType' ? businessType : country
+      // neq on empty value treated as "unknown" — do not fire
+      if (c.op === 'neq' && !val) return false
+      return c.op === 'eq' ? val === c.value : val !== c.value
+    })
+    const match = rule.conditionLogic === 'OR' ? results.some(Boolean) : results.every(Boolean)
+    if (match) return rule.result
   }
-  const defaultRule = rules.find(r => r.conditionType === 'default')
-  return defaultRule?.result ?? 'ENTITY_INDIV'
+  return 'ENTITY_INDIV'
 }
 
 export function classifyServices(services: string[], collectionCountries: string[]): ServiceCode[] {

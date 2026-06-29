@@ -196,12 +196,41 @@ export const INITIAL_RULESET: RuleSet = {
     },
   ],
 
-  // ── Entity classification rules ───────────────────────────────────────────
+  // ── Entity classification rules (explicit 6-case, priority-ordered, no default) ──
   entityClassificationRules: [
-    { id: 'ecr_1', conditionLabel: 'businessType = financial',   conditionType: 'businessType',      conditionValue: 'financial',   result: 'ENTITY_FI'   },
-    { id: 'ecr_2', conditionLabel: '설립 국가 = 해외',             conditionType: 'isForeignFounding',                               result: 'ENTITY_FI'   },
-    { id: 'ecr_3', conditionLabel: 'businessType = corporation', conditionType: 'businessType',      conditionValue: 'corporation', result: 'ENTITY_CORP'  },
-    { id: 'ecr_4', conditionLabel: '(기본값)',                    conditionType: 'default',                                         result: 'ENTITY_INDIV' },
+    {
+      id: 'ecr_fi',
+      conditionLabel: 'businessType = financial  OR  설립국가 ≠ KR',
+      priority: 1,
+      conditions: [
+        { field: 'businessType', op: 'eq',  value: 'financial' },
+        { field: 'foundingCountry', op: 'neq', value: 'KR' },
+      ],
+      conditionLogic: 'OR',
+      result: 'ENTITY_FI',
+    },
+    {
+      id: 'ecr_corp',
+      conditionLabel: 'businessType = corporation  AND  설립국가 = KR',
+      priority: 2,
+      conditions: [
+        { field: 'businessType', op: 'eq', value: 'corporation' },
+        { field: 'foundingCountry', op: 'eq', value: 'KR' },
+      ],
+      conditionLogic: 'AND',
+      result: 'ENTITY_CORP',
+    },
+    {
+      id: 'ecr_indiv',
+      conditionLabel: 'businessType = individual  AND  설립국가 = KR',
+      priority: 3,
+      conditions: [
+        { field: 'businessType', op: 'eq', value: 'individual' },
+        { field: 'foundingCountry', op: 'eq', value: 'KR' },
+      ],
+      conditionLogic: 'AND',
+      result: 'ENTITY_INDIV',
+    },
   ],
 
   // ── Service classification rules ──────────────────────────────────────────
@@ -284,8 +313,11 @@ export const useRuleStore = create<RuleStoreState>()(
 
 export function getRuleSet(): RuleSet {
   const rs = useRuleStore.getState().currentRuleSet
+  // Detect new-format entity rules (have 'conditions' array); fall back if old localStorage format
+  const hasNewEntityRules = rs.entityClassificationRules?.length > 0 && 'conditions' in (rs.entityClassificationRules[0] ?? {})
   return {
     ...rs,
+    entityClassificationRules: hasNewEntityRules ? rs.entityClassificationRules : INITIAL_RULESET.entityClassificationRules,
     questionPool: rs.questionPool?.length ? rs.questionPool : INITIAL_RULESET.questionPool,
     segmentQuestionConfigs: rs.segmentQuestionConfigs?.length ? rs.segmentQuestionConfigs : INITIAL_RULESET.segmentQuestionConfigs,
   }
