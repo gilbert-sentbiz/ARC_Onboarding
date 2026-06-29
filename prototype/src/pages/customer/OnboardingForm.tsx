@@ -168,6 +168,12 @@ export default function OnboardingForm() {
   const [errors, setErrors] = useState<Errors>({})
   const [draftSaved, setDraftSaved] = useState(false)
 
+  // Derived from data.foundingCountry: 'KR' → 'korean'; any other non-empty → 'foreign'; '' → ''
+  const fcType = data.foundingCountry === 'KR' ? 'korean' : data.foundingCountry ? 'foreign' : ''
+  const [foreignCountryText, setForeignCountryText] = useState(
+    draftData?.foundingCountry && draftData.foundingCountry !== 'KR' ? draftData.foundingCountry : ''
+  )
+
   function set<K extends keyof FormData>(key: K, value: FormData[K]) {
     setData((prev) => ({ ...prev, [key]: value }))
     setErrors((prev) => ({ ...prev, [key]: undefined }))
@@ -217,7 +223,7 @@ export default function OnboardingForm() {
 
     if (step === 1) {
       if (!data.businessType) next.businessType = '사업자 유형을 선택해주세요.'
-      if (!data.foundingCountry.trim()) next.foundingCountry = '필수 항목입니다.'
+      if (!data.foundingCountry.trim()) next.foundingCountry = fcType === 'foreign' ? '국가명을 입력해주세요.' : '설립 국가를 선택해주세요.'
       if (!data.monthlyVolume.trim()) next.monthlyVolume = '필수 항목입니다.'
       if (data.monthlyVolumeCurrency === 'OTHER' && !data.monthlyVolumeCurrencyOther.trim())
         next.monthlyVolumeCurrencyOther = '통화를 직접 입력해주세요.'
@@ -469,14 +475,47 @@ export default function OnboardingForm() {
               </div>
               {errors.businessType && <p className="text-[11px] text-sb-negative">{errors.businessType}</p>}
 
-              <Input
-                label="법인·사업자 설립 국가"
-                required
-                placeholder="예: 한국"
-                value={data.foundingCountry}
-                onChange={(e) => set('foundingCountry', e.target.value)}
-                error={errors.foundingCountry}
-              />
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[14px] text-sb-n500">
+                  법인·사업자 설립 국가 <span className="text-sb-negative">*</span>
+                </label>
+                <div className="flex gap-2">
+                  {(['korean', 'foreign'] as const).map((type) => (
+                    <button
+                      key={type}
+                      type="button"
+                      onClick={() => {
+                        if (type === 'korean') {
+                          set('foundingCountry', 'KR')
+                        } else {
+                          set('foundingCountry', foreignCountryText)
+                        }
+                      }}
+                      className={`flex-1 py-2.5 rounded-[8px] border text-[14px] font-medium transition-all duration-[120ms] ${
+                        fcType === type
+                          ? 'bg-sb-blue-100 border-sb-brand text-sb-brand'
+                          : 'bg-white border-sb-n200 text-sb-n500 hover:border-sb-n400'
+                      }`}
+                    >
+                      {type === 'korean' ? '한국' : '해외'}
+                    </button>
+                  ))}
+                </div>
+                {fcType === 'foreign' && (
+                  <Input
+                    placeholder="국가명 입력 (예: 미국)"
+                    value={foreignCountryText}
+                    onChange={(e) => {
+                      setForeignCountryText(e.target.value)
+                      set('foundingCountry', e.target.value)
+                    }}
+                    error={errors.foundingCountry}
+                  />
+                )}
+                {fcType !== 'foreign' && errors.foundingCountry && (
+                  <p className="text-[11px] text-sb-negative">{errors.foundingCountry}</p>
+                )}
+              </div>
             </div>
 
             <div className="h-px bg-sb-n100" />
