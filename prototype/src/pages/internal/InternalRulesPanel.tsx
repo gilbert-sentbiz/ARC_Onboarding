@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { SignOut, TreeStructure, Plus, Trash, CaretDown, CaretRight } from '@phosphor-icons/react'
 import { useSessionStore } from '../../store/sessionStore'
 import { useRuleStore, getRuleSet } from '../../store/ruleStore'
-import type { EntityCode, ServiceCode, SectorCode, ServiceClassificationRule, DocTemplateRule, QuestionRule, SegmentQuestionConfig, QuestionInputType } from '../../types'
+import type { EntityCode, ServiceCode, SectorCode, ServiceClassificationRule, DocTemplateRule, QuestionRule, SegmentQuestionConfig, QuestionInputType, EntityClassificationRule, EntityClassificationCondition } from '../../types'
 
 type Selection =
   | { type: 'entity'; code: EntityCode }
@@ -544,99 +544,160 @@ function DocumentsEditor({ selected }: { selected: Selection }) {
   )
 }
 
-// ── Entity classification editor ──────────────────────────────────────────────
+// ── Entity classification table editor ────────────────────────────────────────
 
-function EntityClassificationEditor({ code }: { code: EntityCode }) {
-  const rs = getRuleSet()
+type RowBusinessType = 'financial' | 'corporation' | 'individual' | 'any'
+type RowFoundingCountry = 'KR' | 'overseas' | 'any'
 
-  const rule = [...rs.entityClassificationRules]
+interface EntityRow {
+  id: string
+  businessType: RowBusinessType
+  foundingCountry: RowFoundingCountry
+  result: EntityCode
+}
+
+const BT_OPTIONS: { value: RowBusinessType; label: string }[] = [
+  { value: 'financial',   label: '금융업' },
+  { value: 'corporation', label: '법인' },
+  { value: 'individual',  label: '개인' },
+  { value: 'any',         label: '(전체)' },
+]
+
+const FC_OPTIONS: { value: RowFoundingCountry; label: string }[] = [
+  { value: 'KR',       label: '한국' },
+  { value: 'overseas', label: '해외' },
+  { value: 'any',      label: '(전체)' },
+]
+
+// Entity priority order for rebuilding the global rules list
+const ENTITY_PRIO: Partial<Record<EntityCode, number>> = {
+  ENTITY_FI: 0,
+  ENTITY_CORP: 100,
+  ENTITY_INDIV: 200,
+}
+
+function ruleToRow(rule: EntityClassificationRule): EntityRow {
+  const btCond = rule.conditions.find((c: EntityClassificationCondition) => c.field === 'businessType')
+  const fcCond = rule.conditions.find((c: EntityClassificationCondition) => c.field === 'foundingCountry')
+  let businessType: RowBusinessType = 'any'
+  if (btCond?.op === 'eq') businessType = btCond.value as RowBusinessType
+  let foundingCountry: RowFoundingCountry = 'any'
+  if (fcCond?.op === 'eq' && fcCond.value === 'KR') foundingCountry = 'KR'
+  else if (fcCond?.op === 'neq' && fcCond.value === 'KR') foundingCountry = 'overseas'
+  return { id: rule.id, businessType, foundingCountry, result: rule.result }
+}
+
+function rowToRule(row: EntityRow, priority: number): EntityClassificationRule {
+  const conditions: EntityClassificationCondition[] = []
+  if (row.businessType !== 'any') conditions.push({ field: 'businessType', op: 'eq', value: row.businessType })
+  if (row.foundingCountry === 'KR') conditions.push({ field: 'foundingCountry', op: 'eq', value: 'KR' })
+  else if (row.foundingCountry === 'overseas') conditions.push({ field: 'foundingCountry', op: 'neq', value: 'KR' })
+  const btLabel = BT_OPTIONS.find(o => o.value === row.businessType)?.label ?? row.businessType
+  const fcLabel = FC_OPTIONS.find(o => o.value === row.foundingCountry)?.label ?? row.foundingCountry
+  return {
+    id: row.id,
+    conditionLabel: `${btLabel} / ${fcLabel}`,
+    priority,
+    conditions,
+    conditionLogic: 'AND',
+    result: row.result,
+  }
+}
+
+function EntityClassificationTableEditor({ code }: { code: EntityCode }) {
+  const { currentRuleSet, updateRuleSet } = useRuleStore()
+  const rs = currentRuleSet
+
+  const myRows: EntityRow[] = rs.entityClassificationRules
+    .filter(r => r.result === code)
     .sort((a, b) => a.priority - b.priority)
-    .find(r => r.result === code)
+    .map(ruleToRow)
 
-  const fieldLabel = (f: string) => f === 'businessType' ? '사업자 유형' : '설립국가'
-  const opLabel = (op: string) => op === 'eq' ? '=' : '≠'
+  const ENTITY_OPTIONS: { value: EntityCode; label: string }[] = [
+    { value: 'ENTITY_FI',    label: rs.entityLabels['ENTITY_FI']    ?? 'FI' },
+    { value: 'ENTITY_CORP',  label: rs.entityLabels['ENTITY_CORP']  ?? '법인' },
+    { value: 'ENTITY_INDIV', label: rs.entityLabels['ENTITY_INDIV'] ?? '개인사업자' },
+  ]
+
+  function saveRows(nextRows: EntityRow[]) {
+    const otherRules = rs.entityClassificationRules.filter(r => r.result !== code)
+    const thisRules = nextRows.map((row, i) => rowToRule(row, i + 1))
+    const allRules = [...otherRules, ...thisRules]
+      .sort((a, b) => {
+        const ap = (ENTITY_PRIO[a.result] ?? 500) + a.priority
+        const bp = (ENTITY_PRIO[b.result] ?? 500) + b.priority
+        return ap - bp
+      })
+      .map((r, i) => ({ ...r, priority: i + 1 }))
+    updateRuleSet({ ...rs, version: nextVersion(rs.version), entityClassificationRules: allRules })
+  }
+
+  function updateRow(idx: number, patch: Partial<EntityRow>) {
+    saveRows(myRows.map((r, i) => i === idx ? { ...r, ...patch } : r))
+  }
+
+  function addRow() {
+    saveRows([...myRows, { id: `ecr_${Date.now()}`, businessType: 'any', foundingCountry: 'any', result: code }])
+  }
+
+  function removeRow(idx: number) {
+    saveRows(myRows.filter((_, i) => i !== idx))
+  }
+
+  const sel = 'w-full text-[12px] border border-sb-n200 rounded-[6px] px-2 py-1.5 bg-white focus:outline-none focus:border-sb-brand text-sb-n700'
 
   return (
     <div className="flex flex-col gap-4">
-      <p className="text-[12px] text-sb-n400">이 세그먼트로 분류되는 조건입니다. (읽기 전용)</p>
+      <p className="text-[12px] text-sb-n400">이 세그먼트로 분류되는 조건 행을 편집합니다. 결과 세그먼트를 변경하면 해당 행은 다른 세그먼트의 뷰로 이동합니다.</p>
 
-      {!rule ? (
-        <div className="bg-sb-n50 rounded-[10px] border border-sb-n100 px-4 py-6 text-center text-[13px] text-sb-n400">
-          이 세그먼트에 해당하는 분류 조건이 없습니다.
+      <div className="bg-white rounded-[10px] border border-sb-n100 overflow-hidden">
+        {/* Header */}
+        <div className="grid grid-cols-[1fr_1fr_1fr_36px] gap-2 px-4 py-2 bg-sb-n50 border-b border-sb-n100">
+          <span className="text-[11px] font-semibold text-sb-n500">사업자 유형</span>
+          <span className="text-[11px] font-semibold text-sb-n500">설립국가</span>
+          <span className="text-[11px] font-semibold text-sb-n500">결과 세그먼트</span>
+          <span />
         </div>
-      ) : (
-        <div className="bg-white rounded-[10px] border border-sb-n100 overflow-hidden">
-          <div className="bg-sb-n50 border-b border-sb-n100 px-4 py-2.5 flex items-center justify-between">
-            <span className="text-[12px] font-semibold text-sb-n500">분류 조건</span>
-            <span className="text-[11px] font-mono text-sb-n400">priority {rule.priority} · {rule.conditionLogic}</span>
+
+        {myRows.length === 0 && (
+          <p className="text-[12px] text-sb-n400 px-4 py-3">분류 조건 없음</p>
+        )}
+
+        {myRows.map((row, idx) => (
+          <div key={row.id} className="grid grid-cols-[1fr_1fr_1fr_36px] gap-2 px-4 py-2.5 border-b border-sb-n100 last:border-0 items-center">
+            <select value={row.businessType} onChange={(e) => updateRow(idx, { businessType: e.target.value as RowBusinessType })} className={sel}>
+              {BT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
+            <select value={row.foundingCountry} onChange={(e) => updateRow(idx, { foundingCountry: e.target.value as RowFoundingCountry })} className={sel}>
+              {FC_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
+            <select value={row.result} onChange={(e) => updateRow(idx, { result: e.target.value as EntityCode })} className={sel}>
+              {ENTITY_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
+            <button
+              onClick={() => removeRow(idx)}
+              className="flex items-center justify-center w-7 h-7 rounded-[6px] text-sb-n400 hover:text-sb-negative hover:bg-red-50 transition-colors"
+            >
+              <Trash size={13} />
+            </button>
           </div>
-          <div className="px-4 py-4 flex flex-col gap-2">
-            {rule.conditions.map((c, i) => (
-              <div key={i} className="flex items-center gap-2">
-                {i > 0 && (
-                  <span className="text-[11px] font-semibold text-sb-brand w-7 text-center">{rule.conditionLogic}</span>
-                )}
-                {i === 0 && <span className="w-7" />}
-                <span className="text-[13px] text-sb-n700 font-mono bg-sb-n50 border border-sb-n100 rounded px-2 py-1">
-                  {fieldLabel(c.field)} {opLabel(c.op)} <strong>{c.value}</strong>
-                </span>
-              </div>
-            ))}
-          </div>
-          <div className="border-t border-sb-n100 px-4 py-2.5">
-            <span className="text-[12px] text-sb-n500">conditionLabel: </span>
-            <span className="text-[12px] font-mono text-sb-n700">{rule.conditionLabel}</span>
-          </div>
+        ))}
+
+        <div className="px-4 py-2.5 border-t border-sb-n100">
+          <button
+            onClick={addRow}
+            className="flex items-center gap-1.5 text-[12px] font-medium text-sb-brand hover:underline"
+          >
+            <Plus size={12} />
+            행 추가
+          </button>
         </div>
-      )}
+      </div>
 
       <p className="text-[11px] text-sb-n400">
         버전: <span className="font-mono font-medium text-sb-n700">{rs.version}</span>
+        &nbsp;— 변경 시 자동으로 버전이 올라갑니다.
       </p>
-    </div>
-  )
-}
-
-// ── Shared tag editor for country codes ──────────────────────────────────────
-
-function CountryTagEditor({ label, hint, countries, onChange }: {
-  label: string
-  hint?: string
-  countries: string[]
-  onChange: (next: string[]) => void
-}) {
-  const [input, setInput] = useState('')
-  function add() {
-    const val = input.trim().toUpperCase()
-    if (val && !countries.includes(val)) {
-      onChange([...countries, val])
-      setInput('')
-    }
-  }
-  return (
-    <div className="flex flex-col gap-2">
-      <label className="text-[12px] font-semibold text-sb-n500 uppercase tracking-[0.5px]">
-        {label} {hint && <span className="font-normal normal-case">({hint})</span>}
-      </label>
-      <div className="flex gap-2">
-        <input
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && add()}
-          placeholder="KR"
-          className="w-24 font-mono border border-sb-n200 rounded-[8px] px-3 py-1.5 text-[13px] focus:outline-none focus:border-sb-brand"
-        />
-        <button onClick={add} disabled={!input.trim()} className="px-3 py-1.5 rounded-[8px] text-[12px] font-medium bg-sb-brand text-white disabled:opacity-40">추가</button>
-      </div>
-      <div className="flex flex-wrap gap-1.5 min-h-[24px]">
-        {countries.map(c => (
-          <span key={c} className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-sb-blue-100 text-sb-brand text-[12px] font-mono font-medium">
-            {c}
-            <button onClick={() => onChange(countries.filter(x => x !== c))} className="ml-0.5 hover:text-sb-negative leading-none">×</button>
-          </span>
-        ))}
-        {countries.length === 0 && <p className="text-[12px] text-sb-n400">추가된 국가 없음</p>}
-      </div>
     </div>
   )
 }
@@ -648,8 +709,16 @@ function ServiceConditionEditor({ code }: { code: ServiceCode }) {
   const rs = currentRuleSet
 
   const rule = rs.serviceClassificationRules.find(r => r.serviceCode === code)
+  const [countrySelect, setCountrySelect] = useState('')
 
   const allServices = ['remittance', 'collection']
+
+  // All country codes registered in any collection service rule (dropdown options)
+  const registeredCountries = Array.from(new Set(
+    rs.serviceClassificationRules
+      .filter(r => r.triggerServices.includes('collection'))
+      .flatMap(r => r.triggerCountries)
+  ))
 
   function updateRule(patch: Partial<ServiceClassificationRule>) {
     if (!rule) return
@@ -660,10 +729,25 @@ function ServiceConditionEditor({ code }: { code: ServiceCode }) {
   }
 
   if (!rule) {
+    // SVC_ETC (기타 Collection) is an implicit fallback — no explicit trigger rule
+    if (code.endsWith('ETC')) {
+      return (
+        <div className="flex flex-col gap-4">
+          <div className="bg-white rounded-[10px] border border-sb-n100 p-5">
+            <p className="text-[13px] font-semibold text-sb-n700 mb-2">분류 조건 (자동 폴백)</p>
+            <p className="text-[13px] text-sb-n500">수금 선택 + 미등록 국가인 경우 이 세그먼트로 자동 분류됩니다.</p>
+            <p className="text-[11px] text-sb-n400 mt-1 font-mono">collection + country not in any registered Collection segment</p>
+          </div>
+          <p className="text-[11px] text-sb-n400">이 조건은 코드로 관리되며 패널에서 편집할 수 없습니다.</p>
+        </div>
+      )
+    }
     return (
       <p className="text-[13px] text-sb-n400">이 서비스 코드에 분류 규칙이 없습니다. (SVC_PAYOUT는 2차 인테이크에서 수동 지정)</p>
     )
   }
+
+  const availableCountries = registeredCountries.filter(c => !rule.triggerCountries.includes(c))
 
   return (
     <div className="flex flex-col gap-5">
@@ -692,12 +776,56 @@ function ServiceConditionEditor({ code }: { code: ServiceCode }) {
           </div>
         </div>
 
-        <CountryTagEditor
-          label="수금 국가 조건"
-          hint="비어있으면 국가 무관"
-          countries={rule.triggerCountries}
-          onChange={(next) => updateRule({ triggerCountries: next })}
-        />
+        {/* 수금 국가 조건 — dropdown sourced from registered service segments */}
+        <div className="flex flex-col gap-2">
+          <label className="text-[12px] font-semibold text-sb-n500 uppercase tracking-[0.5px]">
+            수금 국가 조건 <span className="font-normal normal-case">(비어있으면 국가 무관)</span>
+          </label>
+          {availableCountries.length > 0 ? (
+            <div className="flex gap-2">
+              <select
+                value={countrySelect}
+                onChange={(e) => setCountrySelect(e.target.value)}
+                className="flex-1 border border-sb-n200 rounded-[8px] px-3 py-1.5 text-[13px] font-mono bg-white focus:outline-none focus:border-sb-brand text-sb-n700"
+              >
+                <option value="">국가 선택</option>
+                {availableCountries.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+              <button
+                onClick={() => {
+                  if (countrySelect && !rule.triggerCountries.includes(countrySelect)) {
+                    updateRule({ triggerCountries: [...rule.triggerCountries, countrySelect] })
+                    setCountrySelect('')
+                  }
+                }}
+                disabled={!countrySelect}
+                className="px-3 py-1.5 rounded-[8px] text-[12px] font-medium bg-sb-brand text-white disabled:opacity-40"
+              >
+                추가
+              </button>
+            </div>
+          ) : (
+            <p className="text-[12px] text-sb-n400">
+              {registeredCountries.length === 0
+                ? '등록된 수금 국가 없음 (국가 추가 위저드 사용)'
+                : '모든 등록 국가가 이미 추가됨'}
+            </p>
+          )}
+          <div className="flex flex-wrap gap-1.5 min-h-[24px]">
+            {rule.triggerCountries.map(c => (
+              <span key={c} className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-sb-blue-100 text-sb-brand text-[12px] font-mono font-medium">
+                {c}
+                <button
+                  onClick={() => updateRule({ triggerCountries: rule.triggerCountries.filter(x => x !== c) })}
+                  className="ml-0.5 hover:text-sb-negative leading-none"
+                >
+                  ×
+                </button>
+              </span>
+            ))}
+            {rule.triggerCountries.length === 0 && <p className="text-[12px] text-sb-n400">추가된 국가 없음</p>}
+          </div>
+        </div>
       </div>
 
       <p className="text-[11px] text-sb-n400">
@@ -1189,7 +1317,7 @@ export default function InternalRulesPanel() {
                 onChange={setEntityTab}
               />
 
-              {entityTab === 'classification' && <EntityClassificationEditor code={selected.code} />}
+              {entityTab === 'classification' && <EntityClassificationTableEditor code={selected.code} />}
               {entityTab === 'questions' && <QuestionsEditor selected={selected} />}
               {entityTab === 'documents' && <DocumentsEditor selected={selected} />}
             </div>

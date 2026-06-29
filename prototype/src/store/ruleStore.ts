@@ -199,20 +199,30 @@ export const INITIAL_RULESET: RuleSet = {
   // ── Entity classification rules (explicit 6-case, priority-ordered, no default) ──
   entityClassificationRules: [
     {
-      id: 'ecr_fi',
-      conditionLabel: 'businessType = financial  OR  설립국가 ≠ KR',
+      id: 'ecr_fi_financial',
+      conditionLabel: '사업자 유형 = 금융업 (국가 무관)',
       priority: 1,
       conditions: [
-        { field: 'businessType', op: 'eq',  value: 'financial' },
+        { field: 'businessType', op: 'eq', value: 'financial' },
+      ],
+      conditionLogic: 'AND',
+      result: 'ENTITY_FI',
+    },
+    {
+      // 법인·개인 + 해외 → FI (금융업 경로는 P1에서 이미 처리)
+      id: 'ecr_fi_overseas',
+      conditionLabel: '설립국가 ≠ KR (법인·개인 + 해외)',
+      priority: 2,
+      conditions: [
         { field: 'foundingCountry', op: 'neq', value: 'KR' },
       ],
-      conditionLogic: 'OR',
+      conditionLogic: 'AND',
       result: 'ENTITY_FI',
     },
     {
       id: 'ecr_corp',
       conditionLabel: 'businessType = corporation  AND  설립국가 = KR',
-      priority: 2,
+      priority: 3,
       conditions: [
         { field: 'businessType', op: 'eq', value: 'corporation' },
         { field: 'foundingCountry', op: 'eq', value: 'KR' },
@@ -223,7 +233,7 @@ export const INITIAL_RULESET: RuleSet = {
     {
       id: 'ecr_indiv',
       conditionLabel: 'businessType = individual  AND  설립국가 = KR',
-      priority: 3,
+      priority: 4,
       conditions: [
         { field: 'businessType', op: 'eq', value: 'individual' },
         { field: 'foundingCountry', op: 'eq', value: 'KR' },
