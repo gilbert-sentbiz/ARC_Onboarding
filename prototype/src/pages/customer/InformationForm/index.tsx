@@ -24,7 +24,7 @@ function getSegmentQuestions(configKey: string): QuestionRule[] {
 
 function getEntityFixedQuestions(entityCode: EntityCode): QuestionRule[] {
   const rs = getRuleSet()
-  return rs.questionPool.filter(q => q.classification === 'entity' && q.scopeEntity === entityCode)
+  return rs.questionPool.filter(q => q.classification === 'entity-own' && (q.scope === entityCode || q.scopeEntity === entityCode))
 }
 
 export default function InformationForm() {

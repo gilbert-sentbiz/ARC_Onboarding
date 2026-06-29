@@ -37,7 +37,7 @@ function AddQuestionForm({ onAdd }: { onAdd: (q: QuestionRule) => void }) {
   function submit() {
     if (!form.label) return
     const id = `q_own_${Date.now()}`
-    onAdd({ id, label: form.label, inputType: form.inputType, isRequired: form.isRequired, classification: 'service' })
+    onAdd({ id, label: form.label, inputType: form.inputType, isRequired: form.isRequired, classification: 'service-own' })
     setForm({ label: '', inputType: 'text', isRequired: true })
   }
 
@@ -94,8 +94,8 @@ function QuestionsEditor({ selected }: { selected: Selection }) {
 
   const commonQuestions = rs.questionPool.filter(q => q.classification === 'common')
   const scopedFixedQuestions = rs.questionPool.filter(q => {
-    if (selected.type === 'entity') return q.classification === 'entity' && q.scopeEntity === selected.code
-    return q.classification === 'service' && q.scopeService === selected.code
+    if (selected.type === 'entity') return q.classification === 'entity-own' && (q.scope === selected.code || q.scopeEntity === selected.code)
+    return q.classification === 'service-own' && (q.scope === selected.code || q.scopeService === selected.code)
   })
 
   function saveConfig(patch: Partial<SegmentQuestionConfig>) {

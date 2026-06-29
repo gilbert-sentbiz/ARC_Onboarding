@@ -262,16 +262,16 @@ export const INITIAL_RULESET: RuleSet = {
       ],
     },
     // Entity-specific, FI only (9.7) — fixed
-    { id: 'q_fi_license_number', label: '인허가 번호',          inputType: 'text', isRequired: true, classification: 'entity', scopeEntity: 'ENTITY_FI',   isFixed: true },
-    { id: 'q_fi_regulator',      label: '감독기관명',            inputType: 'text', isRequired: true, classification: 'entity', scopeEntity: 'ENTITY_FI',   isFixed: true },
-    { id: 'q_fi_license_type',   label: '인허가 유형',          inputType: 'text', isRequired: true, classification: 'entity', scopeEntity: 'ENTITY_FI',   isFixed: true },
+    { id: 'q_fi_license_number', label: '인허가 번호',          inputType: 'text', isRequired: true, classification: 'entity-own', scopeEntity: 'ENTITY_FI',   isFixed: true },
+    { id: 'q_fi_regulator',      label: '감독기관명',            inputType: 'text', isRequired: true, classification: 'entity-own', scopeEntity: 'ENTITY_FI',   isFixed: true },
+    { id: 'q_fi_license_type',   label: '인허가 유형',          inputType: 'text', isRequired: true, classification: 'entity-own', scopeEntity: 'ENTITY_FI',   isFixed: true },
     // Entity-specific, CORP (9.8) — fixed
-    { id: 'q_corp_ubo_name',  label: 'UBO 성명 (지분 25% 이상)', inputType: 'text',   isRequired: true, classification: 'entity', scopeEntity: 'ENTITY_CORP', isFixed: true },
-    { id: 'q_corp_ubo_share', label: 'UBO 지분율 (%)',           inputType: 'number', isRequired: true, classification: 'entity', scopeEntity: 'ENTITY_CORP', isFixed: true },
+    { id: 'q_corp_ubo_name',  label: 'UBO 성명 (지분 25% 이상)', inputType: 'text',   isRequired: true, classification: 'entity-own', scopeEntity: 'ENTITY_CORP', isFixed: true },
+    { id: 'q_corp_ubo_share', label: 'UBO 지분율 (%)',           inputType: 'number', isRequired: true, classification: 'entity-own', scopeEntity: 'ENTITY_CORP', isFixed: true },
     // Service-specific, SVC_KRW (9.9) — fixed
-    { id: 'q_krw_business_line', label: '주요 거래 업종/품목', inputType: 'text', isRequired: true, classification: 'service', scopeService: 'SVC_KRW', isFixed: true },
+    { id: 'q_krw_business_line', label: '주요 거래 업종/품목', inputType: 'text', isRequired: true, classification: 'service-own', scopeService: 'SVC_KRW', isFixed: true },
     // Service-specific, SVC_VND (9.10) — fixed
-    { id: 'q_vnd_export_goods', label: '수출 상품/서비스 유형', inputType: 'text', isRequired: true, classification: 'service', scopeService: 'SVC_VND', isFixed: true },
+    { id: 'q_vnd_export_goods', label: '수출 상품/서비스 유형', inputType: 'text', isRequired: true, classification: 'service-own', scopeService: 'SVC_VND', isFixed: true },
   ],
 
   // ── Segment question configs ────────────────────────────────────────────

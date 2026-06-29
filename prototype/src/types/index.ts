@@ -78,7 +78,7 @@ export interface ServiceClassificationRule {
 
 // PI-41: Question rule types
 export type QuestionInputType = 'text' | 'select' | 'radio' | 'textarea' | 'number'
-export type QuestionClassification = 'common' | 'entity' | 'service'
+export type QuestionClassification = 'common' | 'entity-own' | 'service-own'
 
 export interface QuestionOption {
   value: string
@@ -92,9 +92,15 @@ export interface QuestionRule {
   options?: QuestionOption[]
   isRequired: boolean
   classification: QuestionClassification
-  scopeEntity?: EntityCode
-  scopeService?: ServiceCode
-  isFixed?: boolean  // true = read-only in panel (seed questions)
+  scope?: EntityCode | ServiceCode   // owning segment (entity-own / service-own)
+  scopeEntity?: EntityCode           // kept for backward compat
+  scopeService?: ServiceCode         // kept for backward compat
+  isFixed?: boolean
+  // PI-48: tree fields
+  repeat?: boolean                   // true = group can be repeated N times
+  children?: QuestionRule[]          // conditional tail questions
+  showWhen?: { parentId: string; value: string }  // render only when parent answer matches
+  labelOverrides?: Record<string, string>          // segment-specific label overrides
 }
 
 export interface SegmentQuestionConfig {
