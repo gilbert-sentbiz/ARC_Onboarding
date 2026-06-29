@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { ArrowLeft, ArrowRight, Plus, Trash } from '@phosphor-icons/react'
 import type { QuestionRule } from '../../../types'
 
@@ -99,6 +99,24 @@ export default function DynamicQuestionsSection({ title, questions, initialData,
   // repeatCounts: number of extra instances for each repeat question (0 = just the base instance)
   const [repeatCounts, setRepeatCounts] = useState<Record<string, number>>({})
 
+  // Initialize values for newly added repeat instances
+  useEffect(() => {
+    const missing: Record<string, string> = {}
+    for (const q of questions) {
+      if (!q.repeat || !q.children) continue
+      const count = repeatCounts[q.id] ?? 0
+      for (let i = 1; i <= count; i++) {
+        const children: QuestionRule[] = q.children
+        for (const child of children) {
+          const id = `${child.id}_${i}`
+          if (!(id in values)) missing[id] = ''
+        }
+      }
+    }
+    if (Object.keys(missing).length > 0) setValues(v => ({ ...missing, ...v }))
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [repeatCounts])
+
   function set(id: string, val: string) {
     const next = { ...values, [id]: val }
     setValues(next)
@@ -115,10 +133,21 @@ export default function DynamicQuestionsSection({ title, questions, initialData,
     const errs: Record<string, string> = {}
     function check(qs: QuestionRule[]) {
       for (const q of qs) {
-        if (q.isRequired && !values[q.id]) errs[q.id] = '필수 항목입니다'
-        if (q.children?.length) {
-          const visible = q.children.filter(c => isChildVisible(c))
-          check(visible)
+        if (q.repeat) {
+          // Validate all repeat instances (base + extras)
+          const instanceCount = 1 + (repeatCounts[q.id] ?? 0)
+          for (let i = 0; i < instanceCount; i++) {
+            for (const child of q.children ?? []) {
+              const repeatId = i === 0 ? child.id : `${child.id}_${i}`
+              if (child.isRequired && !values[repeatId]) errs[repeatId] = '필수 항목입니다'
+            }
+          }
+        } else {
+          if (q.isRequired && !values[q.id]) errs[q.id] = '필수 항목입니다'
+          if (q.children?.length) {
+            const visible = q.children.filter(c => isChildVisible(c))
+            check(visible)
+          }
         }
       }
     }
@@ -156,7 +185,6 @@ export default function DynamicQuestionsSection({ title, questions, initialData,
                 </div>
                 {q.children?.map(child => {
                   const repeatId = i === 0 ? child.id : `${child.id}_${i}`
-                  if (!values[repeatId]) values[repeatId] = ''
                   return (
                     <QuestionField
                       key={repeatId}
