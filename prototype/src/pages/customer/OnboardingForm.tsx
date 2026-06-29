@@ -17,6 +17,7 @@ import Button from '../../components/ui/Button'
 import { useSessionStore } from '../../store/sessionStore'
 import { saveFirstIntakeDraft } from '../../services/caseService'
 import { useCaseStore } from '../../store/caseStore'
+import { getRuleSet } from '../../store/ruleStore'
 
 interface FormData {
   companyName: string
@@ -394,18 +395,23 @@ export default function OnboardingForm() {
                     <span className="text-sb-n400 font-normal ml-1">(중복 선택 가능)</span>
                   </p>
                   <div className="flex flex-wrap gap-2">
-                    {[
-                      { value: 'KRW', label: '한국 (KRW)' },
-                      { value: 'VND', label: '베트남 (VND)' },
-                      { value: 'OTHER', label: '기타' },
-                    ].map((c) => (
-                      <ToggleChip
-                        key={c.value}
-                        label={c.label}
-                        selected={data.collectionCountries.includes(c.value)}
-                        onClick={() => toggleCollectionCountry(c.value)}
-                      />
-                    ))}
+                    {(() => {
+                      const rs = getRuleSet()
+                      const opts = [
+                        ...rs.serviceClassificationRules
+                          .filter(r => r.triggerServices.includes('collection') && r.triggerCountries.length > 0)
+                          .map(r => ({ value: r.triggerCountries[0], label: (rs.serviceLabels as Record<string, string>)[r.serviceCode] ?? r.serviceCode })),
+                        { value: 'OTHER', label: '기타' },
+                      ]
+                      return opts.map((c) => (
+                        <ToggleChip
+                          key={c.value}
+                          label={c.label}
+                          selected={data.collectionCountries.includes(c.value)}
+                          onClick={() => toggleCollectionCountry(c.value)}
+                        />
+                      ))
+                    })()}
                   </div>
                   {data.collectionCountries.includes('OTHER') && (
                     <Input
