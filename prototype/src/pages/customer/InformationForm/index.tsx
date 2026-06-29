@@ -3,14 +3,9 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { useCaseStore } from '../../../store/caseStore'
 import { getRuleSet } from '../../../store/ruleStore'
 import type { ServiceCode, EntityCode, QuestionRule } from '../../../types'
-import CorporateForm from './CorporateForm'
-import IndividualForm from './IndividualForm'
-import FIForm from './FIForm'
-import KRWCollectionSection from './KRWCollectionSection'
-import VNDCollectionSection from './VNDCollectionSection'
 import DynamicQuestionsSection from './DynamicQuestionsSection'
 
-type Stage = 'entity' | 'entity_questions' | 'krw' | 'krw_questions' | 'vnd' | 'vnd_questions'
+type Stage = 'entity_questions' | 'krw_questions' | 'vnd_questions'
 
 function getSegmentQuestions(configKey: string): QuestionRule[] {
   const rs = getRuleSet()
@@ -33,52 +28,43 @@ export default function InformationForm() {
   const updateCase = useCaseStore((s) => s.updateCase)
   const c = useCaseStore((s) => (id ? s.cases[id] : null))
 
-  const [stage, setStage] = useState<Stage>('entity')
+  const [stage, setStage] = useState<Stage>('entity_questions')
   const [accumulated, setAccumulated] = useState<Record<string, unknown>>(() => {
     if (c?.secondIntake?.status === 'draft') {
       return c.secondIntake.data as Record<string, unknown>
     }
+    // Autofill from 1st-intake using question IDs
     const fi = (c?.firstIntake?.data ?? {}) as Record<string, unknown>
     const rawSeg = (c?.segmentInfo as unknown as Record<string, unknown>) ?? {}
     const seg = (rawSeg.entity ?? rawSeg.entitySegment ?? rawSeg.customerType) as string | undefined
-    const fiServices = Array.isArray(fi.services) ? (fi.services as string[]) : []
-    const fiColl = Array.isArray(fi.collectionCountries) ? (fi.collectionCountries as string[]) : []
     const fiServiceCodes = Array.isArray(rawSeg.services) ? (rawSeg.services as string[]) : []
     const fiServiceSegs = Array.isArray(rawSeg.serviceSegments) ? (rawSeg.serviceSegments as string[]) : []
 
-    const entityInit: Record<string, unknown> = {}
+    const entityInit: Record<string, string> = {}
     if (seg === 'ENTITY_CORP' || seg === 'SentBiz Corporate') {
-      if (fi.companyName) entityInit.companyNameKr = fi.companyName
-      if (fi.phone) entityInit.phone = fi.phone
-      if (fi.foundingCountry) entityInit.corpNationality = fi.foundingCountry
+      if (fi.companyName) entityInit['qe_corp_name_kr'] = fi.companyName as string
+      if (fi.phone) entityInit['qe_corp_phone'] = fi.phone as string
+      if (fi.foundingCountry) entityInit['qe_corp_nation'] = fi.foundingCountry as string
     } else if (seg === 'ENTITY_INDIV' || seg === 'SentBiz Individual') {
-      if (fi.companyName) entityInit.bizName = fi.companyName
-      if (fi.phone) entityInit.phone = fi.phone
+      if (fi.companyName) entityInit['qe_indiv_biz_name'] = fi.companyName as string
+      if (fi.phone) entityInit['qe_indiv_phone'] = fi.phone as string
     } else if (seg === 'ENTITY_FI' || seg === 'FI') {
-      if (fi.companyName) entityInit.legalName = fi.companyName
-      if (fi.foundingCountry) entityInit.incorpCountry = fi.foundingCountry
-      if (fi.phone) entityInit.repPhone = fi.phone
-      if (fi.email) entityInit.repEmail = fi.email
-      const fiBServices: string[] = []
-      if (fiServices.includes('collection')) fiBServices.push('collection')
-      if (fiServices.includes('remittance')) fiBServices.push('payout')
-      if (fiBServices.length > 0) entityInit.services = fiBServices
-      const fiCurrencies = fiColl.filter((v) => v !== 'OTHER')
-      if (fiCurrencies.length > 0) entityInit.collectionCurrencies = fiCurrencies
-      if (fi.remittanceFrom) entityInit.originCountries = fi.remittanceFrom
+      if (fi.companyName) entityInit['qe_fi_legal_name'] = fi.companyName as string
+      if (fi.foundingCountry) entityInit['qe_fi_incorp_country'] = fi.foundingCountry as string
     }
 
     const result: Record<string, unknown> = {}
     if (Object.keys(entityInit).length > 0) result.entity = entityInit
+
     if (fiServiceCodes.includes('SVC_VND') || fiServiceSegs.includes('VND Collection')) {
-      const vndInit: Record<string, unknown> = {}
-      if (fi.companyName) vndInit.entityName = fi.companyName
-      if (fi.foundingCountry) vndInit.placeOfIncorp = fi.foundingCountry
-      if (fi.contactName) vndInit.contactName = fi.contactName
-      if (fi.phone) vndInit.contactPhone = fi.phone
-      if (fi.email) vndInit.contactEmail = fi.email
-      if (fi.monthlyVolume) vndInit.monthlyVolume = fi.monthlyVolume
-      if (Object.keys(vndInit).length > 0) result.vndCollection = vndInit
+      const vndInit: Record<string, string> = {}
+      if (fi.companyName) vndInit['qs_vnd_entity_name'] = fi.companyName as string
+      if (fi.foundingCountry) vndInit['qs_vnd_incorp_country'] = fi.foundingCountry as string
+      if (fi.contactName) vndInit['qs_vnd_contact_name'] = fi.contactName as string
+      if (fi.phone) vndInit['qs_vnd_contact_phone'] = fi.phone as string
+      if (fi.email) vndInit['qs_vnd_contact_email'] = fi.email as string
+      if (fi.monthlyVolume) vndInit['qs_vnd_monthly_volume'] = fi.monthlyVolume as string
+      if (Object.keys(vndInit).length > 0) result.vnd = vndInit
     }
     return result
   })
@@ -98,18 +84,23 @@ export default function InformationForm() {
   const needsKRW = serviceCodes.includes('SVC_KRW') || serviceSegsLegacy.includes('KRW Collection')
   const needsVND = serviceCodes.includes('SVC_VND') || serviceSegsLegacy.includes('VND Collection')
 
-  // Resolve RuleSet-driven questions per segment
   const entityCode = entitySegment as EntityCode | undefined
-  const entityCommonQs = entityCode ? getSegmentQuestions(`entity:${entityCode}`) : []
-  const entityFixedQs  = entityCode ? getEntityFixedQuestions(entityCode) : []
-  const entityDynamicQuestions = [...entityCommonQs, ...entityFixedQs]
 
-  const krwDynamicQuestions  = needsKRW ? getSegmentQuestions('service:SVC_KRW')  : []
-  const vndDynamicQuestions  = needsVND ? getSegmentQuestions('service:SVC_VND')  : []
+  if (!entityCode) {
+    navigate('/customer/onboarding', { replace: true })
+    return null
+  }
 
-  function saveDraft(partial: Record<string, unknown>) {
+  const entityCommonQs = getSegmentQuestions(`entity:${entityCode}`)
+  const entityFixedQs  = getEntityFixedQuestions(entityCode)
+  const entityQuestions = [...entityCommonQs, ...entityFixedQs]
+
+  const krwQuestions = needsKRW ? getSegmentQuestions('service:SVC_KRW') : []
+  const vndQuestions = needsVND ? getSegmentQuestions('service:SVC_VND') : []
+
+  function saveDraft(data: Record<string, unknown>) {
     if (!id) return
-    updateCase(id, { secondIntake: { status: 'draft', data: partial, savedAt: Date.now() } })
+    updateCase(id, { secondIntake: { status: 'draft', data, savedAt: Date.now() } })
   }
 
   function saveAndNavigate(data: Record<string, unknown>) {
@@ -119,144 +110,75 @@ export default function InformationForm() {
   }
 
   function afterEntity(next: Record<string, unknown>) {
-    if (entityDynamicQuestions.length > 0) { setStage('entity_questions'); window.scrollTo({ top: 0 }) }
-    else if (needsKRW) { setStage('krw'); window.scrollTo({ top: 0 }) }
-    else if (needsVND) { setStage('vnd'); window.scrollTo({ top: 0 }) }
-    else saveAndNavigate(next)
-  }
-
-  function afterEntityQuestions(next: Record<string, unknown>) {
-    if (needsKRW) { setStage('krw'); window.scrollTo({ top: 0 }) }
-    else if (needsVND) { setStage('vnd'); window.scrollTo({ top: 0 }) }
+    if (needsKRW) { setStage('krw_questions'); window.scrollTo({ top: 0 }) }
+    else if (needsVND) { setStage('vnd_questions'); window.scrollTo({ top: 0 }) }
     else saveAndNavigate(next)
   }
 
   function afterKRW(next: Record<string, unknown>) {
-    if (krwDynamicQuestions.length > 0) { setStage('krw_questions'); window.scrollTo({ top: 0 }) }
-    else if (needsVND) { setStage('vnd'); window.scrollTo({ top: 0 }) }
+    if (needsVND) { setStage('vnd_questions'); window.scrollTo({ top: 0 }) }
     else saveAndNavigate(next)
   }
 
-  function afterKRWQuestions(next: Record<string, unknown>) {
-    if (needsVND) { setStage('vnd'); window.scrollTo({ top: 0 }) }
-    else saveAndNavigate(next)
+  const entityTitle: Record<string, string> = {
+    ENTITY_CORP: '법인 정보 입력',
+    'SentBiz Corporate': '법인 정보 입력',
+    ENTITY_INDIV: '개인사업자 정보 입력',
+    'SentBiz Individual': '개인사업자 정보 입력',
+    ENTITY_FI: '금융기관 정보 입력',
+    FI: '금융기관 정보 입력',
   }
-
-  function afterVND(next: Record<string, unknown>) {
-    if (vndDynamicQuestions.length > 0) { setStage('vnd_questions'); window.scrollTo({ top: 0 }) }
-    else saveAndNavigate(next)
-  }
-
-  // ── Stage renderers ───────────────────────────────────────────────────────
 
   if (stage === 'entity_questions')
     return (
       <DynamicQuestionsSection
-        title="추가 정보 입력"
-        questions={entityDynamicQuestions}
-        initialData={(accumulated.entityQuestions as Record<string, unknown>) ?? {}}
+        title={entityTitle[entitySegment ?? ''] ?? '정보 입력'}
+        questions={entityQuestions}
+        initialData={(accumulated.entity as Record<string, unknown>) ?? {}}
         onComplete={(d) => {
-          const next = { ...accumulated, entityQuestions: d }
+          const next = { ...accumulated, entity: d }
           setAccumulated(next)
-          afterEntityQuestions(next)
+          afterEntity(next)
         }}
-        onBack={() => setStage('entity')}
-        onDraftSave={(d) => saveDraft({ ...accumulated, entityQuestions: d })}
-      />
-    )
-
-  if (stage === 'krw')
-    return (
-      <KRWCollectionSection
-        initialData={(accumulated.krwCollection as Record<string, unknown>) ?? {}}
-        onComplete={(d) => {
-          const next = { ...accumulated, krwCollection: d }
-          setAccumulated(next)
-          afterKRW(next)
-        }}
-        onBack={() => {
-          if (entityDynamicQuestions.length > 0) setStage('entity_questions')
-          else setStage('entity')
-        }}
-        onDraftSave={(d) => saveDraft({ ...accumulated, krwCollection: d })}
+        onBack={() => navigate(-1)}
+        onDraftSave={(d) => saveDraft({ ...accumulated, entity: d })}
       />
     )
 
   if (stage === 'krw_questions')
     return (
       <DynamicQuestionsSection
-        title="KRW Collection 추가 정보"
-        questions={krwDynamicQuestions}
-        initialData={(accumulated.krwQuestions as Record<string, unknown>) ?? {}}
+        title="KRW Collection 정보"
+        questions={krwQuestions}
+        initialData={(accumulated.krw as Record<string, unknown>) ?? {}}
         onComplete={(d) => {
-          const next = { ...accumulated, krwQuestions: d }
+          const next = { ...accumulated, krw: d }
           setAccumulated(next)
-          afterKRWQuestions(next)
+          afterKRW(next)
         }}
-        onBack={() => setStage('krw')}
-        onDraftSave={(d) => saveDraft({ ...accumulated, krwQuestions: d })}
-      />
-    )
-
-  if (stage === 'vnd')
-    return (
-      <VNDCollectionSection
-        initialData={(accumulated.vndCollection as Record<string, unknown>) ?? {}}
-        onComplete={(d) => {
-          const next = { ...accumulated, vndCollection: d }
-          setAccumulated(next)
-          afterVND(next)
-        }}
-        onBack={() => {
-          if (krwDynamicQuestions.length > 0) setStage('krw_questions')
-          else if (needsKRW) setStage('krw')
-          else if (entityDynamicQuestions.length > 0) setStage('entity_questions')
-          else setStage('entity')
-        }}
-        onDraftSave={(d) => saveDraft({ ...accumulated, vndCollection: d })}
+        onBack={() => { setStage('entity_questions'); window.scrollTo({ top: 0 }) }}
+        onDraftSave={(d) => saveDraft({ ...accumulated, krw: d })}
       />
     )
 
   if (stage === 'vnd_questions')
     return (
       <DynamicQuestionsSection
-        title="VND Collection 추가 정보"
-        questions={vndDynamicQuestions}
-        initialData={(accumulated.vndQuestions as Record<string, unknown>) ?? {}}
+        title="VND Collection 정보"
+        questions={vndQuestions}
+        initialData={(accumulated.vnd as Record<string, unknown>) ?? {}}
         onComplete={(d) => {
-          const next = { ...accumulated, vndQuestions: d }
+          const next = { ...accumulated, vnd: d }
           setAccumulated(next)
           saveAndNavigate(next)
         }}
-        onBack={() => setStage('vnd')}
-        onDraftSave={(d) => saveDraft({ ...accumulated, vndQuestions: d })}
+        onBack={() => {
+          if (needsKRW) { setStage('krw_questions'); window.scrollTo({ top: 0 }) }
+          else { setStage('entity_questions'); window.scrollTo({ top: 0 }) }
+        }}
+        onDraftSave={(d) => saveDraft({ ...accumulated, vnd: d })}
       />
     )
 
-  // entity stage (default)
-  const serviceSegmentsForForm = serviceCodes.length > 0
-    ? serviceCodes.map(c => ({ 'SVC_KRW': 'KRW Collection', 'SVC_VND': 'VND Collection', 'SVC_OTHER_COLL': '기타 Collection', 'SVC_PAYOUT': 'Payout' }[c] ?? c))
-    : serviceSegsLegacy
-
-  const entityProps = {
-    serviceSegments: serviceSegmentsForForm as string[],
-    initialData: (accumulated.entity as Record<string, unknown>) ?? {},
-    onDraftSave: (d: Record<string, unknown>) => saveDraft({ ...accumulated, entity: d }),
-  }
-
-  function handleEntityComplete(data: Record<string, unknown>) {
-    const next = { ...accumulated, entity: data }
-    setAccumulated(next)
-    afterEntity(next)
-  }
-
-  if (entitySegment === 'ENTITY_CORP' || entitySegment === 'SentBiz Corporate')
-    return <CorporateForm {...entityProps} onComplete={handleEntityComplete} />
-  if (entitySegment === 'ENTITY_INDIV' || entitySegment === 'SentBiz Individual')
-    return <IndividualForm {...entityProps} onComplete={handleEntityComplete} />
-  if (entitySegment === 'ENTITY_FI' || entitySegment === 'FI')
-    return <FIForm {...entityProps} onComplete={handleEntityComplete} />
-
-  navigate('/customer/onboarding', { replace: true })
   return null
 }
