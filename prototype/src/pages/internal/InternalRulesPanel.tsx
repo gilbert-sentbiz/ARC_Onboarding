@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { SignOut, TreeStructure, Plus, Trash } from '@phosphor-icons/react'
+import { SignOut, TreeStructure, Plus, Trash, CaretDown, CaretRight } from '@phosphor-icons/react'
 import { useSessionStore } from '../../store/sessionStore'
 import { useRuleStore, getRuleSet } from '../../store/ruleStore'
 import type { EntityCode, ServiceCode, SectorCode, ServiceClassificationRule, DocTemplateRule, QuestionRule, SegmentQuestionConfig, QuestionInputType } from '../../types'
@@ -31,54 +31,132 @@ const INPUT_TYPE_OPTIONS: { value: QuestionInputType; label: string }[] = [
   { value: 'number',   label: 'number' },
 ]
 
-function AddQuestionForm({ onAdd }: { onAdd: (q: QuestionRule) => void }) {
-  const [form, setForm] = useState({ label: '', inputType: 'text' as QuestionInputType, isRequired: true })
+function QuestionRowFixed({ q, depth = 0 }: { q: QuestionRule; depth?: number }) {
+  const [expanded, setExpanded] = useState(false)
+  const hasChildren = !!(q.children?.length)
+
+  return (
+    <>
+      <div className={`flex items-center gap-3 px-4 py-3 border-b border-sb-n100 last:border-0 ${depth > 0 ? 'bg-sb-n50' : ''}`} style={{ paddingLeft: depth > 0 ? `${16 + depth * 16}px` : undefined }}>
+        {hasChildren && (
+          <button onClick={() => setExpanded(v => !v)} className="text-sb-n400 hover:text-sb-brand flex-shrink-0">
+            {expanded ? <CaretDown size={12} /> : <CaretRight size={12} />}
+          </button>
+        )}
+        {!hasChildren && depth === 0 && <span className="w-[16px] flex-shrink-0" />}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-1.5">
+            <p className="text-[13px] text-sb-n800">{q.label}</p>
+            {q.showWhen && (
+              <span className="text-[10px] font-mono text-sb-n400 bg-sb-n50 border border-sb-n100 rounded px-1.5 py-0.5">
+                if {q.showWhen.parentId} = {q.showWhen.value}
+              </span>
+            )}
+          </div>
+          <p className="text-[11px] font-mono text-sb-n400">{q.id}</p>
+        </div>
+        <div className="flex items-center gap-1.5 flex-shrink-0">
+          {q.repeat && <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-green-50 text-green-700">반복</span>}
+          {hasChildren && <span className="text-[10px] text-sb-n400">{q.children!.length}개 조건</span>}
+          <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${q.isRequired ? 'bg-red-50 text-sb-negative' : 'bg-sb-n50 text-sb-n400'}`}>
+            {q.isRequired ? '필수' : '선택'}
+          </span>
+          <span className="text-[10px] font-mono text-sb-n400 px-1.5 py-0.5 border border-sb-n100 rounded">{q.inputType}</span>
+        </div>
+      </div>
+      {expanded && q.children?.map(child => (
+        <QuestionRowFixed key={child.id} q={child} depth={depth + 1} />
+      ))}
+    </>
+  )
+}
+
+function AddOwnQuestionForm({ parentOptions, onAdd }: { parentOptions: QuestionRule[]; onAdd: (q: QuestionRule) => void }) {
+  const [form, setForm] = useState({
+    label: '', inputType: 'text' as QuestionInputType, isRequired: true, parentId: '', parentValue: '',
+  })
 
   function submit() {
     if (!form.label) return
-    const id = `q_own_${Date.now()}`
-    onAdd({ id, label: form.label, inputType: form.inputType, isRequired: form.isRequired, classification: 'service-own' })
-    setForm({ label: '', inputType: 'text', isRequired: true })
+    const q: QuestionRule = {
+      id: `q_own_${Date.now()}`,
+      label: form.label,
+      inputType: form.inputType,
+      isRequired: form.isRequired,
+      classification: 'service-own',
+      ...(form.parentId ? { showWhen: { parentId: form.parentId, value: form.parentValue } } : {}),
+    }
+    onAdd(q)
+    setForm({ label: '', inputType: 'text', isRequired: true, parentId: '', parentValue: '' })
   }
 
   return (
-    <div className="flex items-end gap-2 pt-3 border-t border-sb-n100 mt-1">
-      <div className="flex-1">
-        <p className="text-[11px] text-sb-n400 mb-1">질문 레이블</p>
-        <input
-          placeholder="예: 주요 수출 품목"
-          value={form.label}
-          onChange={(e) => setForm(p => ({ ...p, label: e.target.value }))}
-          className="w-full text-[12px] border border-sb-n200 rounded-[6px] px-2 py-1.5 text-sb-n800 focus:outline-none focus:border-sb-brand"
-        />
-      </div>
-      <div className="w-24">
-        <p className="text-[11px] text-sb-n400 mb-1">입력 유형</p>
-        <select
-          value={form.inputType}
-          onChange={(e) => setForm(p => ({ ...p, inputType: e.target.value as QuestionInputType }))}
-          className="w-full text-[12px] border border-sb-n200 rounded-[6px] px-2 py-1.5 bg-white focus:outline-none focus:border-sb-brand"
+    <div className="pt-3 border-t border-sb-n100 mt-1 flex flex-col gap-2">
+      <div className="flex items-end gap-2">
+        <div className="flex-1">
+          <p className="text-[11px] text-sb-n400 mb-1">질문 레이블</p>
+          <input
+            placeholder="예: 주요 수출 품목"
+            value={form.label}
+            onChange={(e) => setForm(p => ({ ...p, label: e.target.value }))}
+            className="w-full text-[12px] border border-sb-n200 rounded-[6px] px-2 py-1.5 text-sb-n800 focus:outline-none focus:border-sb-brand"
+          />
+        </div>
+        <div className="w-24">
+          <p className="text-[11px] text-sb-n400 mb-1">입력 유형</p>
+          <select
+            value={form.inputType}
+            onChange={(e) => setForm(p => ({ ...p, inputType: e.target.value as QuestionInputType }))}
+            className="w-full text-[12px] border border-sb-n200 rounded-[6px] px-2 py-1.5 bg-white focus:outline-none focus:border-sb-brand"
+          >
+            {INPUT_TYPE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+          </select>
+        </div>
+        <label className="flex items-center gap-1.5 cursor-pointer flex-shrink-0 mb-1.5">
+          <input
+            type="checkbox"
+            checked={form.isRequired}
+            onChange={(e) => setForm(p => ({ ...p, isRequired: e.target.checked }))}
+            className="rounded border-sb-n300 text-sb-brand focus:ring-sb-brand"
+          />
+          <span className="text-[12px] text-sb-n600">필수</span>
+        </label>
+        <button
+          onClick={submit}
+          disabled={!form.label}
+          className="flex items-center gap-1 px-3 py-1.5 rounded-[6px] text-[12px] font-medium bg-sb-brand text-white disabled:opacity-40 mb-px"
         >
-          {INPUT_TYPE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-        </select>
+          <Plus size={12} />
+          추가
+        </button>
       </div>
-      <label className="flex items-center gap-1.5 cursor-pointer flex-shrink-0 mb-1.5">
-        <input
-          type="checkbox"
-          checked={form.isRequired}
-          onChange={(e) => setForm(p => ({ ...p, isRequired: e.target.checked }))}
-          className="rounded border-sb-n300 text-sb-brand focus:ring-sb-brand"
-        />
-        <span className="text-[12px] text-sb-n600">필수</span>
-      </label>
-      <button
-        onClick={submit}
-        disabled={!form.label}
-        className="flex items-center gap-1 px-3 py-1.5 rounded-[6px] text-[12px] font-medium bg-sb-brand text-white disabled:opacity-40 mb-px"
-      >
-        <Plus size={12} />
-        추가
-      </button>
+      {/* Conditional parent setting */}
+      <div className="flex items-center gap-2">
+        <div className="flex-1">
+          <p className="text-[11px] text-sb-n400 mb-1">상위 질문 (조건부, 선택)</p>
+          <select
+            value={form.parentId}
+            onChange={(e) => setForm(p => ({ ...p, parentId: e.target.value, parentValue: '' }))}
+            className="w-full text-[12px] border border-sb-n200 rounded-[6px] px-2 py-1.5 bg-white focus:outline-none focus:border-sb-brand text-sb-n600"
+          >
+            <option value="">없음 (독립 질문)</option>
+            {parentOptions.map(pq => (
+              <option key={pq.id} value={pq.id}>{pq.label}</option>
+            ))}
+          </select>
+        </div>
+        {form.parentId && (
+          <div className="w-36">
+            <p className="text-[11px] text-sb-n400 mb-1">트리거 값</p>
+            <input
+              placeholder="예: joint"
+              value={form.parentValue}
+              onChange={(e) => setForm(p => ({ ...p, parentValue: e.target.value }))}
+              className="w-full text-[12px] border border-sb-n200 rounded-[6px] px-2 py-1.5 text-sb-n800 focus:outline-none focus:border-sb-brand"
+            />
+          </div>
+        )}
+      </div>
     </div>
   )
 }
@@ -93,7 +171,7 @@ function QuestionsEditor({ selected }: { selected: Selection }) {
     ?? { key: configKey, enabledCommonQuestionIds: [], ownQuestions: [] }
 
   const commonQuestions = rs.questionPool.filter(q => q.classification === 'common')
-  const scopedFixedQuestions = rs.questionPool.filter(q => {
+  const ownFixedQuestions = rs.questionPool.filter(q => {
     if (selected.type === 'entity') return q.classification === 'entity-own' && (q.scope === selected.code || q.scopeEntity === selected.code)
     return q.classification === 'service-own' && (q.scope === selected.code || q.scopeService === selected.code)
   })
@@ -107,13 +185,6 @@ function QuestionsEditor({ selected }: { selected: Selection }) {
     updateRuleSet({ ...currentRuleSet, version: nextVersion(currentRuleSet.version), segmentQuestionConfigs: updated, questionPool: fullRs.questionPool })
   }
 
-  function toggleCommon(qId: string, enabled: boolean) {
-    const next = enabled
-      ? [...config.enabledCommonQuestionIds, qId]
-      : config.enabledCommonQuestionIds.filter(id => id !== qId)
-    saveConfig({ enabledCommonQuestionIds: next })
-  }
-
   function addOwn(q: QuestionRule) {
     saveConfig({ ownQuestions: [...config.ownQuestions, q] })
   }
@@ -122,82 +193,57 @@ function QuestionsEditor({ selected }: { selected: Selection }) {
     saveConfig({ ownQuestions: config.ownQuestions.filter((_, i) => i !== idx) })
   }
 
-  const classificationBadge = (cls: string) => (
-    <span className={`inline-block text-[10px] font-medium px-1.5 py-0.5 rounded-full ${cls === 'common' ? 'bg-blue-50 text-blue-600' : cls === 'entity' ? 'bg-purple-50 text-purple-600' : 'bg-amber-50 text-amber-600'}`}>
-      {cls}
-    </span>
-  )
+  const allOwnForParent = [...ownFixedQuestions, ...config.ownQuestions]
 
   return (
-    <div className="flex flex-col gap-4">
-      {/* Common question pool */}
-      <div className="bg-white rounded-[10px] border border-sb-n100 p-4">
-        <p className="text-[12px] font-semibold text-sb-n500 uppercase tracking-[0.5px] mb-3">공통 질문 풀</p>
-        <p className="text-[12px] text-sb-n400 mb-3">이 세그먼트에서 고객에게 표시할 공통 질문을 선택합니다.</p>
-        <div className="flex flex-col divide-y divide-sb-n100">
-          {commonQuestions.map(q => {
-            const isEnabled = config.enabledCommonQuestionIds.includes(q.id)
-            return (
-              <div key={q.id} className="flex items-center gap-3 py-2.5">
-                <input
-                  type="checkbox"
-                  checked={isEnabled}
-                  onChange={(e) => toggleCommon(q.id, e.target.checked)}
-                  className="rounded border-sb-n300 text-sb-brand focus:ring-sb-brand"
-                />
-                <div className="flex-1 min-w-0">
-                  <p className="text-[13px] text-sb-n800">{q.label}</p>
-                  <p className="text-[11px] font-mono text-sb-n400">{q.id}</p>
-                </div>
-                <div className="flex items-center gap-1.5 flex-shrink-0">
-                  {classificationBadge(q.classification)}
-                  <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${q.isRequired ? 'bg-red-50 text-sb-negative' : 'bg-sb-n50 text-sb-n400'}`}>
-                    {q.isRequired ? '필수' : '선택'}
-                  </span>
-                  <span className="text-[10px] font-mono text-sb-n400 px-1.5 py-0.5 border border-sb-n100 rounded">{q.inputType}</span>
-                </div>
+    <div className="flex flex-col gap-5">
+      {/* 공통 섹션 — always the same regardless of which segment is selected */}
+      <div>
+        <p className="text-[12px] font-semibold text-sb-n500 uppercase tracking-[0.5px] mb-2">공통 질문</p>
+        <div className="bg-white rounded-[10px] border border-sb-n100 divide-y divide-sb-n100 overflow-hidden">
+          {commonQuestions.length === 0 && (
+            <p className="text-[12px] text-sb-n400 px-4 py-3">공통 질문 없음</p>
+          )}
+          {commonQuestions.map(q => (
+            <div key={q.id} className="flex items-center gap-3 px-4 py-3">
+              <div className="flex-1 min-w-0">
+                <p className="text-[13px] text-sb-n800">{q.label}</p>
+                <p className="text-[11px] font-mono text-sb-n400">{q.id}</p>
               </div>
-            )
-          })}
+              <div className="flex items-center gap-1.5 flex-shrink-0">
+                <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${q.isRequired ? 'bg-red-50 text-sb-negative' : 'bg-sb-n50 text-sb-n400'}`}>
+                  {q.isRequired ? '필수' : '선택'}
+                </span>
+                <span className="text-[10px] font-mono text-sb-n400 px-1.5 py-0.5 border border-sb-n100 rounded">{q.inputType}</span>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 
-      {/* Fixed scoped questions (read-only) */}
-      {scopedFixedQuestions.length > 0 && (
-        <div className="bg-white rounded-[10px] border border-sb-n100 p-4">
-          <p className="text-[12px] font-semibold text-sb-n500 uppercase tracking-[0.5px] mb-1">고유 질문 (고정)</p>
-          <p className="text-[12px] text-sb-n400 mb-3">이 세그먼트에 항상 표시되는 고정 질문입니다 (PRD 정의, 수정 불가).</p>
-          <div className="flex flex-col divide-y divide-sb-n100">
-            {scopedFixedQuestions.map(q => (
-              <div key={q.id} className="flex items-center gap-3 py-2.5 opacity-70">
-                <input type="checkbox" checked readOnly className="rounded border-sb-n300 text-sb-brand" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-[13px] text-sb-n800">{q.label}</p>
-                  <p className="text-[11px] font-mono text-sb-n400">{q.id}</p>
-                </div>
-                <div className="flex items-center gap-1.5 flex-shrink-0">
-                  {classificationBadge(q.classification)}
-                  <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-sb-n50 text-sb-n500">고정</span>
-                  <span className="text-[10px] font-mono text-sb-n400 px-1.5 py-0.5 border border-sb-n100 rounded">{q.inputType}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Own questions */}
-      <div className="bg-white rounded-[10px] border border-sb-n100 p-4">
-        <p className="text-[12px] font-semibold text-sb-n500 uppercase tracking-[0.5px] mb-1">자체 질문</p>
-        <p className="text-[12px] text-sb-n400 mb-3">이 세그먼트에만 추가되는 커스텀 질문입니다.</p>
-        {config.ownQuestions.length === 0 && (
-          <p className="text-[12px] text-sb-n400 py-2">추가된 자체 질문 없음</p>
-        )}
-        <div className="flex flex-col divide-y divide-sb-n100">
+      {/* 고유 섹션 — swaps when segment changes */}
+      <div>
+        <p className="text-[12px] font-semibold text-sb-n500 uppercase tracking-[0.5px] mb-2">고유 질문</p>
+        <div className="bg-white rounded-[10px] border border-sb-n100 overflow-hidden">
+          {ownFixedQuestions.length === 0 && config.ownQuestions.length === 0 && (
+            <p className="text-[12px] text-sb-n400 px-4 py-3">고유 질문 없음</p>
+          )}
+          {/* PRD-defined fixed questions — tree with accordion for children */}
+          {ownFixedQuestions.map(q => (
+            <QuestionRowFixed key={q.id} q={q} />
+          ))}
+          {/* Admin-added own questions */}
           {config.ownQuestions.map((q, i) => (
-            <div key={q.id} className="flex items-center gap-3 py-2.5">
+            <div key={q.id} className="flex items-center gap-3 px-4 py-3 border-t border-sb-n100">
               <div className="flex-1 min-w-0">
-                <p className="text-[13px] text-sb-n800">{q.label}</p>
+                <div className="flex items-center gap-1.5">
+                  <p className="text-[13px] text-sb-n800">{q.label}</p>
+                  {q.showWhen && (
+                    <span className="text-[10px] font-mono text-sb-n400 bg-sb-n50 border border-sb-n100 rounded px-1.5 py-0.5">
+                      if {q.showWhen.parentId} = {q.showWhen.value}
+                    </span>
+                  )}
+                </div>
                 <p className="text-[11px] font-mono text-sb-n400">{q.id}</p>
               </div>
               <div className="flex items-center gap-1.5 flex-shrink-0">
@@ -214,8 +260,10 @@ function QuestionsEditor({ selected }: { selected: Selection }) {
               </div>
             </div>
           ))}
+          <div className="px-4 pb-4">
+            <AddOwnQuestionForm parentOptions={allOwnForParent} onAdd={addOwn} />
+          </div>
         </div>
-        <AddQuestionForm onAdd={addOwn} />
       </div>
 
       <p className="text-[11px] text-sb-n400">
@@ -595,7 +643,7 @@ function AddCountryWizard({ onFinish, onCancel }: {
     displayName: '',
     triggerServices: ['collection'],
     triggerCurrencies: [],
-    enabledCommonQuestionIds: ['q_business_purpose', 'q_counterparty_country'],
+    enabledCommonQuestionIds: ['qc_biz_reg_no', 'qc_biz_type'],
     ownQuestions: [],
     baseDocs: [],
   })
