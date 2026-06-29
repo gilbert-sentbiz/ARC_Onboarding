@@ -420,7 +420,7 @@ export default function CasePage() {
               value={msgText}
               onChange={(e) => setMsgText(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
+                if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
                   e.preventDefault()
                   sendMessage()
                 }

@@ -616,7 +616,7 @@ export default function InternalCaseDetail() {
                     placeholder="고객에게 메시지 전송"
                     value={chatInput}
                     onChange={(e) => setChatInput(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage() } }}
+                    onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); sendMessage() } }}
                   />
                   <button
                     onClick={sendMessage}
@@ -651,7 +651,7 @@ export default function InternalCaseDetail() {
                     placeholder="내부 메모 작성"
                     value={noteInput}
                     onChange={(e) => setNoteInput(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendNote() } }}
+                    onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); sendNote() } }}
                   />
                   <button
                     onClick={sendNote}
