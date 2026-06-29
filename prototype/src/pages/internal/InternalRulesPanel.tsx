@@ -380,15 +380,37 @@ function DocumentsEditor({ selected }: { selected: Selection }) {
       if (rule.match.service !== code) return rule
       if (sector === undefined && rule.match.sector !== undefined) return rule
       if (sector !== undefined && rule.match.sector !== sector) return rule
+      if (rule.match.entity) return rule  // skip intersection rules
       return { ...rule, docs: updater(rule.docs) }
     })
     updateRuleSet({ ...rs, version: nextVersion(rs.version), documentRules: updated })
   }
 
+  function updateIntersectionDocs(serviceCode: ServiceCode, entityCode: EntityCode, updater: (docs: DocTemplateRule[]) => DocTemplateRule[]) {
+    const updated = rs.documentRules.map(rule =>
+      rule.match.service === serviceCode && rule.match.entity === entityCode
+        ? { ...rule, docs: updater(rule.docs) }
+        : rule
+    )
+    updateRuleSet({ ...rs, version: nextVersion(rs.version), documentRules: updated })
+  }
+
+  const DOC_HEADER = (
+    <div className="grid grid-cols-[1fr_110px_80px_32px] gap-2 border-b border-sb-n100 pb-1 mb-1">
+      <span className="text-[11px] text-sb-n400">displayName</span>
+      <span className="text-[11px] text-sb-n400">type</span>
+      <span className="text-[11px] text-sb-n400">필수 여부</span>
+      <span />
+    </div>
+  )
+
   if (selected.type === 'entity') {
     const code = selected.code
+    // Base rule: entity-only (no service, no sector)
     const rule = rs.documentRules.find(r => r.match.entity === code && !r.match.service && !r.match.sector)
     const docs = rule?.docs ?? []
+    // Intersection rules: entity + service
+    const intersectionRules = rs.documentRules.filter(r => r.match.entity === code && !!r.match.service && !r.match.sector)
 
     return (
       <div className="flex flex-col gap-3">
@@ -396,12 +418,7 @@ function DocumentsEditor({ selected }: { selected: Selection }) {
           <p className="text-[12px] font-semibold text-sb-n500 uppercase tracking-[0.5px] mb-3">
             기본 서류 — {rs.entityLabels[code]}
           </p>
-          <div className="grid grid-cols-[1fr_110px_80px_32px] gap-2 border-b border-sb-n100 pb-1 mb-1">
-            <span className="text-[11px] text-sb-n400">displayName</span>
-            <span className="text-[11px] text-sb-n400">type</span>
-            <span className="text-[11px] text-sb-n400">필수 여부</span>
-            <span />
-          </div>
+          {DOC_HEADER}
           <DocList
             docs={docs}
             onUpdate={(i, patch) => updateEntityDocs(code, d => d.map((doc, idx) => idx === i ? { ...doc, ...patch } : doc))}
@@ -409,6 +426,30 @@ function DocumentsEditor({ selected }: { selected: Selection }) {
           />
           <AddDocForm onAdd={(doc) => updateEntityDocs(code, d => [...d, doc])} />
         </div>
+
+        {intersectionRules.length > 0 && (
+          <div className="flex flex-col gap-3">
+            <p className="text-[13px] font-semibold text-sb-n700">서비스 교집합 서류</p>
+            {intersectionRules.map(iRule => {
+              const svcCode = iRule.match.service!
+              return (
+                <div key={svcCode} className="bg-white rounded-[10px] border border-sb-n100 p-4">
+                  <p className="text-[12px] font-semibold text-sb-n500 uppercase tracking-[0.5px] mb-3">
+                    {rs.entityLabels[code]} × <span className="font-mono">{svcCode}</span> ({(rs.serviceLabels as Record<string, string>)[svcCode] ?? svcCode})
+                  </p>
+                  {DOC_HEADER}
+                  <DocList
+                    docs={iRule.docs}
+                    onUpdate={(i, patch) => updateIntersectionDocs(svcCode, code, d => d.map((doc, idx) => idx === i ? { ...doc, ...patch } : doc))}
+                    onRemove={(i) => updateIntersectionDocs(svcCode, code, d => d.filter((_, idx) => idx !== i))}
+                  />
+                  <AddDocForm onAdd={(doc) => updateIntersectionDocs(svcCode, code, d => [...d, doc])} />
+                </div>
+              )
+            })}
+          </div>
+        )}
+
         <p className="text-[11px] text-sb-n400">
           버전: <span className="font-mono font-medium text-sb-n700">{rs.version}</span>
         </p>
@@ -418,9 +459,12 @@ function DocumentsEditor({ selected }: { selected: Selection }) {
 
   // Service
   const code = selected.code
-  const baseRule = rs.documentRules.find(r => r.match.service === code && !r.match.sector)
+  // Base rule: service-only (no entity, no sector)
+  const baseRule = rs.documentRules.find(r => r.match.service === code && !r.match.sector && !r.match.entity)
   const baseDocs = baseRule?.docs ?? []
   const hasKRWSectors = code === 'SVC_KRW'
+  // Entity-intersection rules for this service
+  const serviceIntersectionRules = rs.documentRules.filter(r => r.match.service === code && !!r.match.entity && !r.match.sector)
 
   return (
     <div className="flex flex-col gap-4">
@@ -429,12 +473,7 @@ function DocumentsEditor({ selected }: { selected: Selection }) {
         <p className="text-[12px] font-semibold text-sb-n500 uppercase tracking-[0.5px] mb-3">
           기본 서류 — {rs.serviceLabels[code]}
         </p>
-        <div className="grid grid-cols-[1fr_110px_80px_32px] gap-2 border-b border-sb-n100 pb-1 mb-1">
-          <span className="text-[11px] text-sb-n400">displayName</span>
-          <span className="text-[11px] text-sb-n400">type</span>
-          <span className="text-[11px] text-sb-n400">필수 여부</span>
-          <span />
-        </div>
+        {DOC_HEADER}
         <DocList
           docs={baseDocs}
           onUpdate={(i, patch) => updateServiceDocs(code, undefined, d => d.map((doc, idx) => idx === i ? { ...doc, ...patch } : doc))}
@@ -464,11 +503,34 @@ function DocumentsEditor({ selected }: { selected: Selection }) {
                   if (sectorRule) {
                     updateServiceDocs(code, sector, d => [...d, doc])
                   } else {
-                    // Create new sector rule
                     const newRule = { match: { service: code, sector }, docs: [doc] }
                     updateRuleSet({ ...rs, version: nextVersion(rs.version), documentRules: [...rs.documentRules, newRule] })
                   }
                 }} />
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      {/* Entity-intersection slots */}
+      {serviceIntersectionRules.length > 0 && (
+        <div className="flex flex-col gap-3">
+          <p className="text-[13px] font-semibold text-sb-n700">교집합 조건부 서류 (entity × service)</p>
+          {serviceIntersectionRules.map(iRule => {
+            const entityCode = iRule.match.entity!
+            return (
+              <div key={entityCode} className="bg-white rounded-[10px] border border-sb-n100 p-4">
+                <p className="text-[12px] font-semibold text-sb-n500 uppercase tracking-[0.5px] mb-3">
+                  <span className="font-mono">{entityCode}</span> × {rs.serviceLabels[code]} — {rs.entityLabels[entityCode]}
+                </p>
+                {DOC_HEADER}
+                <DocList
+                  docs={iRule.docs}
+                  onUpdate={(i, patch) => updateIntersectionDocs(code, entityCode, d => d.map((doc, idx) => idx === i ? { ...doc, ...patch } : doc))}
+                  onRemove={(i) => updateIntersectionDocs(code, entityCode, d => d.filter((_, idx) => idx !== i))}
+                />
+                <AddDocForm onAdd={(doc) => updateIntersectionDocs(code, entityCode, d => [...d, doc])} />
               </div>
             )
           })}
