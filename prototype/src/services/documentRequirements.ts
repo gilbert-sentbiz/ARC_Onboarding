@@ -11,7 +11,7 @@ const LEGACY_SERVICE: Record<string, ServiceCode> = {
   'KRW Collection': 'SVC_KRW',
   'VND Collection': 'SVC_VND',
   'Remittance': 'SVC_PAYOUT',
-  '기타 Collection': 'SVC_OTHER_COLL',
+  '기타 Collection': 'SVC_ETC',
 }
 
 function resolveEntity(seg: SegmentInfo): EntityCode {

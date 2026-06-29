@@ -535,6 +535,50 @@ function EntityClassificationEditor({ code }: { code: EntityCode }) {
   )
 }
 
+// ── Shared tag editor for country codes ──────────────────────────────────────
+
+function CountryTagEditor({ label, hint, countries, onChange }: {
+  label: string
+  hint?: string
+  countries: string[]
+  onChange: (next: string[]) => void
+}) {
+  const [input, setInput] = useState('')
+  function add() {
+    const val = input.trim().toUpperCase()
+    if (val && !countries.includes(val)) {
+      onChange([...countries, val])
+      setInput('')
+    }
+  }
+  return (
+    <div className="flex flex-col gap-2">
+      <label className="text-[12px] font-semibold text-sb-n500 uppercase tracking-[0.5px]">
+        {label} {hint && <span className="font-normal normal-case">({hint})</span>}
+      </label>
+      <div className="flex gap-2">
+        <input
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && add()}
+          placeholder="KR"
+          className="w-24 font-mono border border-sb-n200 rounded-[8px] px-3 py-1.5 text-[13px] focus:outline-none focus:border-sb-brand"
+        />
+        <button onClick={add} disabled={!input.trim()} className="px-3 py-1.5 rounded-[8px] text-[12px] font-medium bg-sb-brand text-white disabled:opacity-40">추가</button>
+      </div>
+      <div className="flex flex-wrap gap-1.5 min-h-[24px]">
+        {countries.map(c => (
+          <span key={c} className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-sb-blue-100 text-sb-brand text-[12px] font-mono font-medium">
+            {c}
+            <button onClick={() => onChange(countries.filter(x => x !== c))} className="ml-0.5 hover:text-sb-negative leading-none">×</button>
+          </span>
+        ))}
+        {countries.length === 0 && <p className="text-[12px] text-sb-n400">추가된 국가 없음</p>}
+      </div>
+    </div>
+  )
+}
+
 // ── Service condition editor ──────────────────────────────────────────────────
 
 function ServiceConditionEditor({ code }: { code: ServiceCode }) {
@@ -544,7 +588,6 @@ function ServiceConditionEditor({ code }: { code: ServiceCode }) {
   const rule = rs.serviceClassificationRules.find(r => r.serviceCode === code)
 
   const allServices = ['remittance', 'collection']
-  const allCurrencies = ['KRW', 'VND', 'OTHER']
 
   function updateRule(patch: Partial<ServiceClassificationRule>) {
     if (!rule) return
@@ -587,29 +630,12 @@ function ServiceConditionEditor({ code }: { code: ServiceCode }) {
           </div>
         </div>
 
-        <div className="flex flex-col gap-2">
-          <label className="text-[12px] font-semibold text-sb-n500 uppercase tracking-[0.5px]">
-            수금 통화 조건 <span className="font-normal normal-case">(비어있으면 통화 무관)</span>
-          </label>
-          <div className="flex flex-wrap gap-3">
-            {allCurrencies.map(cur => (
-              <label key={cur} className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={rule.triggerCurrencies.includes(cur)}
-                  onChange={(e) => {
-                    const next = e.target.checked
-                      ? [...rule.triggerCurrencies, cur]
-                      : rule.triggerCurrencies.filter(c => c !== cur)
-                    updateRule({ triggerCurrencies: next })
-                  }}
-                  className="rounded border-sb-n300 text-sb-brand focus:ring-sb-brand"
-                />
-                <span className="text-[13px] text-sb-n700 font-mono">{cur}</span>
-              </label>
-            ))}
-          </div>
-        </div>
+        <CountryTagEditor
+          label="수금 국가 조건"
+          hint="비어있으면 국가 무관"
+          countries={rule.triggerCountries}
+          onChange={(next) => updateRule({ triggerCountries: next })}
+        />
       </div>
 
       <p className="text-[11px] text-sb-n400">
@@ -626,7 +652,7 @@ interface WizardData {
   serviceCode: string
   displayName: string
   triggerServices: string[]
-  triggerCurrencies: string[]
+  triggerCountries: string[]
   enabledCommonQuestionIds: string[]
   ownQuestions: QuestionRule[]
   baseDocs: DocTemplateRule[]
@@ -642,13 +668,13 @@ function AddCountryWizard({ onFinish, onCancel }: {
     serviceCode: 'SVC_',
     displayName: '',
     triggerServices: ['collection'],
-    triggerCurrencies: [],
+    triggerCountries: [],
     enabledCommonQuestionIds: ['qc_biz_reg_no', 'qc_biz_type'],
     ownQuestions: [],
     baseDocs: [],
   })
   const [errors, setErrors] = useState<Record<string, string>>({})
-  const [currencyInput, setCurrencyInput] = useState('')
+  const [countryInput, setCountryInput] = useState('')
 
   const existingCodes = Object.keys(rs.serviceLabels)
   const commonQuestions = rs.questionPool.filter(q => q.classification === 'common')
@@ -670,10 +696,10 @@ function AddCountryWizard({ onFinish, onCancel }: {
     return Object.keys(errs).length === 0
   }
 
-  function addCurrency() {
-    if (currencyInput && !d.triggerCurrencies.includes(currencyInput)) {
-      setD(p => ({ ...p, triggerCurrencies: [...p.triggerCurrencies, currencyInput] }))
-      setCurrencyInput('')
+  function addCountry() {
+    if (countryInput && !d.triggerCountries.includes(countryInput)) {
+      setD(p => ({ ...p, triggerCountries: [...p.triggerCountries, countryInput] }))
+      setCountryInput('')
     }
   }
 
@@ -758,32 +784,32 @@ function AddCountryWizard({ onFinish, onCancel }: {
               </div>
 
               <div>
-                <label className="block text-[13px] font-semibold text-sb-n700 mb-1.5">수금 통화</label>
-                <p className="text-[12px] text-sb-n400 mb-3">이 세그먼트를 트리거할 통화 코드를 추가합니다. 비어 있으면 통화 무관.</p>
+                <label className="block text-[13px] font-semibold text-sb-n700 mb-1.5">수금 국가</label>
+                <p className="text-[12px] text-sb-n400 mb-3">이 세그먼트를 트리거할 국가 코드를 추가합니다. 비어 있으면 국가 무관.</p>
                 <div className="flex gap-2 mb-3">
                   <input
-                    value={currencyInput}
-                    onChange={(e) => setCurrencyInput(e.target.value.toUpperCase())}
-                    onKeyDown={(e) => e.key === 'Enter' && addCurrency()}
-                    placeholder="IDR"
+                    value={countryInput}
+                    onChange={(e) => setCountryInput(e.target.value.toUpperCase())}
+                    onKeyDown={(e) => e.key === 'Enter' && addCountry()}
+                    placeholder="KR"
                     className="flex-1 font-mono border border-sb-n200 rounded-[8px] px-3 py-2 text-[14px] focus:outline-none focus:border-sb-brand"
                   />
                   <button
-                    onClick={addCurrency}
-                    disabled={!currencyInput}
+                    onClick={addCountry}
+                    disabled={!countryInput}
                     className="px-4 py-2 rounded-[8px] text-[13px] font-medium bg-sb-brand text-white disabled:opacity-40"
                   >
                     추가
                   </button>
                 </div>
                 <div className="flex flex-wrap gap-1.5 min-h-[28px]">
-                  {d.triggerCurrencies.map(cur => (
-                    <span key={cur} className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-sb-blue-100 text-sb-brand text-[12px] font-mono font-medium">
-                      {cur}
-                      <button onClick={() => setD(p => ({ ...p, triggerCurrencies: p.triggerCurrencies.filter(c => c !== cur) }))} className="ml-0.5 hover:text-sb-negative leading-none">×</button>
+                  {d.triggerCountries.map(c => (
+                    <span key={c} className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-sb-blue-100 text-sb-brand text-[12px] font-mono font-medium">
+                      {c}
+                      <button onClick={() => setD(p => ({ ...p, triggerCountries: p.triggerCountries.filter(x => x !== c) }))} className="ml-0.5 hover:text-sb-negative leading-none">×</button>
                     </span>
                   ))}
-                  {d.triggerCurrencies.length === 0 && <p className="text-[12px] text-sb-n400">추가된 통화 없음</p>}
+                  {d.triggerCountries.length === 0 && <p className="text-[12px] text-sb-n400">추가된 국가 없음</p>}
                 </div>
               </div>
             </div>
@@ -930,7 +956,7 @@ export default function InternalRulesPanel() {
       serviceLabels: { ...fullRs.serviceLabels, [newCode]: data.displayName },
       serviceClassificationRules: [
         ...fullRs.serviceClassificationRules,
-        { serviceCode: newCode, triggerServices: data.triggerServices, triggerCurrencies: data.triggerCurrencies },
+        { serviceCode: newCode, triggerServices: data.triggerServices, triggerCountries: data.triggerCountries },
       ],
       segmentQuestionConfigs: [
         ...fullRs.segmentQuestionConfigs,

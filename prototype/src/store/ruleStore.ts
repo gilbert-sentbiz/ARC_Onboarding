@@ -14,7 +14,7 @@ export const INITIAL_RULESET: RuleSet = {
   serviceLabels: {
     SVC_KRW: 'KRW Collection',
     SVC_VND: 'VND Collection',
-    SVC_OTHER_COLL: '기타 Collection',
+    SVC_ETC: '기타 Collection',
     SVC_PAYOUT: 'Payout',
   },
   sectorLabels: {
@@ -188,7 +188,7 @@ export const INITIAL_RULESET: RuleSet = {
       ],
     },
     {
-      match: { service: 'SVC_OTHER_COLL' },
+      match: { service: 'SVC_ETC' },
       docs: [
         { type: 'other_account',         displayName: '해외 수금 계좌 정보', isRequired: true, isConditional: false },
         { type: 'transaction_structure', displayName: '거래 구조 설명서',    isRequired: true, isConditional: false },
@@ -235,10 +235,9 @@ export const INITIAL_RULESET: RuleSet = {
 
   // ── Service classification rules ──────────────────────────────────────────
   serviceClassificationRules: [
-    { serviceCode: 'SVC_PAYOUT',      triggerServices: ['remittance'], triggerCurrencies: []        },
-    { serviceCode: 'SVC_KRW',         triggerServices: ['collection'], triggerCurrencies: ['KRW']   },
-    { serviceCode: 'SVC_VND',         triggerServices: ['collection'], triggerCurrencies: ['VND']   },
-    { serviceCode: 'SVC_OTHER_COLL',  triggerServices: ['collection'], triggerCurrencies: ['OTHER'] },
+    { serviceCode: 'SVC_PAYOUT', triggerServices: ['remittance'], triggerCountries: [] },
+    { serviceCode: 'SVC_KRW',   triggerServices: ['collection'], triggerCountries: ['KR'] },
+    { serviceCode: 'SVC_VND',   triggerServices: ['collection'], triggerCountries: ['VN'] },
   ],
 
   // ── Question pool (PRD 9.6–9.10) ─────────────────────────────────────────
@@ -562,7 +561,7 @@ export const INITIAL_RULESET: RuleSet = {
       { id: 'qs_vnd_payer_type',     label: '입금자 유형',      inputType: 'radio',   isRequired: true,  classification: 'service-own', scope: 'SVC_VND', isFixed: true, options: [{ value: 'corp', label: '법인' }, { value: 'individual', label: '개인' }] },
     ]},
     { key: 'service:SVC_PAYOUT',     enabledCommonQuestionIds: [], ownQuestions: [] },
-    { key: 'service:SVC_OTHER_COLL', enabledCommonQuestionIds: [], ownQuestions: [] },
+    { key: 'service:SVC_ETC', enabledCommonQuestionIds: [], ownQuestions: [] },
   ],
 }
 
@@ -595,9 +594,12 @@ export function getRuleSet(): RuleSet {
   const rs = useRuleStore.getState().currentRuleSet
   // Detect new-format entity rules (have 'conditions' array); fall back if old localStorage format
   const hasNewEntityRules = rs.entityClassificationRules?.length > 0 && 'conditions' in (rs.entityClassificationRules[0] ?? {})
+  // Detect new-format service rules (have 'triggerCountries'); fall back if old localStorage format
+  const hasNewServiceRules = rs.serviceClassificationRules?.length > 0 && 'triggerCountries' in (rs.serviceClassificationRules[0] ?? {})
   return {
     ...rs,
     entityClassificationRules: hasNewEntityRules ? rs.entityClassificationRules : INITIAL_RULESET.entityClassificationRules,
+    serviceClassificationRules: hasNewServiceRules ? rs.serviceClassificationRules : INITIAL_RULESET.serviceClassificationRules,
     questionPool: rs.questionPool?.length ? rs.questionPool : INITIAL_RULESET.questionPool,
     segmentQuestionConfigs: rs.segmentQuestionConfigs?.length ? rs.segmentQuestionConfigs : INITIAL_RULESET.segmentQuestionConfigs,
   }

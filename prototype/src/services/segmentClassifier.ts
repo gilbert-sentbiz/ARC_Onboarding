@@ -37,17 +37,31 @@ export function classifyEntity(businessType: string, foundingCountry: string): E
   return 'ENTITY_INDIV'
 }
 
+// Normalize legacy currency-code collection values to country codes (pre-S2 form)
+const LEGACY_COLLECTION_COUNTRY: Record<string, string> = { KRW: 'KR', VND: 'VN' }
+
 export function classifyServices(services: string[], collectionCountries: string[]): ServiceCode[] {
+  const normalized = collectionCountries.map(c => LEGACY_COLLECTION_COUNTRY[c] ?? c)
   const rules = getRuleSet().serviceClassificationRules
   const result: ServiceCode[] = []
   for (const rule of rules) {
     const serviceMatch = rule.triggerServices.every(s => services.includes(s))
     if (!serviceMatch) continue
-    if (rule.triggerCurrencies.length > 0) {
-      const currencyMatch = rule.triggerCurrencies.some(c => collectionCountries.includes(c))
-      if (!currencyMatch) continue
+    if (rule.triggerCountries.length > 0) {
+      const countryMatch = rule.triggerCountries.some(c => normalized.includes(c))
+      if (!countryMatch) continue
     }
     result.push(rule.serviceCode)
+  }
+  // SVC_ETC fallback: collection selected but country is 'OTHER' or unregistered
+  if (services.includes('collection') && normalized.length > 0) {
+    const registeredCountries = new Set(
+      rules
+        .filter(r => r.triggerServices.includes('collection') && r.triggerCountries.length > 0)
+        .flatMap(r => r.triggerCountries)
+    )
+    const hasEtc = normalized.some(c => c === 'OTHER' || !registeredCountries.has(c))
+    if (hasEtc && !result.includes('SVC_ETC')) result.push('SVC_ETC')
   }
   return result
 }

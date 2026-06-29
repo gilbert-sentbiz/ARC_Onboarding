@@ -258,7 +258,7 @@ export default function InternalCaseDetail() {
   const SERVICE_LABEL: Record<string, string> = {
     'SVC_KRW': 'KRW Collection',
     'SVC_VND': 'VND Collection',
-    'SVC_OTHER_COLL': '기타 Collection',
+    'SVC_ETC': '기타 Collection',
     'SVC_PAYOUT': 'Payout',
   }
 
