@@ -3,7 +3,25 @@ import { ArrowLeft, ArrowRight } from '@phosphor-icons/react'
 import { useCaseStore } from '../../store/caseStore'
 import { useSessionStore } from '../../store/sessionStore'
 import { confirmSecondIntake } from '../../services/caseService'
+import { getRuleSet } from '../../store/ruleStore'
+import type { QuestionRule } from '../../types'
 import Button from '../../components/ui/Button'
+
+function buildLabelMap(): Record<string, string> {
+  const rs = getRuleSet()
+  const map: Record<string, string> = {}
+  function walk(qs: QuestionRule[]) {
+    for (const q of qs) {
+      map[q.id] = q.label
+      if (q.children?.length) walk(q.children)
+    }
+  }
+  walk(rs.questionPool)
+  for (const config of rs.segmentQuestionConfigs) {
+    walk(config.ownQuestions)
+  }
+  return map
+}
 
 const SERVICE_LABELS: Record<string, string> = {
   remittance: '해외 송금',
@@ -22,21 +40,12 @@ const BUSINESS_TYPE_LABELS: Record<string, string> = {
   financial: '금융업',
 }
 
-function prettifyKey(key: string): string {
-  const LABELS: Record<string, string> = {
-    companyName: '회사명', contactName: '담당자', contactTitle: '직함',
-    phone: '연락처', email: '이메일', foundingCountry: '설립 국가',
-    businessType: '사업자 유형', monthlyVolume: '월 거래 규모',
-    monthlyVolumeCurrency: '통화', monthlyCount: '월 거래 건수',
-    referralSource: '유입 경로', additionalNote: '추가 문의',
-    businessRegistrationNumber: '사업자등록번호', ceo: '대표자',
-    address: '사업장 주소', businessSector: '업종', mainProduct: '주요 제품/서비스',
-    averageTransactionAmount: '평균 거래 금액', transactionPurpose: '거래 목적',
-    counterpartyCountry: '거래 상대국', counterpartyBank: '상대방 은행',
-    settlementCurrency: '결제 통화',
-  }
-  if (LABELS[key]) return LABELS[key]
-  return key.replace(/([A-Z])/g, ' $1').trim()
+function getLabel(key: string, labelMap: Record<string, string>): string {
+  if (labelMap[key]) return labelMap[key]
+  // Repeat instances: qe_corp_bo_name_kr_1 → look up base ID
+  const base = key.replace(/_\d+$/, '')
+  if (base !== key && labelMap[base]) return labelMap[base]
+  return key
 }
 
 function renderValue(val: unknown): string {
@@ -63,7 +72,7 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   )
 }
 
-function DataBlock({ data }: { data: Record<string, unknown> }) {
+function DataBlock({ data, labelMap }: { data: Record<string, unknown>; labelMap: Record<string, string> }) {
   const entries = Object.entries(data).filter(([, v]) => {
     if (v === null || v === undefined || v === '' || v === false) return false
     if (Array.isArray(v) && v.length === 0) return false
@@ -73,7 +82,7 @@ function DataBlock({ data }: { data: Record<string, unknown> }) {
   return (
     <div className="grid grid-cols-2 gap-4">
       {entries.map(([key, val]) => (
-        <Field key={key} label={prettifyKey(key)} value={renderValue(val)} />
+        <Field key={key} label={getLabel(key, labelMap)} value={renderValue(val)} />
       ))}
     </div>
   )
@@ -97,6 +106,8 @@ export default function SecondIntakeReview() {
   const str1 = (key: string) => String(d1[key] ?? '')
   const services = (d1.services as string[]) ?? []
   const collectionCountries = (d1.collectionCountries as string[]) ?? []
+
+  const labelMap = buildLabelMap()
 
   const d2 = c.secondIntake.data as {
     entity?: Record<string, unknown>
@@ -219,7 +230,7 @@ export default function SecondIntakeReview() {
           {d2.entity && (
             <div className="flex flex-col gap-3">
               <SectionLabel>기업 정보</SectionLabel>
-              <DataBlock data={d2.entity} />
+              <DataBlock data={d2.entity} labelMap={labelMap} />
             </div>
           )}
 
@@ -228,7 +239,7 @@ export default function SecondIntakeReview() {
               <div className="h-px bg-sb-n200" />
               <div className="flex flex-col gap-3">
                 <SectionLabel>KRW 수금 정보</SectionLabel>
-                <DataBlock data={d2.krwCollection} />
+                <DataBlock data={d2.krwCollection} labelMap={labelMap} />
               </div>
             </>
           )}
@@ -238,7 +249,7 @@ export default function SecondIntakeReview() {
               <div className="h-px bg-sb-n200" />
               <div className="flex flex-col gap-3">
                 <SectionLabel>VND 수금 정보</SectionLabel>
-                <DataBlock data={d2.vndCollection} />
+                <DataBlock data={d2.vndCollection} labelMap={labelMap} />
               </div>
             </>
           )}
