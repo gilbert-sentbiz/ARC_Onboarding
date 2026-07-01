@@ -496,6 +496,10 @@ export const INITIAL_RULESET: RuleSet = {
       options: [{ value: 'yes', label: '예' }, { value: 'no', label: '아니오' }],
       children: [
         { id: 'qe_fi_vasp_custody', label: '자산 수탁 장소를 입력해주세요', inputType: 'text', isRequired: true, classification: 'entity-own', scope: 'ENTITY_FI', showWhen: { parentId: 'qe_fi_vasp', value: 'yes' } },
+        { id: 'qe_fi_vasp_outside_lic', label: '인가 국가 이외 지역의 고객을 온보딩하나요?', inputType: 'radio', isRequired: true, classification: 'entity-own', scope: 'ENTITY_FI', showWhen: { parentId: 'qe_fi_vasp', value: 'yes' }, options: [{ value: 'yes', label: '예' }, { value: 'no', label: '아니오' }] },
+        { id: 'qe_fi_vasp_cust_country', label: '고객 거주 국가를 입력해주세요', inputType: 'text', isRequired: true, classification: 'entity-own', scope: 'ENTITY_FI', showWhen: { parentId: 'qe_fi_vasp_outside_lic', value: 'yes' } },
+        { id: 'qe_fi_vasp_lic_used', label: '적용된 인허가를 입력해주세요', inputType: 'text', isRequired: true, classification: 'entity-own', scope: 'ENTITY_FI', showWhen: { parentId: 'qe_fi_vasp_outside_lic', value: 'yes' } },
+        { id: 'qe_fi_vasp_purpose', label: '전환 목적을 입력해주세요', inputType: 'text', isRequired: true, classification: 'entity-own', scope: 'ENTITY_FI', showWhen: { parentId: 'qe_fi_vasp', value: 'yes' } },
       ],
     },
     // Section C — 자금 원천
@@ -645,11 +649,13 @@ export function getRuleSet(): RuleSet {
   const hasNewServiceRules = rs.serviceClassificationRules?.length > 0 && 'triggerCountries' in (rs.serviceClassificationRules[0] ?? {})
   // Detect canonical document types; fall back if old localStorage still has pre-canonical codes
   const hasCanonicalDocTypes = !rs.documentRules?.some(r => r.docs.some(d => d.type === 'id_card' || d.type === 'fi_biz_registration'))
+  // Detect new VASP children (qe_fi_vasp_outside_lic added in PI-64)
+  const hasNewVaspChildren = rs.questionPool?.find((q: { id: string }) => q.id === 'qe_fi_vasp')?.children?.some((c: { id: string }) => c.id === 'qe_fi_vasp_outside_lic')
   return {
     ...rs,
     entityClassificationRules: hasNewEntityRules ? rs.entityClassificationRules : INITIAL_RULESET.entityClassificationRules,
     serviceClassificationRules: hasNewServiceRules ? rs.serviceClassificationRules : INITIAL_RULESET.serviceClassificationRules,
-    questionPool: rs.questionPool?.length ? rs.questionPool : INITIAL_RULESET.questionPool,
+    questionPool: (rs.questionPool?.length && hasNewVaspChildren) ? rs.questionPool : INITIAL_RULESET.questionPool,
     segmentQuestionConfigs: rs.segmentQuestionConfigs?.length ? rs.segmentQuestionConfigs : INITIAL_RULESET.segmentQuestionConfigs,
     documentRules: hasCanonicalDocTypes ? rs.documentRules : INITIAL_RULESET.documentRules,
   }
