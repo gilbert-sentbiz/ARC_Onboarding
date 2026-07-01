@@ -209,11 +209,22 @@ export const INITIAL_RULESET: RuleSet = {
       result: 'ENTITY_FI',
     },
     {
-      // 법인·개인 + 해외 → FI (금융업 경로는 P1에서 이미 처리)
-      id: 'ecr_fi_overseas',
-      conditionLabel: '설립국가 ≠ KR (법인·개인 + 해외)',
+      id: 'ecr_fi_overseas_corp',
+      conditionLabel: '법인 / 해외',
       priority: 2,
       conditions: [
+        { field: 'businessType', op: 'eq', value: 'corporation' },
+        { field: 'foundingCountry', op: 'neq', value: 'KR' },
+      ],
+      conditionLogic: 'AND',
+      result: 'ENTITY_FI',
+    },
+    {
+      id: 'ecr_fi_overseas_indiv',
+      conditionLabel: '개인 / 해외',
+      priority: 3,
+      conditions: [
+        { field: 'businessType', op: 'eq', value: 'individual' },
         { field: 'foundingCountry', op: 'neq', value: 'KR' },
       ],
       conditionLogic: 'AND',
@@ -221,8 +232,8 @@ export const INITIAL_RULESET: RuleSet = {
     },
     {
       id: 'ecr_corp',
-      conditionLabel: 'businessType = corporation  AND  설립국가 = KR',
-      priority: 3,
+      conditionLabel: '법인 / 한국',
+      priority: 4,
       conditions: [
         { field: 'businessType', op: 'eq', value: 'corporation' },
         { field: 'foundingCountry', op: 'eq', value: 'KR' },
@@ -232,8 +243,8 @@ export const INITIAL_RULESET: RuleSet = {
     },
     {
       id: 'ecr_indiv',
-      conditionLabel: 'businessType = individual  AND  설립국가 = KR',
-      priority: 4,
+      conditionLabel: '개인 / 한국',
+      priority: 5,
       conditions: [
         { field: 'businessType', op: 'eq', value: 'individual' },
         { field: 'foundingCountry', op: 'eq', value: 'KR' },
@@ -626,8 +637,10 @@ export const useRuleStore = create<RuleStoreState>()(
 
 export function getRuleSet(): RuleSet {
   const rs = useRuleStore.getState().currentRuleSet
-  // Detect new-format entity rules (have 'conditions' array); fall back if old localStorage format
-  const hasNewEntityRules = rs.entityClassificationRules?.length > 0 && 'conditions' in (rs.entityClassificationRules[0] ?? {})
+  // Detect new-format entity rules (split fi_overseas rows); fall back if old format
+  const hasNewEntityRules = rs.entityClassificationRules?.length > 0
+    && 'conditions' in (rs.entityClassificationRules[0] ?? {})
+    && !rs.entityClassificationRules.some(r => r.id === 'ecr_fi_overseas')
   // Detect new-format service rules (have 'triggerCountries'); fall back if old localStorage format
   const hasNewServiceRules = rs.serviceClassificationRules?.length > 0 && 'triggerCountries' in (rs.serviceClassificationRules[0] ?? {})
   // Detect canonical document types; fall back if old localStorage still has pre-canonical codes
