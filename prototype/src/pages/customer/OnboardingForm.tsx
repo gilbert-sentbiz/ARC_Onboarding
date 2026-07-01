@@ -397,10 +397,11 @@ export default function OnboardingForm() {
                   <div className="flex flex-wrap gap-2">
                     {(() => {
                       const rs = getRuleSet()
+                      const COUNTRY_NAME: Record<string, string> = { KR: '한국', VN: '베트남' }
                       const opts = [
                         ...rs.serviceClassificationRules
                           .filter(r => r.triggerServices.includes('collection') && r.triggerCountries.length > 0)
-                          .map(r => ({ value: r.triggerCountries[0], label: (rs.serviceLabels as Record<string, string>)[r.serviceCode] ?? r.serviceCode })),
+                          .map(r => ({ value: r.triggerCountries[0], label: COUNTRY_NAME[r.triggerCountries[0]] ?? r.triggerCountries[0] })),
                         { value: 'OTHER', label: '기타' },
                       ]
                       return opts.map((c) => (
