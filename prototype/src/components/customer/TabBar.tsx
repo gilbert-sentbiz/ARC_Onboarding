@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom'
-import { Tray, ClockCounterClockwise } from '@phosphor-icons/react'
+import { Tray, ClockCounterClockwise, SignOut } from '@phosphor-icons/react'
+import { useSessionStore } from '../../store/sessionStore'
 
 interface Props {
   caseId: string
@@ -8,10 +9,16 @@ interface Props {
 
 export default function TabBar({ caseId, active }: Props) {
   const navigate = useNavigate()
+  const clearSession = useSessionStore((s) => s.clearSession)
+
+  function handleLogout() {
+    clearSession()
+    navigate('/')
+  }
 
   return (
     <div className="w-full bg-white border-b border-sb-n100 sticky top-0 z-10">
-      <div className="flex max-w-[640px] mx-auto">
+      <div className="flex max-w-[640px] mx-auto items-stretch">
         <button
           type="button"
           onClick={() => navigate(`/customer/case/${caseId}/documents`)}
@@ -35,6 +42,14 @@ export default function TabBar({ caseId, active }: Props) {
         >
           <ClockCounterClockwise size={16} weight={active === 'status' ? 'fill' : 'regular'} />
           상태 & 이력
+        </button>
+        <button
+          type="button"
+          onClick={handleLogout}
+          title="로그아웃"
+          className="flex items-center justify-center px-4 border-b-2 border-transparent text-sb-n400 hover:text-sb-n700 transition-colors"
+        >
+          <SignOut size={18} />
         </button>
       </div>
     </div>
