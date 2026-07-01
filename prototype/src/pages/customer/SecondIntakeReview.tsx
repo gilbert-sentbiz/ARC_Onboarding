@@ -73,9 +73,11 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 }
 
 function DataBlock({ data, labelMap }: { data: Record<string, unknown>; labelMap: Record<string, string> }) {
-  const entries = Object.entries(data).filter(([, v]) => {
+  const entries = Object.entries(data).filter(([key, v]) => {
     if (v === null || v === undefined || v === '' || v === false) return false
     if (Array.isArray(v) && v.length === 0) return false
+    // Skip internal convenience keys that have no Korean label mapping
+    if (getLabel(key, labelMap) === key) return false
     return true
   })
   if (entries.length === 0) return <p className="text-[13px] text-sb-n400">입력된 정보가 없습니다.</p>
