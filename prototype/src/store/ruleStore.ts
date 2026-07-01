@@ -281,16 +281,15 @@ export const INITIAL_RULESET: RuleSet = {
     },
     {
       id: 'qc_virtual_asset',
-      label: '가상자산 취급업소에 해당하나요?',
+      label: '가상자산사업자(VASP)에 해당하나요?',
       inputType: 'radio', isRequired: true, classification: 'common',
       options: [{ value: 'yes', label: '예' }, { value: 'no', label: '아니오' }],
       children: [
-        {
-          id: 'qc_virtual_asset_reg_no',
-          label: '가상자산사업자 신고번호를 입력해주세요',
-          inputType: 'text', isRequired: true, classification: 'common',
-          showWhen: { parentId: 'qc_virtual_asset', value: 'yes' },
-        },
+        { id: 'qc_vasp_custody',      label: '자산 수탁 장소를 입력해주세요',                               inputType: 'text',  isRequired: true, classification: 'common', showWhen: { parentId: 'qc_virtual_asset',   value: 'yes' } },
+        { id: 'qc_vasp_outside_lic',  label: '설립/인허가 국가 외 고객을 온보딩하나요?',                   inputType: 'radio', isRequired: true, classification: 'common', showWhen: { parentId: 'qc_virtual_asset',   value: 'yes' }, options: [{ value: 'yes', label: '예' }, { value: 'no', label: '아니오' }] },
+        { id: 'qc_vasp_cust_country', label: '해당 고객의 거주 국가를 입력해주세요',                       inputType: 'text',  isRequired: true, classification: 'common', showWhen: { parentId: 'qc_vasp_outside_lic', value: 'yes' } },
+        { id: 'qc_vasp_lic_used',     label: '비거주 고객 온보딩에 사용하는 인허가를 입력해주세요',         inputType: 'text',  isRequired: true, classification: 'common', showWhen: { parentId: 'qc_vasp_outside_lic', value: 'yes' } },
+        { id: 'qc_vasp_purpose',      label: '가상자산 출금·법정화폐 전환 요청의 주요 목적을 입력해주세요', inputType: 'text',  isRequired: true, classification: 'common', showWhen: { parentId: 'qc_virtual_asset',   value: 'yes' } },
       ],
     },
     {
@@ -490,19 +489,6 @@ export const INITIAL_RULESET: RuleSet = {
         { id: 'qe_fi_unlic_psp', label: '미인가 FI/PSP/MSB와 거래하나요?', inputType: 'radio', isRequired: true, classification: 'entity-own', scope: 'ENTITY_FI', showWhen: { parentId: 'qe_fi_intermediary', value: 'yes' }, options: [{ value: 'yes', label: '예' }, { value: 'no', label: '아니오' }] },
       ],
     },
-    {
-      id: 'qe_fi_vasp',
-      label: '가상자산 서비스 제공업체(VASP)에 해당하나요?',
-      inputType: 'radio', isRequired: true, classification: 'entity-own', scope: 'ENTITY_FI', isFixed: true,
-      options: [{ value: 'yes', label: '예' }, { value: 'no', label: '아니오' }],
-      children: [
-        { id: 'qe_fi_vasp_custody', label: '자산 수탁 장소를 입력해주세요', inputType: 'text', isRequired: true, classification: 'entity-own', scope: 'ENTITY_FI', showWhen: { parentId: 'qe_fi_vasp', value: 'yes' } },
-        { id: 'qe_fi_vasp_outside_lic', label: '인가 국가 이외 지역의 고객을 온보딩하나요?', inputType: 'radio', isRequired: true, classification: 'entity-own', scope: 'ENTITY_FI', showWhen: { parentId: 'qe_fi_vasp', value: 'yes' }, options: [{ value: 'yes', label: '예' }, { value: 'no', label: '아니오' }] },
-        { id: 'qe_fi_vasp_cust_country', label: '고객 거주 국가를 입력해주세요', inputType: 'text', isRequired: true, classification: 'entity-own', scope: 'ENTITY_FI', showWhen: { parentId: 'qe_fi_vasp_outside_lic', value: 'yes' } },
-        { id: 'qe_fi_vasp_lic_used', label: '적용된 인허가를 입력해주세요', inputType: 'text', isRequired: true, classification: 'entity-own', scope: 'ENTITY_FI', showWhen: { parentId: 'qe_fi_vasp_outside_lic', value: 'yes' } },
-        { id: 'qe_fi_vasp_purpose', label: '전환 목적을 입력해주세요', inputType: 'text', isRequired: true, classification: 'entity-own', scope: 'ENTITY_FI', showWhen: { parentId: 'qe_fi_vasp', value: 'yes' } },
-      ],
-    },
     // Section C — 자금 원천
     {
       id: 'qe_fi_fund_source',
@@ -578,7 +564,7 @@ export const INITIAL_RULESET: RuleSet = {
   segmentQuestionConfigs: [
     { key: 'entity:ENTITY_CORP',  enabledCommonQuestionIds: ['qc_biz_reg_no','qc_biz_type','qc_biz_category','qc_virtual_asset','qc_fund_source'], ownQuestions: [] },
     { key: 'entity:ENTITY_INDIV', enabledCommonQuestionIds: ['qc_biz_reg_no','qc_biz_type','qc_biz_category','qc_virtual_asset','qc_fund_source'], ownQuestions: [] },
-    { key: 'entity:ENTITY_FI',    enabledCommonQuestionIds: [], ownQuestions: [] },
+    { key: 'entity:ENTITY_FI',    enabledCommonQuestionIds: ['qc_virtual_asset'], ownQuestions: [] },
     { key: 'service:SVC_COL_KRW',     enabledCommonQuestionIds: [], ownQuestions: [
       { id: 'qs_krw_sector', label: '업종을 선택해주세요', inputType: 'select', isRequired: true, classification: 'service-own', scope: 'SVC_COL_KRW', isFixed: true,
         options: [
@@ -650,13 +636,13 @@ export function getRuleSet(): RuleSet {
   const hasNewServiceRules = rs.serviceClassificationRules?.length > 0 && 'triggerCountries' in (rs.serviceClassificationRules[0] ?? {})
   // Detect canonical document types; fall back if old localStorage still has pre-canonical codes
   const hasCanonicalDocTypes = !rs.documentRules?.some(r => r.docs.some(d => d.type === 'id_card' || d.type === 'fi_biz_registration'))
-  // Detect new VASP children (qe_fi_vasp_outside_lic added in PI-64)
-  const hasNewVaspChildren = rs.questionPool?.find((q: { id: string }) => q.id === 'qe_fi_vasp')?.children?.some((c: { id: string }) => c.id === 'qe_fi_vasp_outside_lic')
+  // Detect unified VASP common question (qc_vasp_outside_lic added in PI-64 rev2)
+  const hasUnifiedVasp = rs.questionPool?.find((q: { id: string }) => q.id === 'qc_virtual_asset')?.children?.some((c: { id: string }) => c.id === 'qc_vasp_outside_lic')
   return {
     ...rs,
     entityClassificationRules: hasNewEntityRules ? rs.entityClassificationRules : INITIAL_RULESET.entityClassificationRules,
     serviceClassificationRules: hasNewServiceRules ? rs.serviceClassificationRules : INITIAL_RULESET.serviceClassificationRules,
-    questionPool: (rs.questionPool?.length && hasNewVaspChildren) ? rs.questionPool : INITIAL_RULESET.questionPool,
+    questionPool: (rs.questionPool?.length && hasUnifiedVasp) ? rs.questionPool : INITIAL_RULESET.questionPool,
     segmentQuestionConfigs: rs.segmentQuestionConfigs?.length ? rs.segmentQuestionConfigs : INITIAL_RULESET.segmentQuestionConfigs,
     documentRules: hasCanonicalDocTypes ? rs.documentRules : INITIAL_RULESET.documentRules,
   }
