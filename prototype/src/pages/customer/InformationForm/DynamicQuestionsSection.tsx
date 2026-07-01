@@ -129,10 +129,16 @@ export default function DynamicQuestionsSection({ title, questions, initialData,
     return values[child.showWhen.parentId] === child.showWhen.value
   }
 
+  function isVisible(q: QuestionRule): boolean {
+    if (!q.showWhen) return true
+    return values[q.showWhen.parentId] === q.showWhen.value
+  }
+
   function validate() {
     const errs: Record<string, string> = {}
     function check(qs: QuestionRule[]) {
       for (const q of qs) {
+        if (!isVisible(q)) continue
         if (q.repeat) {
           // Validate all repeat instances (base + extras)
           const instanceCount = 1 + (repeatCounts[q.id] ?? 0)
@@ -162,6 +168,7 @@ export default function DynamicQuestionsSection({ title, questions, initialData,
   }
 
   function renderQuestion(q: QuestionRule) {
+    if (!isVisible(q)) return null
     return (
       <div key={q.id} className="flex flex-col gap-4">
         {q.repeat ? (

@@ -367,13 +367,14 @@ export const INITIAL_RULESET: RuleSet = {
       label: '회사 지분을 25% 이상 보유한 자연인(개인)이 있나요?',
       inputType: 'radio', isRequired: true, classification: 'entity-own', scope: 'ENTITY_CORP', isFixed: true,
       options: [{ value: 'yes', label: '예' }, { value: 'no', label: '아니오' }],
+      showWhen: { parentId: 'qe_corp_bo_exempt', value: 'none' },
     },
-    { id: 'qe_corp_bo_count', label: '실제 소유자가 몇 명인가요?', inputType: 'number', isRequired: true, classification: 'entity-own', scope: 'ENTITY_CORP', isFixed: true },
+    { id: 'qe_corp_bo_count', label: '실제 소유자가 몇 명인가요?', inputType: 'number', isRequired: true, classification: 'entity-own', scope: 'ENTITY_CORP', isFixed: true, showWhen: { parentId: 'qe_corp_bo_exempt', value: 'none' } },
     {
       id: 'qe_corp_bo_group',
       label: '실제 소유자(BO) 정보를 입력해주세요',
       inputType: 'text', isRequired: true, classification: 'entity-own', scope: 'ENTITY_CORP', isFixed: true,
-      repeat: true, addButtonLabel: '실제 소유자(BO) 추가하기',
+      repeat: true, addButtonLabel: '실제 소유자(BO) 추가하기', showWhen: { parentId: 'qe_corp_bo_exempt', value: 'none' },
       children: [
         { id: 'qe_corp_bo_name_kr', label: '성명 (한글)', inputType: 'text', isRequired: true, classification: 'entity-own', scope: 'ENTITY_CORP' },
         { id: 'qe_corp_bo_name_en', label: '성명 (영문)', inputType: 'text', isRequired: true, classification: 'entity-own', scope: 'ENTITY_CORP' },
