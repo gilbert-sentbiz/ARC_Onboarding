@@ -196,6 +196,8 @@ export interface Document {
   status: DocumentStatus
   isRequired: boolean
   isConditional: boolean
+  isAdHoc?: boolean
+  requestedBy?: string
   uploadedFiles: UploadedFile[]
   revisionHistory: RevisionRecord[]
   approvalNote?: string

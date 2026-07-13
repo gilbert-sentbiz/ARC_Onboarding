@@ -68,13 +68,14 @@ function DocRow({
   const inputRef = useRef<HTMLInputElement>(null)
   const isUploaded = doc.status === 'SUBMITTED' || doc.status === 'APPROVED'
   const needsRevision = doc.status === 'REVISION_REQUIRED'
+  const isAdHocPending = doc.isAdHoc && doc.status === 'REQUESTED'
   const latestFile = doc.uploadedFiles[doc.uploadedFiles.length - 1]
   const latestRevision = doc.revisionHistory[doc.revisionHistory.length - 1]
 
   return (
     <div
       className={`flex items-center justify-between gap-4 p-4 rounded-[10px] border transition-colors ${
-        needsRevision
+        needsRevision || isAdHocPending
           ? 'border-amber-300 bg-amber-50'
           : isUploaded
           ? 'border-sb-positive bg-green-50'
@@ -85,21 +86,26 @@ function DocRow({
         <div className="flex-shrink-0 mt-0.5">
           {isUploaded ? (
             <CheckCircle size={18} weight="fill" className="text-sb-positive" />
-          ) : needsRevision ? (
+          ) : needsRevision || isAdHocPending ? (
             <Warning size={18} weight="fill" className="text-amber-500" />
           ) : (
             <div className="w-[18px] h-[18px] rounded-full border-2 border-sb-n300" />
           )}
         </div>
         <div className="min-w-0">
-          <p className="text-[14px] font-medium text-sb-n800 leading-[20px]">{doc.displayName}</p>
+          <div className="flex items-center gap-2">
+            <p className="text-[14px] font-medium text-sb-n800 leading-[20px]">{doc.displayName}</p>
+            {isAdHocPending && (
+              <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700">제출 필요</span>
+            )}
+          </div>
           {doc.isConditional && !doc.isRequired && (
             <p className="text-[11px] text-sb-n400 mt-0.5">조건부 제출</p>
           )}
           {isUploaded && latestFile && (
             <p className="text-[11px] text-sb-positive mt-0.5 truncate">{latestFile.fileName} 업로드됨</p>
           )}
-          {needsRevision && latestRevision && (
+          {(needsRevision || isAdHocPending) && latestRevision && (
             <p className="text-[11px] text-amber-600 mt-0.5">{latestRevision.reason}</p>
           )}
         </div>
@@ -172,7 +178,8 @@ export default function DocumentUpload() {
     (d) => d.status === 'SUBMITTED' || d.status === 'APPROVED'
   )
   const noRevisionRemaining = !c.documents.some((d) => d.status === 'REVISION_REQUIRED')
-  const canSubmit = isRevision ? noRevisionRemaining : allRequiredUploaded
+  const noAdHocPending = !c.documents.some((d) => d.isAdHoc && d.status === 'REQUESTED')
+  const canSubmit = isRevision ? (noRevisionRemaining && noAdHocPending) : allRequiredUploaded
 
   const displayDocs = isRevision
     ? c.documents
@@ -254,8 +261,8 @@ export default function DocumentUpload() {
             <div>
               <p className="text-[14px] font-semibold text-sb-n800 mb-0.5">서류 보완이 요청되었습니다</p>
               <p className="text-[13px] text-sb-n600">
-                컴플라이언스팀에서 일부 서류에 대한 보완을 요청했습니다. 아래 표시된 서류를 다시
-                업로드한 후 재제출해주세요.
+                담당팀에서 서류 보완 또는 추가 제출을 요청했습니다. 아래 표시된 서류를 업로드한 후
+                재제출해주세요.
               </p>
             </div>
           </div>
