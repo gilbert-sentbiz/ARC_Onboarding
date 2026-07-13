@@ -5,6 +5,7 @@ import { useSessionStore } from '../../store/sessionStore'
 import { useCaseStore } from '../../store/caseStore'
 import { STATUS_LABELS, canView } from '../../services/stateMachine'
 import type { CaseStatus, UserRole } from '../../types'
+import NotificationBell from '../../components/ui/NotificationBell'
 
 const ROLE_DEFAULT_FILTER: Record<string, CaseStatus> = {
   SALES: 'SALES_REVIEW_REQUIRED',
@@ -118,6 +119,7 @@ export default function InternalDashboard() {
               <span className="font-medium text-sb-n800">{session?.name}</span>
               {' '}({session?.role === 'SALES' ? '영업' : session?.role === 'COMPLIANCE' ? '컴플라이언스' : '운영'})
             </span>
+            <NotificationBell role={role} name={session?.name} />
             <button
               onClick={handleLogout}
               className="flex items-center gap-1.5 text-[13px] text-sb-n400 hover:text-sb-n700 transition-colors"

@@ -258,6 +258,19 @@ export interface InternalNote {
   createdAt: number
 }
 
+export type NotificationType = 'STATUS_CHANGED' | 'ASSIGNED' | 'REVISION_REQUESTED' | 'NEW_MESSAGE'
+
+export interface Notification {
+  id: string
+  type: NotificationType
+  caseId: string
+  caseLabel: string
+  message: string
+  recipient: { role: UserRole; userId?: string; name?: string }
+  createdAt: number
+  readAt?: number
+}
+
 export interface SalesAction {
   id: string
   caseId: string

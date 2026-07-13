@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import { Tray, ClockCounterClockwise, SignOut } from '@phosphor-icons/react'
 import { useSessionStore } from '../../store/sessionStore'
+import NotificationBell from '../ui/NotificationBell'
 
 interface Props {
   caseId: string
@@ -10,6 +11,7 @@ interface Props {
 export default function TabBar({ caseId, active }: Props) {
   const navigate = useNavigate()
   const clearSession = useSessionStore((s) => s.clearSession)
+  const session = useSessionStore((s) => s.session)
 
   function handleLogout() {
     clearSession()
@@ -43,14 +45,17 @@ export default function TabBar({ caseId, active }: Props) {
           <ClockCounterClockwise size={16} weight={active === 'status' ? 'fill' : 'regular'} />
           상태 & 이력
         </button>
-        <button
-          type="button"
-          onClick={handleLogout}
-          title="로그아웃"
-          className="flex items-center justify-center px-4 border-b-2 border-transparent text-sb-n400 hover:text-sb-n700 transition-colors"
-        >
-          <SignOut size={18} />
-        </button>
+        <div className="flex items-center px-3 border-b-2 border-transparent gap-1">
+          <NotificationBell role="CUSTOMER" userId={session?.userId} />
+          <button
+            type="button"
+            onClick={handleLogout}
+            title="로그아웃"
+            className="flex items-center justify-center p-1 text-sb-n400 hover:text-sb-n700 transition-colors"
+          >
+            <SignOut size={18} />
+          </button>
+        </div>
       </div>
     </div>
   )

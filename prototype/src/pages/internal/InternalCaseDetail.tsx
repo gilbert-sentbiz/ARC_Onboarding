@@ -10,7 +10,9 @@ import { useInternalNoteStore } from '../../store/internalNoteStore'
 import { useInternalStaffStore } from '../../store/internalStaffStore'
 import { transitionStatus, changeOwner } from '../../services/caseService'
 import { STATUS_LABELS } from '../../services/stateMachine'
+import { emitNotification } from '../../store/notificationStore'
 import type { CaseStatus, CloseReason, Document, DocumentStatus, UserRole, Message, UploadedFile } from '../../types'
+import NotificationBell from '../../components/ui/NotificationBell'
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -197,6 +199,14 @@ export default function InternalCaseDetail() {
     })
     if (fromStatus !== 'REVISION_REQUESTED') {
       transitionStatus(caseId, 'REVISION_REQUESTED', { role, name: sess.name })
+    } else {
+      emitNotification({
+        type: 'REVISION_REQUESTED',
+        caseId,
+        caseLabel: caseObj.customerName || caseObj.customerEmail,
+        message: `'${caseObj.customerName || caseObj.customerEmail}' 케이스에 서류 보완이 요청되었습니다.`,
+        recipient: { role: 'CUSTOMER', userId: caseObj.customerId },
+      })
     }
     setDocRevisionId(null)
     setDocRevisionNote('')
@@ -229,6 +239,14 @@ export default function InternalCaseDetail() {
     })
     if (fromStatus !== 'REVISION_REQUESTED') {
       transitionStatus(caseId, 'REVISION_REQUESTED', { role, name: sess.name })
+    } else {
+      emitNotification({
+        type: 'REVISION_REQUESTED',
+        caseId,
+        caseLabel: caseObj.customerName || caseObj.customerEmail,
+        message: `'${caseObj.customerName || caseObj.customerEmail}' 케이스에 추가 서류가 요청되었습니다.`,
+        recipient: { role: 'CUSTOMER', userId: caseObj.customerId },
+      })
     }
     setShowAdHocForm(false)
     setAdHocForm({ displayName: '', format: '모든 형식', isRequired: true, reason: '' })
@@ -280,6 +298,13 @@ export default function InternalCaseDetail() {
     }
     updateCase(caseId, { messages: [...caseObj.messages, msg] })
     setChatInput('')
+    emitNotification({
+      type: 'NEW_MESSAGE',
+      caseId,
+      caseLabel: caseObj.customerName || caseObj.customerEmail,
+      message: `'${caseObj.customerName || caseObj.customerEmail}' 케이스에 새 메시지가 도착했습니다.`,
+      recipient: { role: 'CUSTOMER', userId: caseObj.customerId },
+    })
   }
 
   // ── note handler ──
@@ -324,7 +349,7 @@ export default function InternalCaseDetail() {
             대시보드
           </button>
           <div className="h-4 w-px bg-sb-n200" />
-          <div className="flex items-center gap-3 min-w-0 flex-1">
+          <div className="flex items-center gap-3 min-w-0 flex-1 mr-4">
             <span className="text-[15px] font-semibold text-sb-n900 truncate">
               {c.customerName || c.customerEmail}
             </span>
@@ -377,6 +402,7 @@ export default function InternalCaseDetail() {
               </div>
             )}
           </div>
+          <NotificationBell role={role} name={sess.name} />
         </div>
 
         {/* Tab bar */}

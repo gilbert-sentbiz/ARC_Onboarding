@@ -5,6 +5,7 @@ import { canTransition, STATUS_LABELS, ROLE_LABELS } from './stateMachine'
 import { useCaseStore } from '../store/caseStore'
 import { useInternalStaffStore } from '../store/internalStaffStore'
 import { getRuleSet } from '../store/ruleStore'
+import { emitNotification } from '../store/notificationStore'
 
 const EMPTY_INTAKE: IntakeRecord = { status: 'not_started', data: {}, savedAt: 0 }
 
@@ -195,9 +196,10 @@ export function transitionStatus(
   }
 
   const now = Date.now()
+  const newOwner = resolveOwner(newStatus)
   state.updateCase(caseId, {
     status: newStatus,
-    currentOwner: resolveOwner(newStatus),
+    currentOwner: newOwner,
     statusHistory: [
       ...c.statusHistory,
       {
@@ -211,6 +213,43 @@ export function transitionStatus(
       },
     ],
   })
+
+  // Notification: status change → next actor
+  const label = c.customerName || c.customerEmail
+  const statusLabel = STATUS_LABELS[newStatus]
+  if (newStatus === 'REVISION_REQUESTED' || newStatus === 'DOCUMENT_SUBMISSION_REQUIRED') {
+    emitNotification({
+      type: 'REVISION_REQUESTED',
+      caseId,
+      caseLabel: label,
+      message: `'${label}' 케이스에 서류 보완이 요청되었습니다.`,
+      recipient: { role: 'CUSTOMER', userId: c.customerId },
+    })
+  } else if (newStatus === 'COMPLETED') {
+    emitNotification({
+      type: 'STATUS_CHANGED',
+      caseId,
+      caseLabel: label,
+      message: `'${label}' 온보딩이 완료되었습니다.`,
+      recipient: { role: 'CUSTOMER', userId: c.customerId },
+    })
+  } else if (newStatus === 'CLOSED') {
+    emitNotification({
+      type: 'STATUS_CHANGED',
+      caseId,
+      caseLabel: label,
+      message: `'${label}' 케이스가 종료되었습니다.`,
+      recipient: { role: 'CUSTOMER', userId: c.customerId },
+    })
+  } else if (newOwner.role !== 'CUSTOMER') {
+    emitNotification({
+      type: 'STATUS_CHANGED',
+      caseId,
+      caseLabel: label,
+      message: `'${label}' 케이스가 '${statusLabel}' 단계로 이동했습니다.`,
+      recipient: { role: newOwner.role, name: newOwner.name },
+    })
+  }
 
   return { ok: true }
 }
@@ -278,5 +317,12 @@ export function changeOwner(
         notes: `담당자 변경: ${prevName} → ${newOwnerName}`,
       },
     ],
+  })
+  emitNotification({
+    type: 'ASSIGNED',
+    caseId,
+    caseLabel: c.customerName || c.customerEmail,
+    message: `'${c.customerName || c.customerEmail}' 케이스 담당자로 지정되었습니다.`,
+    recipient: { role: c.currentOwner.role, name: newOwnerName },
   })
 }
