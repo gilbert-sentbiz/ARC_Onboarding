@@ -29,7 +29,9 @@ interface FormData {
   collectionCountries: string[]
   collectionOtherCountry: string
   remittanceFrom: string
-  remittanceTo: string
+  remittanceFromOther: string
+  remittanceTo: string[]
+  remittanceToOther: string
   businessType: string
   foundingCountry: string
   monthlyVolume: string
@@ -41,7 +43,20 @@ interface FormData {
   agreed: boolean
 }
 
-type Errors = Partial<Record<keyof FormData | 'services' | 'collectionCountries', string>>
+type Errors = Partial<Record<keyof FormData | 'services' | 'collectionCountries' | 'remittanceTo', string>>
+
+const REMITTANCE_COUNTRIES = [
+  { value: 'KR', label: '한국' },
+  { value: 'US', label: '미국' },
+  { value: 'CN', label: '중국' },
+  { value: 'JP', label: '일본' },
+  { value: 'VN', label: '베트남' },
+  { value: 'SG', label: '싱가포르' },
+  { value: 'MY', label: '말레이시아' },
+  { value: 'PH', label: '필리핀' },
+  { value: 'TH', label: '태국' },
+  { value: 'ID', label: '인도네시아' },
+]
 
 const INITIAL: FormData = {
   companyName: '',
@@ -53,7 +68,9 @@ const INITIAL: FormData = {
   collectionCountries: [],
   collectionOtherCountry: '',
   remittanceFrom: '',
-  remittanceTo: '',
+  remittanceFromOther: '',
+  remittanceTo: [],
+  remittanceToOther: '',
   businessType: '',
   foundingCountry: '',
   monthlyVolume: '',
@@ -217,8 +234,11 @@ export default function OnboardingForm() {
       if (data.collectionCountries.includes('OTHER') && !data.collectionOtherCountry.trim())
         next.collectionOtherCountry = '수금 국가를 직접 입력해주세요.'
       if (data.services.includes('remittance')) {
-        if (!data.remittanceFrom.trim()) next.remittanceFrom = '필수 항목입니다.'
-        if (!data.remittanceTo.trim()) next.remittanceTo = '필수 항목입니다.'
+        const fromVal = data.remittanceFrom === '__OTHER__' ? data.remittanceFromOther : data.remittanceFrom
+        if (!fromVal.trim()) next.remittanceFrom = '필수 항목입니다.'
+        if (data.remittanceTo.length === 0) next.remittanceTo = '도착 국가를 하나 이상 선택해주세요.'
+        if (data.remittanceTo.includes('__OTHER__') && !data.remittanceToOther.trim())
+          next.remittanceToOther = '도착 국가를 직접 입력해주세요.'
       }
     }
 
@@ -247,16 +267,25 @@ export default function OnboardingForm() {
     }
   }
 
+  function toSaveData() {
+    const fromVal = data.remittanceFrom === '__OTHER__' ? data.remittanceFromOther : data.remittanceFrom
+    const toArr = [
+      ...data.remittanceTo.filter((c) => c !== '__OTHER__'),
+      ...(data.remittanceTo.includes('__OTHER__') && data.remittanceToOther.trim() ? [data.remittanceToOther.trim()] : []),
+    ]
+    return { ...data, remittanceFrom: fromVal, remittanceTo: toArr.join(', ') }
+  }
+
   function handleDraftSave() {
     if (!session) return
-    saveFirstIntakeDraft(data, session)
+    saveFirstIntakeDraft(toSaveData(), session)
     setDraftSaved(true)
     setTimeout(() => setDraftSaved(false), 2000)
   }
 
   function handleSubmit() {
     if (!session) return
-    const savedCase = saveFirstIntakeDraft(data, session)
+    const savedCase = saveFirstIntakeDraft(toSaveData(), session)
     useSessionStore.getState().setSession({ ...session, name: data.contactName })
     navigate(`/customer/case/${savedCase.id}/review/first`)
   }
@@ -429,23 +458,81 @@ export default function OnboardingForm() {
 
               {/* 송금 국가 */}
               {data.services.includes('remittance') && (
-                <div className="grid grid-cols-2 gap-4 p-4 bg-sb-n50 rounded-[10px] border border-sb-n200">
-                  <Input
-                    label="송금 출발 국가"
-                    required
-                    placeholder="예: 한국"
-                    value={data.remittanceFrom}
-                    onChange={(e) => set('remittanceFrom', e.target.value)}
-                    error={errors.remittanceFrom}
-                  />
-                  <Input
-                    label="송금 도착 국가"
-                    required
-                    placeholder="예: 미국"
-                    value={data.remittanceTo}
-                    onChange={(e) => set('remittanceTo', e.target.value)}
-                    error={errors.remittanceTo}
-                  />
+                <div className="flex flex-col gap-4 p-4 bg-sb-n50 rounded-[10px] border border-sb-n200">
+                  {/* 출발 국가 — single select */}
+                  <div className="flex flex-col gap-2">
+                    <p className="text-[13px] font-medium text-sb-n700">
+                      송금 출발 국가 <span className="text-sb-negative">*</span>
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {REMITTANCE_COUNTRIES.map((c) => (
+                        <ToggleChip
+                          key={c.value}
+                          label={c.label}
+                          selected={data.remittanceFrom === c.value}
+                          onClick={() => { set('remittanceFrom', c.value); set('remittanceFromOther', '') }}
+                        />
+                      ))}
+                      <ToggleChip
+                        label="기타"
+                        selected={data.remittanceFrom === '__OTHER__'}
+                        onClick={() => set('remittanceFrom', '__OTHER__')}
+                      />
+                    </div>
+                    {data.remittanceFrom === '__OTHER__' && (
+                      <Input
+                        placeholder="출발 국가를 직접 입력해주세요"
+                        value={data.remittanceFromOther}
+                        onChange={(e) => set('remittanceFromOther', e.target.value)}
+                      />
+                    )}
+                    {errors.remittanceFrom && (
+                      <p className="text-[11px] text-sb-negative">{errors.remittanceFrom}</p>
+                    )}
+                  </div>
+
+                  {/* 도착 국가 — multi select */}
+                  <div className="flex flex-col gap-2">
+                    <p className="text-[13px] font-medium text-sb-n700">
+                      송금 도착 국가 <span className="text-sb-negative">*</span>
+                      <span className="text-sb-n400 font-normal ml-1">(중복 선택 가능)</span>
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {REMITTANCE_COUNTRIES.map((c) => (
+                        <ToggleChip
+                          key={c.value}
+                          label={c.label}
+                          selected={data.remittanceTo.includes(c.value)}
+                          onClick={() => {
+                            set('remittanceTo', data.remittanceTo.includes(c.value)
+                              ? data.remittanceTo.filter((v) => v !== c.value)
+                              : [...data.remittanceTo, c.value])
+                          }}
+                        />
+                      ))}
+                      <ToggleChip
+                        label="기타"
+                        selected={data.remittanceTo.includes('__OTHER__')}
+                        onClick={() => {
+                          set('remittanceTo', data.remittanceTo.includes('__OTHER__')
+                            ? data.remittanceTo.filter((v) => v !== '__OTHER__')
+                            : [...data.remittanceTo, '__OTHER__'])
+                          if (data.remittanceTo.includes('__OTHER__')) set('remittanceToOther', '')
+                        }}
+                      />
+                    </div>
+                    {data.remittanceTo.includes('__OTHER__') && (
+                      <Input
+                        placeholder="도착 국가를 직접 입력해주세요"
+                        value={data.remittanceToOther}
+                        onChange={(e) => set('remittanceToOther', e.target.value)}
+                        error={errors.remittanceToOther}
+                      />
+                    )}
+                    {errors.remittanceTo && (
+                      <p className="text-[11px] text-sb-negative">{errors.remittanceTo}</p>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
