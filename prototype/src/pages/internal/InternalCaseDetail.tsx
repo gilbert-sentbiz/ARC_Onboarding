@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import {
   ArrowLeft, CheckCircle, WarningCircle, Clock, ChatCircle,
-  Note, PaperPlaneTilt, FileText, FileDashed, Check, X, CaretDown, CaretUp, Eye, Plus,
+  Note, PaperPlaneTilt, FileText, FileDashed, Check, X, CaretDown, CaretUp, Eye, Plus, DownloadSimple,
 } from '@phosphor-icons/react'
 import { useSessionStore } from '../../store/sessionStore'
 import { useCaseStore } from '../../store/caseStore'
@@ -17,6 +17,14 @@ import type { CaseStatus, CloseReason, Document, DocumentStatus, UserRole, Messa
 function formatDate(ts: number) {
   const d = new Date(ts)
   return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+}
+
+function downloadFile(file: UploadedFile) {
+  if (!file.dataUrl) return
+  const a = document.createElement('a')
+  a.href = file.dataUrl
+  a.download = file.fileName
+  a.click()
 }
 
 const DOC_STATUS_BADGE: Record<DocumentStatus, { label: string; cls: string }> = {
@@ -542,14 +550,25 @@ export default function InternalCaseDetail() {
                             const isExpanded = expandedDocFiles.has(doc.id)
                             return (
                               <div className="flex flex-col gap-0.5">
-                                <button
-                                  onClick={() => setPreviewFile(latestFile)}
-                                  className="flex items-center gap-1 text-[12px] text-sb-brand hover:underline text-left"
-                                >
-                                  <Eye size={12} />
-                                  {latestFile.fileName}
-                                  <span className="text-sb-n400 font-normal ml-1">{formatDate(latestFile.uploadedAt)}</span>
-                                </button>
+                                <div className="flex items-center gap-2">
+                                  <button
+                                    onClick={() => setPreviewFile(latestFile)}
+                                    className="flex items-center gap-1 text-[12px] text-sb-brand hover:underline text-left"
+                                  >
+                                    <Eye size={12} />
+                                    {latestFile.fileName}
+                                    <span className="text-sb-n400 font-normal ml-1">{formatDate(latestFile.uploadedAt)}</span>
+                                  </button>
+                                  {latestFile.dataUrl && (
+                                    <button
+                                      onClick={() => downloadFile(latestFile)}
+                                      className="flex items-center gap-0.5 text-[11px] text-sb-n400 hover:text-sb-n700 transition-colors flex-shrink-0"
+                                    >
+                                      <DownloadSimple size={12} />
+                                      다운로드
+                                    </button>
+                                  )}
+                                </div>
                                 {oldFiles.length > 0 && (
                                   <>
                                     <button
@@ -560,13 +579,22 @@ export default function InternalCaseDetail() {
                                       이전 제출본 {oldFiles.length}건
                                     </button>
                                     {isExpanded && oldFiles.map(f => (
-                                      <button
-                                        key={f.id}
-                                        onClick={() => setPreviewFile(f)}
-                                        className="text-[11px] text-sb-n400 hover:underline text-left pl-3"
-                                      >
-                                        {f.fileName} ({formatDate(f.uploadedAt)})
-                                      </button>
+                                      <div key={f.id} className="flex items-center gap-2 pl-3">
+                                        <button
+                                          onClick={() => setPreviewFile(f)}
+                                          className="text-[11px] text-sb-n400 hover:underline text-left"
+                                        >
+                                          {f.fileName} ({formatDate(f.uploadedAt)})
+                                        </button>
+                                        {f.dataUrl && (
+                                          <button
+                                            onClick={() => downloadFile(f)}
+                                            className="flex-shrink-0 text-sb-n400 hover:text-sb-n700 transition-colors"
+                                          >
+                                            <DownloadSimple size={11} />
+                                          </button>
+                                        )}
+                                      </div>
                                     ))}
                                   </>
                                 )}
@@ -878,12 +906,23 @@ export default function InternalCaseDetail() {
           >
             <div className="flex items-center justify-between px-5 py-4 border-b border-sb-n100">
               <span className="text-[14px] font-medium text-sb-n900 truncate pr-4">{previewFile.fileName}</span>
-              <button
-                onClick={() => setPreviewFile(null)}
-                className="flex-shrink-0 text-[13px] text-sb-n500 hover:text-sb-n800 px-3 py-1.5 rounded-[6px] hover:bg-sb-n50 transition-colors"
-              >
-                닫기
-              </button>
+              <div className="flex items-center gap-2 flex-shrink-0">
+                {previewFile.dataUrl && (
+                  <button
+                    onClick={() => downloadFile(previewFile)}
+                    className="flex items-center gap-1 text-[13px] text-sb-n700 hover:text-sb-n900 px-3 py-1.5 rounded-[6px] hover:bg-sb-n50 transition-colors"
+                  >
+                    <DownloadSimple size={14} />
+                    다운로드
+                  </button>
+                )}
+                <button
+                  onClick={() => setPreviewFile(null)}
+                  className="text-[13px] text-sb-n500 hover:text-sb-n800 px-3 py-1.5 rounded-[6px] hover:bg-sb-n50 transition-colors"
+                >
+                  닫기
+                </button>
+              </div>
             </div>
             <div className="flex-1 overflow-auto p-5 flex items-center justify-center min-h-[300px]">
               {previewFile.dataUrl && previewFile.dataUrl.startsWith('data:image') ? (
