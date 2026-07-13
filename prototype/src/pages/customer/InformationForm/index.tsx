@@ -146,6 +146,7 @@ export default function InformationForm() {
         title={entityTitle[entitySegment ?? ''] ?? '정보 입력'}
         questions={entityQuestions}
         initialData={entityInitial}
+        isKR={raw.foundingCountry === 'KR'}
         onComplete={(d) => {
           const next = { ...accumulated, entity: d }
           afterEntity(d, next)

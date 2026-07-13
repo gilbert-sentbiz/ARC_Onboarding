@@ -1,11 +1,27 @@
 import { useState, useEffect } from 'react'
 import { ArrowLeft, ArrowRight, Plus, Trash } from '@phosphor-icons/react'
 import type { QuestionRule } from '../../../types'
+import { validateKrBizRegNo, validateKrCorpRegNo, validateDate } from '../../../services/validators'
+
+const DATE_QUESTION_IDS = new Set([
+  'qe_corp_founded_date', 'qe_corp_rep_dob', 'qe_corp_bo_dob',
+  'qe_indiv_rep_dob', 'qe_indiv_bo_dob',
+  'qe_fi_founded_date', 'qe_fi_rep_dob', 'qe_fi_ubo_dob',
+])
+
+function baseId(id: string): string {
+  return id.replace(/_\d+$/, '')
+}
+
+function isDateField(id: string): boolean {
+  return DATE_QUESTION_IDS.has(baseId(id))
+}
 
 interface Props {
   title: string
   questions: QuestionRule[]
   initialData?: Record<string, unknown>
+  isKR?: boolean
   onComplete: (data: Record<string, unknown>) => void
   onBack: () => void
   onDraftSave?: (data: Record<string, unknown>) => void
@@ -31,9 +47,10 @@ function QuestionField({
 
       {(q.inputType === 'text' || q.inputType === 'number') && (
         <input
-          type={q.inputType}
+          type={isDateField(q.id) ? 'date' : q.inputType}
           value={value}
           onChange={(e) => onChange(e.target.value)}
+          placeholder={isDateField(q.id) ? 'YYYY-MM-DD' : undefined}
           className={`w-full border rounded-[8px] px-3 py-2.5 text-[14px] text-sb-n800 focus:outline-none focus:border-sb-brand ${error ? 'border-sb-negative' : 'border-sb-n200'}`}
         />
       )}
@@ -83,7 +100,7 @@ function QuestionField({
   )
 }
 
-export default function DynamicQuestionsSection({ title, questions, initialData, onComplete, onBack, onDraftSave }: Props) {
+export default function DynamicQuestionsSection({ title, questions, initialData, isKR, onComplete, onBack, onDraftSave }: Props) {
   const [values, setValues] = useState<Record<string, string>>(() => {
     const flat: Record<string, string> = {}
     function collect(qs: QuestionRule[]) {
@@ -134,22 +151,41 @@ export default function DynamicQuestionsSection({ title, questions, initialData,
     return values[q.showWhen.parentId] === q.showWhen.value
   }
 
+  function getFormatError(id: string, val: string): string | null {
+    if (!val) return null
+    if (isDateField(id)) return validateDate(val)
+    if (isKR) {
+      if (baseId(id) === 'qc_biz_reg_no') return validateKrBizRegNo(val)
+      if (baseId(id) === 'qe_corp_reg_no') return validateKrCorpRegNo(val)
+    }
+    return null
+  }
+
   function validate() {
     const errs: Record<string, string> = {}
     function check(qs: QuestionRule[]) {
       for (const q of qs) {
         if (!isVisible(q)) continue
         if (q.repeat) {
-          // Validate all repeat instances (base + extras)
           const instanceCount = 1 + (repeatCounts[q.id] ?? 0)
           for (let i = 0; i < instanceCount; i++) {
             for (const child of q.children ?? []) {
               const repeatId = i === 0 ? child.id : `${child.id}_${i}`
-              if (child.isRequired && !values[repeatId]) errs[repeatId] = '필수 항목입니다'
+              if (child.isRequired && !values[repeatId]) {
+                errs[repeatId] = '필수 항목입니다'
+              } else {
+                const fmt = getFormatError(repeatId, values[repeatId] ?? '')
+                if (fmt) errs[repeatId] = fmt
+              }
             }
           }
         } else {
-          if (q.isRequired && !values[q.id]) errs[q.id] = '필수 항목입니다'
+          if (q.isRequired && !values[q.id]) {
+            errs[q.id] = '필수 항목입니다'
+          } else {
+            const fmt = getFormatError(q.id, values[q.id] ?? '')
+            if (fmt) errs[q.id] = fmt
+          }
           if (q.children?.length) {
             const visible = q.children.filter(c => isChildVisible(c))
             check(visible)
