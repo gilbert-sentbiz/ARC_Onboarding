@@ -243,6 +243,17 @@ function resolveOwner(newStatus: CaseStatus): { role: UserRole; name: string } {
   }
 }
 
+export function resubmitRevision(
+  caseId: string,
+  actor: { role: UserRole; name: string }
+): TransitionResult {
+  const state = useCaseStore.getState()
+  const c = state.cases[caseId]
+  if (!c) return { ok: false, error: '케이스를 찾을 수 없습니다.' }
+  const target: CaseStatus = c.revisionRequestedFrom ?? 'COMPLIANCE_REVIEW_REQUIRED'
+  return transitionStatus(caseId, target, actor)
+}
+
 export function changeOwner(
   caseId: string,
   newOwnerName: string,

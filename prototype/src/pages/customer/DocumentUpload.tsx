@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { CheckCircle, CloudArrowUp, Warning, ArrowRight, Clock, Link } from '@phosphor-icons/react'
 import { useCaseStore } from '../../store/caseStore'
 import { useSessionStore } from '../../store/sessionStore'
-import { transitionStatus } from '../../services/caseService'
+import { transitionStatus, resubmitRevision } from '../../services/caseService'
 import type { Document, UploadedFile } from '../../types'
 import Button from '../../components/ui/Button'
 import TabBar from '../../components/customer/TabBar'
@@ -231,11 +231,10 @@ export default function DocumentUpload() {
 
   function handleSubmit() {
     if (!session || !canSubmit) return
-    const nextStatus = isRevision ? 'COMPLIANCE_REVIEW_REQUIRED' : 'SALES_REVIEW_REQUIRED'
-    const result = transitionStatus(id!, nextStatus, {
-      role: 'CUSTOMER',
-      name: session.name || '고객',
-    })
+    const actor = { role: 'CUSTOMER' as const, name: session.name || '고객' }
+    const result = isRevision
+      ? resubmitRevision(id!, actor)
+      : transitionStatus(id!, 'SALES_REVIEW_REQUIRED', actor)
     if (result.ok) {
       setSubmitted(true)
       setTimeout(() => navigate(`/customer/case/${id}`), 2000)

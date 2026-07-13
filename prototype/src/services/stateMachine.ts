@@ -16,6 +16,7 @@ const TRANSITIONS: Record<CaseStatus, TransitionRule[]> = {
   ],
   SALES_REVIEW_REQUIRED: [
     { to: 'COMPLIANCE_REVIEW_REQUIRED', allowedRoles: ['SALES'] },
+    { to: 'REVISION_REQUESTED', allowedRoles: ['SALES'] },
     { to: 'CLOSED', allowedRoles: ['SALES'] },
   ],
   COMPLIANCE_REVIEW_REQUIRED: [
@@ -26,11 +27,14 @@ const TRANSITIONS: Record<CaseStatus, TransitionRule[]> = {
   ],
   REVISION_REQUESTED: [
     { to: 'COMPLIANCE_REVIEW_REQUIRED', allowedRoles: ['CUSTOMER', 'COMPLIANCE'] },
+    { to: 'SALES_REVIEW_REQUIRED', allowedRoles: ['CUSTOMER'] },
+    { to: 'OPS_REVIEW_REQUIRED', allowedRoles: ['CUSTOMER'] },
     { to: 'CLOSED', allowedRoles: ['COMPLIANCE'] },
   ],
   OPS_REVIEW_REQUIRED: [
     { to: 'COMPLETED', allowedRoles: ['OPS'] },
     { to: 'COMPLIANCE_REVIEW_REQUIRED', allowedRoles: ['OPS'] }, // 반려
+    { to: 'REVISION_REQUESTED', allowedRoles: ['OPS'] },
     { to: 'CLOSED', allowedRoles: ['OPS', 'COMPLIANCE'] },
   ],
   COMPLETED: [

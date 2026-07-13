@@ -227,6 +227,7 @@ export interface Case {
   updatedAt: number
   status: CaseStatus
   closeReason?: CloseReason
+  revisionRequestedFrom?: CaseStatus
   customerId: string
   customerName: string
   customerEmail: string

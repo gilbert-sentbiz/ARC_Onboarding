@@ -162,7 +162,9 @@ export default function InternalCaseDetail() {
   }
 
   function requestDocRevision(docId: string) {
+    if (!docRevisionNote.trim()) return
     const now = Date.now()
+    const fromStatus = caseObj.status
     updateCase(caseId, {
       documents: caseObj.documents.map((d) =>
         d.id === docId
@@ -181,8 +183,9 @@ export default function InternalCaseDetail() {
             }
           : d
       ),
+      ...(fromStatus !== 'REVISION_REQUESTED' && { revisionRequestedFrom: fromStatus }),
     })
-    if (caseObj.status === 'COMPLIANCE_REVIEW_REQUIRED') {
+    if (fromStatus !== 'REVISION_REQUESTED') {
       transitionStatus(caseId, 'REVISION_REQUESTED', { role, name: sess.name })
     }
     setDocRevisionId(null)
@@ -483,25 +486,29 @@ export default function InternalCaseDetail() {
                         <span className={`px-2 py-0.5 rounded-full text-[11px] font-medium ${badge.cls}`}>
                           {badge.label}
                         </span>
-                        {role === 'COMPLIANCE' && doc.status === 'SUBMITTED' && (
+                        {doc.status === 'SUBMITTED' && (
                           <>
-                            <button
-                              onClick={() => approveDoc(doc.id)}
-                              className="flex items-center gap-1 px-2.5 py-1 rounded-[6px] text-[12px] font-medium bg-sb-positive-light text-sb-positive hover:opacity-80 transition-opacity"
-                            >
-                              <Check size={13} weight="bold" />
-                              승인
-                            </button>
-                            <button
-                              onClick={() => {
-                                setDocRevisionId(isRevisionOpen ? null : doc.id)
-                                setDocRevisionNote('')
-                              }}
-                              className="flex items-center gap-1 px-2.5 py-1 rounded-[6px] text-[12px] font-medium bg-orange-50 text-orange-600 hover:opacity-80 transition-opacity"
-                            >
-                              <X size={13} weight="bold" />
-                              보완요청
-                            </button>
+                            {role === 'COMPLIANCE' && (
+                              <button
+                                onClick={() => approveDoc(doc.id)}
+                                className="flex items-center gap-1 px-2.5 py-1 rounded-[6px] text-[12px] font-medium bg-sb-positive-light text-sb-positive hover:opacity-80 transition-opacity"
+                              >
+                                <Check size={13} weight="bold" />
+                                승인
+                              </button>
+                            )}
+                            {(role === 'COMPLIANCE' || role === 'SALES' || role === 'OPS') && (
+                              <button
+                                onClick={() => {
+                                  setDocRevisionId(isRevisionOpen ? null : doc.id)
+                                  setDocRevisionNote('')
+                                }}
+                                className="flex items-center gap-1 px-2.5 py-1 rounded-[6px] text-[12px] font-medium bg-orange-50 text-orange-600 hover:opacity-80 transition-opacity"
+                              >
+                                <X size={13} weight="bold" />
+                                보완요청
+                              </button>
+                            )}
                           </>
                         )}
                       </div>
@@ -517,7 +524,8 @@ export default function InternalCaseDetail() {
                         />
                         <button
                           onClick={() => requestDocRevision(doc.id)}
-                          className="px-3 py-2 rounded-[8px] text-[12px] font-medium bg-orange-500 text-white hover:bg-orange-600 transition-colors"
+                          disabled={!docRevisionNote.trim()}
+                          className="px-3 py-2 rounded-[8px] text-[12px] font-medium bg-orange-500 text-white hover:bg-orange-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                         >
                           전송
                         </button>
