@@ -186,8 +186,9 @@ export default function OnboardingForm() {
   const [errors, setErrors] = useState<Errors>({})
   const [draftSaved, setDraftSaved] = useState(false)
 
-  // Derived from data.foundingCountry: 'KR' → 'korean'; any other non-empty → 'foreign'; '' → ''
-  const fcType = data.foundingCountry === 'KR' ? 'korean' : data.foundingCountry ? 'foreign' : ''
+  const [fcType, setFcType] = useState<'korean' | 'foreign' | ''>(
+    draftData?.foundingCountry === 'KR' ? 'korean' : draftData?.foundingCountry ? 'foreign' : ''
+  )
   const [foreignCountryText, setForeignCountryText] = useState(
     draftData?.foundingCountry && draftData.foundingCountry !== 'KR' ? draftData.foundingCountry : ''
   )
@@ -579,6 +580,7 @@ export default function OnboardingForm() {
                       key={type}
                       type="button"
                       onClick={() => {
+                        setFcType(type)
                         if (type === 'korean') {
                           set('foundingCountry', 'KR')
                         } else {

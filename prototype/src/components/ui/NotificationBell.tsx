@@ -56,6 +56,8 @@ export default function NotificationBell({ role, userId, name }: Props) {
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen((v) => !v)}
+        aria-label="알림"
+        title="알림"
         className="relative flex items-center justify-center w-8 h-8 rounded-full hover:bg-sb-n100 transition-colors"
       >
         <Bell size={18} className="text-sb-n600" weight={unreadCount > 0 ? 'fill' : 'regular'} />
