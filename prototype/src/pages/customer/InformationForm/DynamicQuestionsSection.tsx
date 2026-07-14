@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { ArrowLeft, ArrowRight, Plus, Trash } from '@phosphor-icons/react'
 import type { QuestionRule } from '../../../types'
 import { validateKrBizRegNo, validateKrCorpRegNo, validateDate } from '../../../services/validators'
+import DateInput from '../../../components/ui/DateInput'
 
 const DATE_QUESTION_IDS = new Set([
   'qe_corp_founded_date', 'qe_corp_rep_dob', 'qe_corp_bo_dob',
@@ -45,12 +46,15 @@ function QuestionField({
         {q.isRequired && <span className="text-sb-negative ml-0.5">*</span>}
       </label>
 
-      {(q.inputType === 'text' || q.inputType === 'number') && (
+      {(q.inputType === 'text' || q.inputType === 'number') && isDateField(q.id) && (
+        <DateInput value={value} onChange={onChange} error={!!error} />
+      )}
+
+      {(q.inputType === 'text' || q.inputType === 'number') && !isDateField(q.id) && (
         <input
-          type={isDateField(q.id) ? 'date' : q.inputType}
+          type={q.inputType}
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          placeholder={isDateField(q.id) ? 'YYYY-MM-DD' : undefined}
           className={`w-full border rounded-[8px] px-3 py-2.5 text-[14px] text-sb-n800 focus:outline-none focus:border-sb-brand ${error ? 'border-sb-negative' : 'border-sb-n200'}`}
         />
       )}
