@@ -140,23 +140,28 @@ function ToggleChip({ label, selected, onClick }: { label: string; selected: boo
 }
 
 function OptionCard({
-  icon, label, desc, selected, onClick,
-}: { icon: React.ReactNode; label: string; desc: string; selected: boolean; onClick: () => void }) {
+  icon, label, desc, selected, onClick, disabled,
+}: { icon: React.ReactNode; label: string; desc: string; selected: boolean; onClick: () => void; disabled?: boolean }) {
   return (
     <button
       type="button"
-      onClick={onClick}
+      onClick={disabled ? undefined : onClick}
+      disabled={disabled}
       className={`flex items-center gap-4 p-4 rounded-[10px] border text-left transition-all duration-[120ms] ${
-        selected ? 'bg-sb-blue-100 border-sb-brand' : 'bg-white border-sb-n200 hover:border-sb-n400'
+        disabled
+          ? 'bg-sb-n50 border-sb-n100 cursor-not-allowed opacity-60'
+          : selected
+          ? 'bg-sb-blue-100 border-sb-brand'
+          : 'bg-white border-sb-n200 hover:border-sb-n400'
       }`}
     >
       <div className={`flex-shrink-0 w-10 h-10 rounded-[8px] flex items-center justify-center transition-colors duration-[120ms] ${
-        selected ? 'bg-sb-brand text-white' : 'bg-sb-n100 text-sb-n500'
+        disabled ? 'bg-sb-n100 text-sb-n400' : selected ? 'bg-sb-brand text-white' : 'bg-sb-n100 text-sb-n500'
       }`}>
         {icon}
       </div>
       <div className="flex flex-col gap-0.5">
-        <p className={`text-[14px] font-semibold leading-[20px] ${selected ? 'text-sb-brand' : 'text-sb-n800'}`}>{label}</p>
+        <p className={`text-[14px] font-semibold leading-[20px] ${disabled ? 'text-sb-n400' : selected ? 'text-sb-brand' : 'text-sb-n800'}`}>{label}</p>
         <p className="text-[12px] leading-[18px] text-sb-n500">{desc}</p>
       </div>
     </button>
@@ -199,14 +204,19 @@ export default function OnboardingForm() {
   }
 
   function toggleService(value: string) {
-    setData((prev) => ({
-      ...prev,
-      services: prev.services.includes(value)
+    setData((prev) => {
+      const nextServices = prev.services.includes(value)
         ? prev.services.filter((s) => s !== value)
-        : [...prev.services, value],
-      collectionCountries:
-        value === 'collection' && prev.services.includes('collection') ? [] : prev.collectionCountries,
-    }))
+        : [...prev.services, value]
+      const collectionOn = nextServices.includes('collection')
+      return {
+        ...prev,
+        services: nextServices,
+        collectionCountries:
+          value === 'collection' && prev.services.includes('collection') ? [] : prev.collectionCountries,
+        ...(collectionOn ? { businessType: 'financial' } : {}),
+      }
+    })
     setErrors((prev) => ({ ...prev, services: undefined }))
   }
 
@@ -545,6 +555,11 @@ export default function OnboardingForm() {
           <div className="flex flex-col gap-6">
             <div className="flex flex-col gap-4">
               <SectionLabel>사업자 정보</SectionLabel>
+              {data.services.includes('collection') && (
+                <p className="text-[12px] text-sb-n500 bg-sb-n50 border border-sb-n100 rounded-[8px] px-3 py-2">
+                  수금 서비스 이용 시 사업자 유형이 <span className="font-medium text-sb-n800">금융업</span>으로 자동 설정됩니다.
+                </p>
+              )}
               <div className="flex flex-col gap-3">
                 <OptionCard
                   icon={<Buildings size={20} weight="fill" />}
@@ -552,6 +567,7 @@ export default function OnboardingForm() {
                   desc="주식회사, 유한회사 등 법인 형태의 사업자"
                   selected={data.businessType === 'corporation'}
                   onClick={() => set('businessType', 'corporation')}
+                  disabled={data.services.includes('collection')}
                 />
                 <OptionCard
                   icon={<User size={20} weight="fill" />}
@@ -559,6 +575,7 @@ export default function OnboardingForm() {
                   desc="개인 명의로 사업자등록을 한 사업자"
                   selected={data.businessType === 'individual'}
                   onClick={() => set('businessType', 'individual')}
+                  disabled={data.services.includes('collection')}
                 />
                 <OptionCard
                   icon={<Bank size={20} weight="fill" />}
@@ -566,6 +583,7 @@ export default function OnboardingForm() {
                   desc="은행, 보험, 증권 등 금융 관련 업종"
                   selected={data.businessType === 'financial'}
                   onClick={() => set('businessType', 'financial')}
+                  disabled={data.services.includes('collection')}
                 />
               </div>
               {errors.businessType && <p className="text-[11px] text-sb-negative">{errors.businessType}</p>}
