@@ -1,7 +1,11 @@
 import { useState, useEffect } from 'react'
 import { ArrowLeft, ArrowRight, Plus, Trash } from '@phosphor-icons/react'
 import type { QuestionRule } from '../../../types'
-import { validateKrBizRegNo, validateKrCorpRegNo, validateDate } from '../../../services/validators'
+import {
+  validateKrBizRegNo, validateKrCorpRegNo, validateDate,
+  validatePhone, validateEmail, validateUrl, normalizeUrl,
+  validateRatio, validateCount,
+} from '../../../services/validators'
 import DateInput from '../../../components/ui/DateInput'
 
 const DATE_QUESTION_IDS = new Set([
@@ -9,6 +13,12 @@ const DATE_QUESTION_IDS = new Set([
   'qe_indiv_rep_dob', 'qe_indiv_bo_dob',
   'qe_fi_founded_date', 'qe_fi_rep_dob', 'qe_fi_ubo_dob',
 ])
+
+const PHONE_IDS = new Set(['qe_corp_phone', 'qe_indiv_phone', 'qs_vnd_contact_phone'])
+const EMAIL_IDS = new Set(['qs_vnd_contact_email'])
+const URL_IDS = new Set(['qe_fi_website', 'qs_vnd_website'])
+const RATIO_IDS = new Set(['qe_fi_ubo_share'])
+const COUNT_IDS = new Set(['qe_corp_rep_count', 'qe_corp_bo_count'])
 
 function baseId(id: string): string {
   return id.replace(/_\d+$/, '')
@@ -56,6 +66,7 @@ function QuestionField({
           type={q.inputType}
           value={value}
           onChange={(e) => onChange(e.target.value)}
+          onBlur={() => { if (URL_IDS.has(baseId(q.id)) && value) onChange(normalizeUrl(value)) }}
           className={`w-full border rounded-[8px] px-3 py-2.5 text-[14px] text-sb-n800 focus:outline-none focus:border-sb-brand ${error ? 'border-sb-negative' : 'border-sb-n200'}`}
         />
       )}
@@ -158,10 +169,16 @@ export default function DynamicQuestionsSection({ title, questions, initialData,
 
   function getFormatError(id: string, val: string): string | null {
     if (!val) return null
+    const b = baseId(id)
     if (isDateField(id)) return validateDate(val)
+    if (PHONE_IDS.has(b)) return validatePhone(val)
+    if (EMAIL_IDS.has(b)) return validateEmail(val)
+    if (URL_IDS.has(b)) return validateUrl(val)
+    if (RATIO_IDS.has(b)) return validateRatio(val)
+    if (COUNT_IDS.has(b)) return validateCount(val, 1)
     if (isKR) {
-      if (baseId(id) === 'qc_biz_reg_no') return validateKrBizRegNo(val)
-      if (baseId(id) === 'qe_corp_reg_no') return validateKrCorpRegNo(val)
+      if (b === 'qc_biz_reg_no') return validateKrBizRegNo(val)
+      if (b === 'qe_corp_reg_no') return validateKrCorpRegNo(val)
     }
     return null
   }

@@ -18,6 +18,7 @@ import { useSessionStore } from '../../store/sessionStore'
 import { saveFirstIntakeDraft } from '../../services/caseService'
 import { useCaseStore } from '../../store/caseStore'
 import { getRuleSet } from '../../store/ruleStore'
+import { validatePhone, validateEmail, validateAmount, validateCount } from '../../services/validators'
 
 interface FormData {
   companyName: string
@@ -83,10 +84,8 @@ const INITIAL: FormData = {
 }
 
 function formatPhone(raw: string): string {
-  const d = raw.replace(/\D/g, '').slice(0, 11)
-  if (d.length <= 3) return d
-  if (d.length <= 7) return `${d.slice(0, 3)}-${d.slice(3)}`
-  return `${d.slice(0, 3)}-${d.slice(3, 7)}-${d.slice(7)}`
+  // Allow digits, +, -, space — strip all other chars
+  return raw.replace(/[^0-9+\-\s()]/g, '')
 }
 
 function formatAmount(raw: string): string {
@@ -238,7 +237,9 @@ export default function OnboardingForm() {
       if (!data.contactName.trim()) next.contactName = '필수 항목입니다.'
       if (!data.contactTitle.trim()) next.contactTitle = '필수 항목입니다.'
       if (!data.phone.trim()) next.phone = '필수 항목입니다.'
+      else { const e = validatePhone(data.phone); if (e) next.phone = e }
       if (!data.email.trim()) next.email = '필수 항목입니다.'
+      else { const e = validateEmail(data.email); if (e) next.email = e }
       if (data.services.length === 0) next.services = '서비스를 하나 이상 선택해주세요.'
       if (data.services.includes('collection') && data.collectionCountries.length === 0)
         next.collectionCountries = '수금 국가를 하나 이상 선택해주세요.'
@@ -257,9 +258,11 @@ export default function OnboardingForm() {
       if (!data.businessType) next.businessType = '사업자 유형을 선택해주세요.'
       if (!data.foundingCountry.trim()) next.foundingCountry = fcType === 'foreign' ? '국가명을 입력해주세요.' : '설립 국가를 선택해주세요.'
       if (!data.monthlyVolume.trim()) next.monthlyVolume = '필수 항목입니다.'
+      else { const e = validateAmount(data.monthlyVolume); if (e) next.monthlyVolume = e }
       if (data.monthlyVolumeCurrency === 'OTHER' && !data.monthlyVolumeCurrencyOther.trim())
         next.monthlyVolumeCurrencyOther = '통화를 직접 입력해주세요.'
       if (!data.monthlyCount.trim()) next.monthlyCount = '필수 항목입니다.'
+      else { const e = validateCount(data.monthlyCount, 1); if (e) next.monthlyCount = e }
       if (!data.referralSource) next.referralSource = '선택해주세요.'
       if (!data.agreed) next.agreed = '동의가 필요합니다.'
     }
@@ -385,7 +388,7 @@ export default function OnboardingForm() {
                   label="연락처"
                   required
                   type="tel"
-                  placeholder="010-0000-0000"
+                  placeholder="+82-10-0000-0000"
                   value={data.phone}
                   onChange={(e) => set('phone', formatPhone(e.target.value))}
                   error={errors.phone}
