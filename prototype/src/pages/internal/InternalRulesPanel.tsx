@@ -31,6 +31,80 @@ const INPUT_TYPE_OPTIONS: { value: QuestionInputType; label: string }[] = [
   { value: 'number',   label: 'number' },
 ]
 
+function CommonQuestionRow({ q, enabled, optionFilter, onToggle, onFilterChange }: {
+  q: QuestionRule
+  enabled: boolean
+  optionFilter: string[] | undefined
+  onToggle: () => void
+  onFilterChange: (values: string[] | undefined) => void
+}) {
+  const [expanded, setExpanded] = useState(false)
+  const hasOptions = (q.inputType === 'select' || q.inputType === 'radio') && !!q.options?.length
+
+  return (
+    <div className={`border-b border-sb-n100 last:border-0 ${!enabled ? 'opacity-50' : ''}`}>
+      <div className="flex items-center gap-3 px-4 py-3">
+        <label className="flex items-center cursor-pointer flex-shrink-0">
+          <input type="checkbox" checked={enabled} onChange={onToggle} className="rounded border-sb-n300 text-sb-brand focus:ring-sb-brand" />
+        </label>
+        <div className="flex-1 min-w-0">
+          <p className="text-[13px] text-sb-n800">{q.label}</p>
+          <p className="text-[11px] font-mono text-sb-n400">{q.id}</p>
+        </div>
+        <div className="flex items-center gap-1.5 flex-shrink-0">
+          <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${q.isRequired ? 'bg-red-50 text-sb-negative' : 'bg-sb-n50 text-sb-n400'}`}>
+            {q.isRequired ? '필수' : '선택'}
+          </span>
+          <span className="text-[10px] font-mono text-sb-n400 px-1.5 py-0.5 border border-sb-n100 rounded">{q.inputType}</span>
+          {hasOptions && enabled && (
+            <button
+              onClick={() => setExpanded(v => !v)}
+              className="flex items-center gap-0.5 text-[10px] text-sb-n400 hover:text-sb-brand"
+            >
+              옵션필터
+              {expanded ? <CaretDown size={10} /> : <CaretRight size={10} />}
+            </button>
+          )}
+          {hasOptions && enabled && optionFilter && (
+            <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-sb-blue-100 text-sb-brand">
+              {optionFilter.length}/{q.options!.length}
+            </span>
+          )}
+        </div>
+      </div>
+      {hasOptions && enabled && expanded && (
+        <div className="px-4 pb-3 bg-sb-n50">
+          <p className="text-[11px] text-sb-n400 mb-2">이 세그먼트에서 노출할 옵션 선택. 전체 선택 시 필터 없음.</p>
+          <div className="flex flex-col gap-1.5">
+            {q.options!.map(opt => {
+              const allVals = q.options!.map(o => o.value)
+              const isChecked = !optionFilter || optionFilter.includes(opt.value)
+              return (
+                <label key={opt.value} className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={isChecked}
+                    onChange={(e) => {
+                      const current = optionFilter ?? allVals
+                      const next = e.target.checked
+                        ? [...current, opt.value]
+                        : current.filter(v => v !== opt.value)
+                      onFilterChange(next.length === allVals.length ? undefined : next.length ? next : [opt.value])
+                    }}
+                    className="rounded border-sb-n300 text-sb-brand focus:ring-sb-brand"
+                  />
+                  <span className="text-[12px] text-sb-n700">{opt.label}</span>
+                  <span className="text-[10px] font-mono text-sb-n400">{opt.value}</span>
+                </label>
+              )
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 function QuestionRowFixed({ q, depth = 0 }: { q: QuestionRule; depth?: number }) {
   const [expanded, setExpanded] = useState(false)
   const hasChildren = !!(q.children?.length)
@@ -73,43 +147,63 @@ function QuestionRowFixed({ q, depth = 0 }: { q: QuestionRule; depth?: number })
 
 function AddOwnQuestionForm({
   parentOptions,
+  commonQuestions,
+  showSvcCondition,
+  defaultSvcCondition,
   onAdd,
   editTarget,
   onUpdate,
   onCancelEdit,
 }: {
   parentOptions: QuestionRule[]
+  commonQuestions?: QuestionRule[]
+  showSvcCondition?: boolean
+  defaultSvcCondition?: 'payout' | 'collection'
   onAdd: (q: QuestionRule) => void
   editTarget?: QuestionRule
   onUpdate?: (q: QuestionRule) => void
   onCancelEdit?: () => void
 }) {
+  const initSvc = (): 'payout' | 'collection' | '' =>
+    editTarget?.showWhen?.parentId === '_svc'
+      ? (editTarget.showWhen.value as 'payout' | 'collection')
+      : defaultSvcCondition ?? ''
+
   const [form, setForm] = useState({
     label: editTarget?.label ?? '',
     inputType: (editTarget?.inputType ?? 'text') as QuestionInputType,
     isRequired: editTarget?.isRequired ?? true,
-    parentId: editTarget?.showWhen?.parentId ?? '',
-    parentValue: editTarget?.showWhen?.value ?? '',
+    parentId: editTarget?.showWhen?.parentId !== '_svc' ? (editTarget?.showWhen?.parentId ?? '') : '',
+    parentValue: editTarget?.showWhen?.parentId !== '_svc' ? (editTarget?.showWhen?.value ?? '') : '',
+    svcCondition: initSvc(),
   })
 
   const isEditing = !!editTarget
 
+  // Find parent question to resolve its options for the trigger-value dropdown
+  const allParents = [...(commonQuestions ?? []), ...parentOptions]
+  const selectedParent = form.parentId ? allParents.find(q => q.id === form.parentId) : null
+  const parentOpts = selectedParent?.options ?? []
+
   function submit() {
     if (!form.label) return
+    let showWhen: { parentId: string; value: string } | undefined
+    if (form.svcCondition) showWhen = { parentId: '_svc', value: form.svcCondition }
+    else if (form.parentId) showWhen = { parentId: form.parentId, value: form.parentValue }
     const q: QuestionRule = {
       id: editTarget?.id ?? `q_own_${Date.now()}`,
       label: form.label,
       inputType: form.inputType,
       isRequired: form.isRequired,
       classification: 'service-own',
-      ...(form.parentId ? { showWhen: { parentId: form.parentId, value: form.parentValue } } : {}),
+      ...(showWhen ? { showWhen } : {}),
     }
     if (isEditing && onUpdate) {
       onUpdate(q)
     } else {
       onAdd(q)
     }
-    setForm({ label: '', inputType: 'text', isRequired: true, parentId: '', parentValue: '' })
+    setForm({ label: '', inputType: 'text', isRequired: true, parentId: '', parentValue: '', svcCondition: defaultSvcCondition ?? '' })
   }
 
   return (
@@ -120,6 +214,23 @@ function AddOwnQuestionForm({
           <button onClick={onCancelEdit} className="text-[11px] text-sb-n400 hover:text-sb-n700">취소</button>
         </div>
       )}
+
+      {/* FI service condition */}
+      {showSvcCondition && (
+        <div>
+          <p className="text-[11px] text-sb-n400 mb-1">서비스 조건 (FI)</p>
+          <select
+            value={form.svcCondition}
+            onChange={(e) => setForm(p => ({ ...p, svcCondition: e.target.value as typeof p.svcCondition, parentId: '', parentValue: '' }))}
+            className="w-full text-[12px] border border-sb-n200 rounded-[6px] px-2 py-1.5 bg-white focus:outline-none focus:border-sb-brand text-sb-n700"
+          >
+            <option value="">없음 (서비스 무관)</option>
+            <option value="payout">송금 전용</option>
+            <option value="collection">수금 전용</option>
+          </select>
+        </div>
+      )}
+
       <div className="flex items-end gap-2">
         <div className="flex-1">
           <p className="text-[11px] text-sb-n400 mb-1">질문 레이블</p>
@@ -158,33 +269,50 @@ function AddOwnQuestionForm({
           {isEditing ? '저장' : '추가'}
         </button>
       </div>
-      {/* Conditional parent setting */}
-      <div className="flex items-center gap-2">
-        <div className="flex-1">
-          <p className="text-[11px] text-sb-n400 mb-1">상위 질문 (조건부, 선택)</p>
-          <select
-            value={form.parentId}
-            onChange={(e) => setForm(p => ({ ...p, parentId: e.target.value, parentValue: '' }))}
-            className="w-full text-[12px] border border-sb-n200 rounded-[6px] px-2 py-1.5 bg-white focus:outline-none focus:border-sb-brand text-sb-n600"
-          >
-            <option value="">없음 (독립 질문)</option>
-            {parentOptions.map(pq => (
-              <option key={pq.id} value={pq.id}>{pq.label}</option>
-            ))}
-          </select>
-        </div>
-        {form.parentId && (
-          <div className="w-36">
-            <p className="text-[11px] text-sb-n400 mb-1">트리거 값</p>
-            <input
-              placeholder="예: joint"
-              value={form.parentValue}
-              onChange={(e) => setForm(p => ({ ...p, parentValue: e.target.value }))}
-              className="w-full text-[12px] border border-sb-n200 rounded-[6px] px-2 py-1.5 text-sb-n800 focus:outline-none focus:border-sb-brand"
-            />
+
+      {/* Display condition (only when no svc condition) */}
+      {!form.svcCondition && (
+        <div className="flex items-center gap-2">
+          <div className="flex-1">
+            <p className="text-[11px] text-sb-n400 mb-1">표시 조건 (선택)</p>
+            <select
+              value={form.parentId}
+              onChange={(e) => setForm(p => ({ ...p, parentId: e.target.value, parentValue: '' }))}
+              className="w-full text-[12px] border border-sb-n200 rounded-[6px] px-2 py-1.5 bg-white focus:outline-none focus:border-sb-brand text-sb-n600"
+            >
+              <option value="">없음 (독립 질문)</option>
+              {allParents.filter(pq => pq.options?.length).map(pq => (
+                <option key={pq.id} value={pq.id}>[{pq.inputType}] {pq.label}</option>
+              ))}
+              {allParents.filter(pq => !pq.options?.length).map(pq => (
+                <option key={pq.id} value={pq.id}>{pq.label}</option>
+              ))}
+            </select>
           </div>
-        )}
-      </div>
+          {form.parentId && (
+            <div className="w-36">
+              <p className="text-[11px] text-sb-n400 mb-1">트리거 값</p>
+              {parentOpts.length > 0 ? (
+                <select
+                  value={form.parentValue}
+                  onChange={(e) => setForm(p => ({ ...p, parentValue: e.target.value }))}
+                  className="w-full text-[12px] border border-sb-n200 rounded-[6px] px-2 py-1.5 bg-white focus:outline-none focus:border-sb-brand"
+                >
+                  <option value="">선택</option>
+                  {parentOpts.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                </select>
+              ) : (
+                <input
+                  placeholder="예: joint"
+                  value={form.parentValue}
+                  onChange={(e) => setForm(p => ({ ...p, parentValue: e.target.value }))}
+                  className="w-full text-[12px] border border-sb-n200 rounded-[6px] px-2 py-1.5 text-sb-n800 focus:outline-none focus:border-sb-brand"
+                />
+              )}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   )
 }
@@ -192,7 +320,9 @@ function AddOwnQuestionForm({
 function QuestionsEditor({ selected }: { selected: Selection }) {
   const { currentRuleSet, updateRuleSet } = useRuleStore()
   const [editIdx, setEditIdx] = useState<number | null>(null)
+  const [svcView, setSvcView] = useState<'all' | 'payout' | 'collection'>('all')
 
+  const isFI = selected.type === 'entity' && selected.code === 'ENTITY_FI'
   const configKey = selected.type === 'entity' ? `entity:${selected.code}` : `service:${selected.code}`
   const rs = getRuleSet()
 
@@ -231,81 +361,127 @@ function QuestionsEditor({ selected }: { selected: Selection }) {
 
   const allOwnForParent = [...ownFixedQuestions, ...config.ownQuestions]
 
+  function matchesSvcView(q: QuestionRule): boolean {
+    if (svcView === 'all') return true
+    const cond = q.showWhen?.parentId === '_svc' ? q.showWhen.value : null
+    if (!cond) return true  // no service condition → shown in all views
+    return cond === svcView
+  }
+
   return (
     <div className="flex flex-col gap-5">
-      {/* 공통 섹션 — always the same regardless of which segment is selected */}
+      {/* 공통 질문 — enable/disable + option filter per segment */}
       <div>
         <p className="text-[12px] font-semibold text-sb-n500 uppercase tracking-[0.5px] mb-2">공통 질문</p>
-        <div className="bg-white rounded-[10px] border border-sb-n100 divide-y divide-sb-n100 overflow-hidden">
+        <div className="bg-white rounded-[10px] border border-sb-n100 overflow-hidden">
           {commonQuestions.length === 0 && (
             <p className="text-[12px] text-sb-n400 px-4 py-3">공통 질문 없음</p>
           )}
           {commonQuestions.map(q => (
-            <div key={q.id} className="flex items-center gap-3 px-4 py-3">
-              <div className="flex-1 min-w-0">
-                <p className="text-[13px] text-sb-n800">{q.label}</p>
-                <p className="text-[11px] font-mono text-sb-n400">{q.id}</p>
-              </div>
-              <div className="flex items-center gap-1.5 flex-shrink-0">
-                <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${q.isRequired ? 'bg-red-50 text-sb-negative' : 'bg-sb-n50 text-sb-n400'}`}>
-                  {q.isRequired ? '필수' : '선택'}
-                </span>
-                <span className="text-[10px] font-mono text-sb-n400 px-1.5 py-0.5 border border-sb-n100 rounded">{q.inputType}</span>
-              </div>
-            </div>
+            <CommonQuestionRow
+              key={q.id}
+              q={q}
+              enabled={config.enabledCommonQuestionIds.includes(q.id)}
+              optionFilter={config.commonOptionFilters?.[q.id]}
+              onToggle={() => {
+                const ids = config.enabledCommonQuestionIds.includes(q.id)
+                  ? config.enabledCommonQuestionIds.filter(id => id !== q.id)
+                  : [...config.enabledCommonQuestionIds, q.id]
+                saveConfig({ enabledCommonQuestionIds: ids })
+              }}
+              onFilterChange={(values) => {
+                const current = config.commonOptionFilters ?? {}
+                const next = { ...current }
+                if (values === undefined) delete next[q.id]
+                else next[q.id] = values
+                saveConfig({ commonOptionFilters: Object.keys(next).length ? next : undefined })
+              }}
+            />
           ))}
         </div>
       </div>
 
-      {/* 고유 섹션 — swaps when segment changes */}
+      {/* FI 서비스 뷰 탭 */}
+      {isFI && (
+        <div>
+          <p className="text-[12px] font-semibold text-sb-n500 uppercase tracking-[0.5px] mb-2">서비스 뷰 (FI)</p>
+          <div className="flex border border-sb-n100 rounded-[8px] overflow-hidden bg-white text-[12px]">
+            {(['all', 'payout', 'collection'] as const).map((v, i) => (
+              <button
+                key={v}
+                onClick={() => { setSvcView(v); setEditIdx(null) }}
+                className={`flex-1 py-2 font-medium transition-colors ${i > 0 ? 'border-l border-sb-n100' : ''} ${svcView === v ? 'bg-sb-brand text-white' : 'text-sb-n500 hover:bg-sb-n50'}`}
+              >
+                {v === 'all' ? '전체' : v === 'payout' ? '송금' : '수금'}
+              </button>
+            ))}
+          </div>
+          {svcView !== 'all' && (
+            <p className="text-[11px] text-sb-n400 mt-1.5">
+              {svcView === 'payout' ? '송금' : '수금'} 서비스 고객에게만 표시되는 질문. 서비스 조건 없는 질문은 항상 표시됩니다.
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* 고유 질문 */}
       <div>
         <p className="text-[12px] font-semibold text-sb-n500 uppercase tracking-[0.5px] mb-2">고유 질문</p>
         <div className="bg-white rounded-[10px] border border-sb-n100 overflow-hidden">
-          {ownFixedQuestions.length === 0 && config.ownQuestions.length === 0 && (
+          {ownFixedQuestions.filter(matchesSvcView).length === 0 && config.ownQuestions.filter(matchesSvcView).length === 0 && (
             <p className="text-[12px] text-sb-n400 px-4 py-3">고유 질문 없음</p>
           )}
-          {/* PRD-defined fixed questions — tree with accordion for children */}
-          {ownFixedQuestions.map(q => (
+          {ownFixedQuestions.filter(matchesSvcView).map(q => (
             <QuestionRowFixed key={q.id} q={q} />
           ))}
-          {/* Admin-added own questions */}
-          {config.ownQuestions.map((q, i) => (
-            <div key={q.id} className={`flex items-center gap-3 px-4 py-3 border-t border-sb-n100 ${editIdx === i ? 'bg-sb-blue-50' : ''}`}>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-1.5">
-                  <p className="text-[13px] text-sb-n800">{q.label}</p>
-                  {q.showWhen && (
-                    <span className="text-[10px] font-mono text-sb-n400 bg-sb-n50 border border-sb-n100 rounded px-1.5 py-0.5">
-                      if {q.showWhen.parentId} = {q.showWhen.value}
-                    </span>
-                  )}
+          {config.ownQuestions.map((q, i) => {
+            if (!matchesSvcView(q)) return null
+            return (
+              <div key={q.id} className={`flex items-center gap-3 px-4 py-3 border-t border-sb-n100 ${editIdx === i ? 'bg-sb-blue-50' : ''}`}>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <p className="text-[13px] text-sb-n800">{q.label}</p>
+                    {q.showWhen?.parentId === '_svc' && (
+                      <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-sb-blue-100 text-sb-brand">
+                        {q.showWhen.value === 'payout' ? '송금' : '수금'}
+                      </span>
+                    )}
+                    {q.showWhen && q.showWhen.parentId !== '_svc' && (
+                      <span className="text-[10px] font-mono text-sb-n400 bg-sb-n50 border border-sb-n100 rounded px-1.5 py-0.5">
+                        if {q.showWhen.parentId} = {q.showWhen.value}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-[11px] font-mono text-sb-n400">{q.id}</p>
                 </div>
-                <p className="text-[11px] font-mono text-sb-n400">{q.id}</p>
+                <div className="flex items-center gap-1.5 flex-shrink-0">
+                  <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${q.isRequired ? 'bg-red-50 text-sb-negative' : 'bg-sb-n50 text-sb-n400'}`}>
+                    {q.isRequired ? '필수' : '선택'}
+                  </span>
+                  <span className="text-[10px] font-mono text-sb-n400 px-1.5 py-0.5 border border-sb-n100 rounded">{q.inputType}</span>
+                  <button
+                    onClick={() => setEditIdx(editIdx === i ? null : i)}
+                    className="flex items-center justify-center w-7 h-7 rounded-[6px] text-sb-n400 hover:text-sb-brand hover:bg-sb-blue-100 transition-colors"
+                  >
+                    <PencilSimple size={13} />
+                  </button>
+                  <button
+                    onClick={() => removeOwn(i)}
+                    className="flex items-center justify-center w-7 h-7 rounded-[6px] text-sb-n400 hover:text-sb-negative hover:bg-red-50 transition-colors"
+                  >
+                    <Trash size={13} />
+                  </button>
+                </div>
               </div>
-              <div className="flex items-center gap-1.5 flex-shrink-0">
-                <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${q.isRequired ? 'bg-red-50 text-sb-negative' : 'bg-sb-n50 text-sb-n400'}`}>
-                  {q.isRequired ? '필수' : '선택'}
-                </span>
-                <span className="text-[10px] font-mono text-sb-n400 px-1.5 py-0.5 border border-sb-n100 rounded">{q.inputType}</span>
-                <button
-                  onClick={() => setEditIdx(editIdx === i ? null : i)}
-                  className="flex items-center justify-center w-7 h-7 rounded-[6px] text-sb-n400 hover:text-sb-brand hover:bg-sb-blue-100 transition-colors"
-                >
-                  <PencilSimple size={13} />
-                </button>
-                <button
-                  onClick={() => removeOwn(i)}
-                  className="flex items-center justify-center w-7 h-7 rounded-[6px] text-sb-n400 hover:text-sb-negative hover:bg-red-50 transition-colors"
-                >
-                  <Trash size={13} />
-                </button>
-              </div>
-            </div>
-          ))}
+            )
+          })}
           <div className="px-4 pb-4">
             <AddOwnQuestionForm
-              key={editIdx ?? 'add'}
+              key={`${editIdx ?? 'add'}-${svcView}`}
               parentOptions={allOwnForParent}
+              commonQuestions={commonQuestions}
+              showSvcCondition={isFI}
+              defaultSvcCondition={isFI && svcView !== 'all' ? svcView : undefined}
               onAdd={addOwn}
               editTarget={editIdx !== null ? config.ownQuestions[editIdx] : undefined}
               onUpdate={updateOwn}

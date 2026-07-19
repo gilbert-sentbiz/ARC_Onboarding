@@ -108,6 +108,7 @@ export interface SegmentQuestionConfig {
   key: string                        // 'entity:ENTITY_CORP' | 'service:SVC_COL_KRW' etc.
   enabledCommonQuestionIds: string[]
   ownQuestions: QuestionRule[]
+  commonOptionFilters?: Record<string, string[]>  // questionId -> allowed option values for this segment
 }
 
 export interface RuleSet {

@@ -197,7 +197,10 @@ export default function InformationForm() {
   // ── CORP Screen 2 ─────────────────────────────────────────────────────────
   if (stage === 'corp_s2') {
     let qs = pickByIds(allQuestions, CORP_S2_IDS)
-    qs = applyOptionFilter(qs, 'qc_fund_source', CORP_FUND_SOURCE_ALLOWED)
+    const entityCfg = getRuleSet().segmentQuestionConfigs.find(c => c.key === `entity:${entityCode}`)
+    const filters = entityCfg?.commonOptionFilters ?? {}
+    for (const [qId, allowed] of Object.entries(filters)) qs = applyOptionFilter(qs, qId, allowed)
+    if (!filters['qc_fund_source']) qs = applyOptionFilter(qs, 'qc_fund_source', CORP_FUND_SOURCE_ALLOWED)
     return (
       <DynamicQuestionsSection
         title="실제 소유자 / 추가 정보"
