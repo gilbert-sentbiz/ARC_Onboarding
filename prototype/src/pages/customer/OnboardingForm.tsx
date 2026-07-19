@@ -420,7 +420,7 @@ export default function OnboardingForm() {
                 <OptionCard
                   icon={<HandCoins size={20} weight="fill" />}
                   label="수금"
-                  desc="해외에서 원화 또는 외화로 대금을 수금합니다"
+                  desc="원화 또는 외화로 대금을 수금합니다"
                   selected={data.services.includes('collection')}
                   onClick={() => toggleService('collection')}
                 />
