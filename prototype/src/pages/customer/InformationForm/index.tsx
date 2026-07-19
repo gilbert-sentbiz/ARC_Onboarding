@@ -5,21 +5,79 @@ import { getRuleSet } from '../../../store/ruleStore'
 import type { ServiceCode, EntityCode, QuestionRule } from '../../../types'
 import DynamicQuestionsSection from './DynamicQuestionsSection'
 
-type Stage = 'entity_questions' | 'vnd_questions'
+type Stage =
+  | 'corp_s1' | 'corp_s2'
+  | 'indiv_s1' | 'indiv_s2'
+  | 'fi_s1' | 'fi_s2' | 'fi_s3' | 'fi_s4'
+  | 'vnd_questions'
 
-function getSegmentQuestions(configKey: string): QuestionRule[] {
+// Question IDs per screen — order determines display order
+const CORP_S1_IDS = [
+  'qc_biz_reg_no', 'qc_biz_type', 'qc_biz_category',
+  'qe_corp_name_kr', 'qe_corp_name_en', 'qe_corp_phone', 'qe_corp_address',
+  'qe_corp_type', 'qe_corp_reg_no', 'qe_corp_nation', 'qe_corp_hq_addr',
+  'qe_corp_rep_type', 'qe_corp_rep_group', 'qe_corp_size', 'qe_corp_listed', 'qe_corp_founded_date',
+]
+const CORP_S2_IDS = [
+  'qe_corp_bo_exempt', 'qe_corp_bo_has_25', 'qe_corp_bo_count', 'qe_corp_bo_group',
+  'qe_corp_purpose', 'qc_virtual_asset', 'qc_fund_source', 'qs_krw_sector',
+]
+
+const INDIV_S1_IDS = [
+  'qc_biz_reg_no', 'qc_biz_type', 'qc_biz_category',
+  'qe_indiv_biz_name', 'qe_indiv_phone', 'qe_indiv_address', 'qe_indiv_residence',
+  'qe_indiv_rep_name_kr', 'qe_indiv_rep_name_en', 'qe_indiv_rep_dob', 'qe_indiv_rep_gender', 'qe_indiv_rep_nation',
+]
+const INDIV_S2_IDS = [
+  'qe_indiv_bo_same', 'qe_indiv_purpose', 'qc_virtual_asset', 'qc_fund_source', 'qs_krw_sector',
+]
+
+const FI_S1_IDS = [
+  'qc_virtual_asset',
+  'qe_fi_legal_name', 'qe_fi_legal_form', 'qe_fi_founded_date', 'qe_fi_incorp_country',
+  'qe_fi_biz_reg_no', 'qe_fi_website', 'qe_fi_reg_address', 'qe_fi_biz_category',
+  'qe_fi_rep_name', 'qe_fi_rep_dob',
+]
+const FI_S2_BASE_IDS = ['qe_fi_license_info', 'qe_fi_license_detail', 'qe_fi_auditor']
+const FI_S2_PAYOUT_IDS = ['qe_fi_intermediary']
+const FI_S3_IDS = ['qe_fi_parent_name', 'qe_fi_parent_address', 'qe_fi_ubo_group', 'qe_fi_fund_source']
+const FI_S4_IDS = ['qe_fi_aml_policy', 'qe_fi_aml_sanction']
+
+// Corporate fund source: exclude 근로·연금소득, 상속·증여, 일시 재산양도
+const CORP_FUND_SOURCE_ALLOWED = [
+  'business_income', 'real_estate_rent', 'real_estate_sale', 'financial_income', 'other',
+]
+
+function buildAllQuestions(entityCode: EntityCode, serviceCodes: ServiceCode[]): QuestionRule[] {
   const rs = getRuleSet()
-  const config = rs.segmentQuestionConfigs.find(c => c.key === configKey)
-  if (!config) return []
-  const enabled = rs.questionPool.filter(
-    q => q.classification === 'common' && config.enabledCommonQuestionIds.includes(q.id)
+  const common = rs.questionPool.filter(q => q.classification === 'common')
+  const entityOwn = rs.questionPool.filter(
+    q => q.classification === 'entity-own' && (q.scope === entityCode || q.scopeEntity === entityCode)
   )
-  return [...enabled, ...config.ownQuestions]
+  const serviceQs: QuestionRule[] = []
+  for (const svc of serviceCodes) {
+    const cfg = rs.segmentQuestionConfigs.find(c => c.key === `service:${svc}`)
+    if (cfg) serviceQs.push(...cfg.ownQuestions)
+  }
+  const seen = new Set<string>()
+  const all: QuestionRule[] = []
+  for (const q of [...common, ...entityOwn, ...serviceQs]) {
+    if (!seen.has(q.id)) { seen.add(q.id); all.push(q) }
+  }
+  return all
 }
 
-function getEntityFixedQuestions(entityCode: EntityCode): QuestionRule[] {
-  const rs = getRuleSet()
-  return rs.questionPool.filter(q => q.classification === 'entity-own' && (q.scope === entityCode || q.scopeEntity === entityCode))
+function pickByIds(questions: QuestionRule[], ids: string[]): QuestionRule[] {
+  const map = new Map(questions.map(q => [q.id, q]))
+  return ids.flatMap(id => { const q = map.get(id); return q ? [q] : [] })
+}
+
+function applyOptionFilter(questions: QuestionRule[], targetId: string, allowedValues: string[]): QuestionRule[] {
+  return questions.map(q =>
+    q.id === targetId && q.options
+      ? { ...q, options: q.options.filter(opt => allowedValues.includes(opt.value)) }
+      : q
+  )
 }
 
 export default function InformationForm() {
@@ -28,46 +86,28 @@ export default function InformationForm() {
   const updateCase = useCaseStore((s) => s.updateCase)
   const c = useCaseStore((s) => (id ? s.cases[id] : null))
 
-  const [stage, setStage] = useState<Stage>('entity_questions')
+  const raw = (c?.segmentInfo as unknown as Record<string, unknown>) ?? {}
+  const entitySegmentRaw = (raw.entity ?? raw.entitySegment ?? raw.customerType) as string | undefined
+  const entityCode = entitySegmentRaw as EntityCode | undefined
+  const serviceCodes = Array.isArray(raw.services) ? (raw.services as ServiceCode[]) : []
+  const svcSet = new Set(serviceCodes as string[])
+  const needsVND = svcSet.has('SVC_COL_VND') || (Array.isArray(raw.serviceSegments) && (raw.serviceSegments as string[]).includes('VND Collection'))
+  const hasPayout = svcSet.has('SVC_PAYOUT')
+  const isKR = raw.foundingCountry === 'KR'
+
   const [accumulated, setAccumulated] = useState<Record<string, unknown>>(() => {
     if (c?.secondIntake?.status === 'draft') {
       return c.secondIntake.data as Record<string, unknown>
     }
-    // Autofill from 1st-intake using question IDs
-    const fi = (c?.firstIntake?.data ?? {}) as Record<string, unknown>
-    const rawSeg = (c?.segmentInfo as unknown as Record<string, unknown>) ?? {}
-    const seg = (rawSeg.entity ?? rawSeg.entitySegment ?? rawSeg.customerType) as string | undefined
-    const fiServiceCodes = Array.isArray(rawSeg.services) ? (rawSeg.services as string[]) : []
-    const fiServiceSegs = Array.isArray(rawSeg.serviceSegments) ? (rawSeg.serviceSegments as string[]) : []
+    return {}
+  })
 
-    const entityInit: Record<string, string> = {}
-    if (seg === 'ENTITY_CORP' || seg === 'SentBiz Corporate') {
-      if (fi.companyName) entityInit['qe_corp_name_kr'] = fi.companyName as string
-      if (fi.phone) entityInit['qe_corp_phone'] = fi.phone as string
-      if (fi.foundingCountry) entityInit['qe_corp_nation'] = fi.foundingCountry as string
-    } else if (seg === 'ENTITY_INDIV' || seg === 'SentBiz Individual') {
-      if (fi.companyName) entityInit['qe_indiv_biz_name'] = fi.companyName as string
-      if (fi.phone) entityInit['qe_indiv_phone'] = fi.phone as string
-    } else if (seg === 'ENTITY_FI' || seg === 'FI') {
-      if (fi.companyName) entityInit['qe_fi_legal_name'] = fi.companyName as string
-      if (fi.foundingCountry) entityInit['qe_fi_incorp_country'] = fi.foundingCountry as string
-    }
-
-    const result: Record<string, unknown> = {}
-    if (Object.keys(entityInit).length > 0) result.entity = entityInit
-
-    const fiSvcSet = new Set(fiServiceCodes as string[])
-    if (fiSvcSet.has('SVC_COL_VND') || fiSvcSet.has('SVC_VND') || fiServiceSegs.includes('VND Collection')) {
-      const vndInit: Record<string, string> = {}
-      if (fi.companyName) vndInit['qs_vnd_entity_name'] = fi.companyName as string
-      if (fi.foundingCountry) vndInit['qs_vnd_incorp_country'] = fi.foundingCountry as string
-      if (fi.contactName) vndInit['qs_vnd_contact_name'] = fi.contactName as string
-      if (fi.phone) vndInit['qs_vnd_contact_phone'] = fi.phone as string
-      if (fi.email) vndInit['qs_vnd_contact_email'] = fi.email as string
-      if (fi.monthlyVolume) vndInit['qs_vnd_monthly_volume'] = fi.monthlyVolume as string
-      if (Object.keys(vndInit).length > 0) result.vnd = vndInit
-    }
-    return result
+  const [stage, setStage] = useState<Stage>(() => {
+    const draftStage = (c?.secondIntake?.data as Record<string, unknown>)?._stage as Stage | undefined
+    if (draftStage) return draftStage
+    if (entityCode === 'ENTITY_CORP') return 'corp_s1'
+    if (entityCode === 'ENTITY_INDIV') return 'indiv_s1'
+    return 'fi_s1'
   })
 
   if (!c) {
@@ -78,100 +118,218 @@ export default function InformationForm() {
     )
   }
 
-  const raw = c.segmentInfo as unknown as Record<string, unknown>
-  const entitySegment = (raw.entity ?? raw.entitySegment ?? raw.customerType) as string | undefined
-  const serviceCodes = Array.isArray(raw.services) ? raw.services as ServiceCode[] : []
-  const serviceSegsLegacy = Array.isArray(raw.serviceSegments) ? raw.serviceSegments as string[] : []
-  const svcSet = new Set(serviceCodes as string[])
-  const needsKRW = svcSet.has('SVC_COL_KRW') || svcSet.has('SVC_KRW') || serviceSegsLegacy.includes('KRW Collection')
-  const needsVND = svcSet.has('SVC_COL_VND') || svcSet.has('SVC_VND') || serviceSegsLegacy.includes('VND Collection')
-
-  const entityCode = entitySegment as EntityCode | undefined
-
   if (!entityCode) {
     navigate('/customer/onboarding', { replace: true })
     return null
   }
 
-  const entityCommonQs = getSegmentQuestions(`entity:${entityCode}`)
-  const entityFixedQs  = getEntityFixedQuestions(entityCode)
-  const krwQuestions   = needsKRW ? getSegmentQuestions('service:SVC_COL_KRW') : []
-  const entityQuestions = [...entityCommonQs, ...entityFixedQs, ...krwQuestions]
+  const allQuestions = buildAllQuestions(entityCode, serviceCodes)
 
-  const vndQuestions = needsVND ? getSegmentQuestions('service:SVC_COL_VND') : []
-
-  function saveDraft(data: Record<string, unknown>) {
+  function saveDraft(stageKey: string, data: Record<string, unknown>) {
     if (!id) return
-    updateCase(id, { secondIntake: { status: 'draft', data, savedAt: Date.now() } })
+    const next = { ...accumulated, [stageKey]: data, _stage: stage }
+    updateCase(id, { secondIntake: { status: 'draft', data: next, savedAt: Date.now() } })
   }
 
-  function saveAndNavigate(data: Record<string, unknown>) {
-    if (!id) return
-    updateCase(id, { secondIntake: { status: 'draft', data, savedAt: Date.now() } })
-    navigate(`/customer/case/${id}/review/second`)
-  }
-
-  function afterEntity(entityData: Record<string, unknown>, allData: Record<string, unknown>) {
-    let next = allData
-    if (needsKRW) {
-      const krwIds = new Set(krwQuestions.map(q => q.id))
-      const krwData: Record<string, unknown> = {}
-      for (const [k, v] of Object.entries(entityData)) {
-        if (krwIds.has(k)) krwData[k] = v
-      }
-      const sector = krwData['qs_krw_sector'] as string | undefined
-      next = { ...allData, krwCollection: { sector, ...krwData } }
-      setAccumulated(next)
+  function mergeEntityScreens(next: Record<string, unknown>): Record<string, unknown> {
+    const entityData = {
+      ...(next.corp_s1 as Record<string, unknown> ?? {}),
+      ...(next.corp_s2 as Record<string, unknown> ?? {}),
+      ...(next.indiv_s1 as Record<string, unknown> ?? {}),
+      ...(next.indiv_s2 as Record<string, unknown> ?? {}),
+      ...(next.fi_s1 as Record<string, unknown> ?? {}),
+      ...(next.fi_s2 as Record<string, unknown> ?? {}),
+      ...(next.fi_s3 as Record<string, unknown> ?? {}),
+      ...(next.fi_s4 as Record<string, unknown> ?? {}),
     }
-    if (needsVND) { setStage('vnd_questions'); window.scrollTo({ top: 0 }) }
-    else saveAndNavigate(next)
+    return { ...next, entity: entityData }
   }
 
-  const entityTitle: Record<string, string> = {
-    ENTITY_CORP: '법인 정보 입력',
-    'SentBiz Corporate': '법인 정보 입력',
-    ENTITY_INDIV: '개인사업자 정보 입력',
-    'SentBiz Individual': '개인사업자 정보 입력',
-    ENTITY_FI: '금융기관 정보 입력',
-    FI: '금융기관 정보 입력',
+  function isLastEntityStage(stageKey: string): boolean {
+    return (
+      (entityCode === 'ENTITY_CORP' && stageKey === 'corp_s2') ||
+      (entityCode === 'ENTITY_INDIV' && stageKey === 'indiv_s2') ||
+      (entityCode === 'ENTITY_FI' && stageKey === 'fi_s4')
+    )
   }
 
-  if (stage === 'entity_questions') {
-    const entityInitial = {
-      ...((accumulated.entity as Record<string, unknown>) ?? {}),
-      ...((accumulated.krwCollection as Record<string, unknown>) ?? {}),
+  function advance(stageKey: string, data: Record<string, unknown>, nextStage: Stage | null) {
+    let next: Record<string, unknown> = { ...accumulated, [stageKey]: data }
+    if (isLastEntityStage(stageKey)) next = mergeEntityScreens(next)
+    setAccumulated(next)
+    if (nextStage) {
+      setStage(nextStage)
+      window.scrollTo({ top: 0 })
+    } else {
+      if (!id) return
+      updateCase(id, { secondIntake: { status: 'draft', data: next, savedAt: Date.now() } })
+      navigate(`/customer/case/${id}/review/second`)
     }
+  }
+
+  function goBack(prevStage: Stage | null) {
+    if (prevStage) { setStage(prevStage); window.scrollTo({ top: 0 }) }
+    else navigate(-1)
+  }
+
+  function lastEntityStage(): Stage {
+    if (entityCode === 'ENTITY_CORP') return 'corp_s2'
+    if (entityCode === 'ENTITY_INDIV') return 'indiv_s2'
+    return 'fi_s4'
+  }
+
+  // ── CORP Screen 1 ─────────────────────────────────────────────────────────
+  if (stage === 'corp_s1') {
     return (
       <DynamicQuestionsSection
-        title={entityTitle[entitySegment ?? ''] ?? '정보 입력'}
-        questions={entityQuestions}
-        initialData={entityInitial}
-        isKR={raw.foundingCountry === 'KR'}
-        onComplete={(d) => {
-          const next = { ...accumulated, entity: d }
-          afterEntity(d, next)
-        }}
-        onBack={() => navigate(-1)}
-        onDraftSave={(d) => saveDraft({ ...accumulated, entity: d })}
+        title="기본 정보 / 대표자"
+        questions={pickByIds(allQuestions, CORP_S1_IDS)}
+        initialData={(accumulated.corp_s1 as Record<string, unknown>) ?? {}}
+        isKR={isKR}
+        screenInfo={{ current: 1, total: 2, label: '법인 정보 입력' }}
+        onComplete={(d) => advance('corp_s1', d, 'corp_s2')}
+        onBack={() => goBack(null)}
+        onDraftSave={(d) => saveDraft('corp_s1', d)}
       />
     )
   }
 
-  if (stage === 'vnd_questions')
+  // ── CORP Screen 2 ─────────────────────────────────────────────────────────
+  if (stage === 'corp_s2') {
+    let qs = pickByIds(allQuestions, CORP_S2_IDS)
+    qs = applyOptionFilter(qs, 'qc_fund_source', CORP_FUND_SOURCE_ALLOWED)
+    return (
+      <DynamicQuestionsSection
+        title="실제 소유자 / 추가 정보"
+        questions={qs}
+        initialData={(accumulated.corp_s2 as Record<string, unknown>) ?? {}}
+        isKR={isKR}
+        screenInfo={{ current: 2, total: 2, label: '법인 정보 입력' }}
+        onComplete={(d) => advance('corp_s2', d, needsVND ? 'vnd_questions' : null)}
+        onBack={() => goBack('corp_s1')}
+        onDraftSave={(d) => saveDraft('corp_s2', d)}
+      />
+    )
+  }
+
+  // ── INDIV Screen 1 ────────────────────────────────────────────────────────
+  if (stage === 'indiv_s1') {
+    return (
+      <DynamicQuestionsSection
+        title="기본 정보 / 대표자"
+        questions={pickByIds(allQuestions, INDIV_S1_IDS)}
+        initialData={(accumulated.indiv_s1 as Record<string, unknown>) ?? {}}
+        isKR={isKR}
+        screenInfo={{ current: 1, total: 2, label: '개인사업자 정보 입력' }}
+        onComplete={(d) => advance('indiv_s1', d, 'indiv_s2')}
+        onBack={() => goBack(null)}
+        onDraftSave={(d) => saveDraft('indiv_s1', d)}
+      />
+    )
+  }
+
+  // ── INDIV Screen 2 ────────────────────────────────────────────────────────
+  if (stage === 'indiv_s2') {
+    return (
+      <DynamicQuestionsSection
+        title="실제 소유자 / 추가 정보"
+        questions={pickByIds(allQuestions, INDIV_S2_IDS)}
+        initialData={(accumulated.indiv_s2 as Record<string, unknown>) ?? {}}
+        isKR={isKR}
+        screenInfo={{ current: 2, total: 2, label: '개인사업자 정보 입력' }}
+        onComplete={(d) => advance('indiv_s2', d, needsVND ? 'vnd_questions' : null)}
+        onBack={() => goBack('indiv_s1')}
+        onDraftSave={(d) => saveDraft('indiv_s2', d)}
+      />
+    )
+  }
+
+  // ── FI Screen 1 ───────────────────────────────────────────────────────────
+  if (stage === 'fi_s1') {
+    return (
+      <DynamicQuestionsSection
+        title="기본 정보 / 대표자"
+        questions={pickByIds(allQuestions, FI_S1_IDS)}
+        initialData={(accumulated.fi_s1 as Record<string, unknown>) ?? {}}
+        isKR={isKR}
+        screenInfo={{ current: 1, total: 4, label: '금융기관 정보 입력' }}
+        onComplete={(d) => advance('fi_s1', d, 'fi_s2')}
+        onBack={() => goBack(null)}
+        onDraftSave={(d) => saveDraft('fi_s1', d)}
+      />
+    )
+  }
+
+  // ── FI Screen 2 (인허가 + 서비스) ─────────────────────────────────────────
+  if (stage === 'fi_s2') {
+    const ids = [...FI_S2_BASE_IDS, ...(hasPayout ? FI_S2_PAYOUT_IDS : [])]
+    return (
+      <DynamicQuestionsSection
+        title="인허가 / 서비스 정보"
+        questions={pickByIds(allQuestions, ids)}
+        initialData={(accumulated.fi_s2 as Record<string, unknown>) ?? {}}
+        isKR={isKR}
+        screenInfo={{ current: 2, total: 4, label: '금융기관 정보 입력' }}
+        onComplete={(d) => advance('fi_s2', d, 'fi_s3')}
+        onBack={() => goBack('fi_s1')}
+        onDraftSave={(d) => saveDraft('fi_s2', d)}
+      />
+    )
+  }
+
+  // ── FI Screen 3 (소유 구조) ────────────────────────────────────────────────
+  if (stage === 'fi_s3') {
+    return (
+      <DynamicQuestionsSection
+        title="소유 구조 / 자금 원천"
+        questions={pickByIds(allQuestions, FI_S3_IDS)}
+        initialData={(accumulated.fi_s3 as Record<string, unknown>) ?? {}}
+        isKR={isKR}
+        screenInfo={{ current: 3, total: 4, label: '금융기관 정보 입력' }}
+        onComplete={(d) => advance('fi_s3', d, 'fi_s4')}
+        onBack={() => goBack('fi_s2')}
+        onDraftSave={(d) => saveDraft('fi_s3', d)}
+      />
+    )
+  }
+
+  // ── FI Screen 4 (법적/AML) ────────────────────────────────────────────────
+  if (stage === 'fi_s4') {
+    return (
+      <DynamicQuestionsSection
+        title="법적 / AML 정보"
+        questions={pickByIds(allQuestions, FI_S4_IDS)}
+        initialData={(accumulated.fi_s4 as Record<string, unknown>) ?? {}}
+        isKR={isKR}
+        screenInfo={{ current: 4, total: 4, label: '금융기관 정보 입력' }}
+        onComplete={(d) => advance('fi_s4', d, needsVND ? 'vnd_questions' : null)}
+        onBack={() => goBack('fi_s3')}
+        onDraftSave={(d) => saveDraft('fi_s4', d)}
+      />
+    )
+  }
+
+  // ── VND Collection ─────────────────────────────────────────────────────────
+  if (stage === 'vnd_questions') {
+    const vndCfg = getRuleSet().segmentQuestionConfigs.find(c => c.key === 'service:SVC_COL_VND')
+    const vndQs = vndCfg?.ownQuestions ?? []
     return (
       <DynamicQuestionsSection
         title="VND Collection 정보"
-        questions={vndQuestions}
+        questions={vndQs}
         initialData={(accumulated.vnd as Record<string, unknown>) ?? {}}
         onComplete={(d) => {
-          const next = { ...accumulated, vnd: d }
+          const next = { ...accumulated, vnd: d, vndCollection: d }
           setAccumulated(next)
-          saveAndNavigate(next)
+          if (!id) return
+          updateCase(id, { secondIntake: { status: 'draft', data: next, savedAt: Date.now() } })
+          navigate(`/customer/case/${id}/review/second`)
         }}
-        onBack={() => { setStage('entity_questions'); window.scrollTo({ top: 0 }) }}
-        onDraftSave={(d) => saveDraft({ ...accumulated, vnd: d })}
+        onBack={() => goBack(lastEntityStage())}
+        onDraftSave={(d) => saveDraft('vnd', d)}
       />
     )
+  }
 
   return null
 }

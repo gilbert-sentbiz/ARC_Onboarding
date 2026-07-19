@@ -23,6 +23,7 @@ interface Props {
   questions: QuestionRule[]
   initialData?: Record<string, unknown>
   isKR?: boolean
+  screenInfo?: { current: number; total: number; label: string }
   onComplete: (data: Record<string, unknown>) => void
   onBack: () => void
   onDraftSave?: (data: Record<string, unknown>) => void
@@ -104,7 +105,7 @@ function QuestionField({
   )
 }
 
-export default function DynamicQuestionsSection({ title, questions, initialData, isKR, onComplete, onBack, onDraftSave }: Props) {
+export default function DynamicQuestionsSection({ title, questions, initialData, isKR, screenInfo, onComplete, onBack, onDraftSave }: Props) {
   const [values, setValues] = useState<Record<string, string>>(() => {
     const flat: Record<string, string> = {}
     function collect(qs: QuestionRule[]) {
@@ -281,6 +282,20 @@ export default function DynamicQuestionsSection({ title, questions, initialData,
   return (
     <div className="min-h-screen bg-sb-n50 flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-[560px] bg-white rounded-[16px] border border-sb-n100 shadow-sm p-8">
+        {screenInfo && (
+          <div className="mb-5">
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-[12px] text-sb-n500">{screenInfo.label}</span>
+              <span className="text-[12px] text-sb-n500">{screenInfo.current} / {screenInfo.total}</span>
+            </div>
+            <div className="w-full h-1.5 bg-sb-n100 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-sb-brand rounded-full transition-all"
+                style={{ width: `${Math.round((screenInfo.current / screenInfo.total) * 100)}%` }}
+              />
+            </div>
+          </div>
+        )}
         <h2 className="text-[20px] font-semibold text-sb-n900 mb-6">{title}</h2>
         <div className="flex flex-col gap-6">
           {questions.map(q => renderQuestion(q))}
