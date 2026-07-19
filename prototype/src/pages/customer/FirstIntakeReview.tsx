@@ -2,16 +2,11 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { ArrowLeft, ArrowRight } from '@phosphor-icons/react'
 import { useCaseStore } from '../../store/caseStore'
 import Button from '../../components/ui/Button'
+import { getCountryName } from '../../utils/countryNames'
 
 const SERVICE_LABELS: Record<string, string> = {
   remittance: '해외 송금',
   collection: '수금',
-}
-
-const COLLECTION_LABELS: Record<string, string> = {
-  KRW: '한국 (KRW)',
-  VND: '베트남 (VND)',
-  OTHER: '기타',
 }
 
 const BUSINESS_TYPE_LABELS: Record<string, string> = {
@@ -131,15 +126,22 @@ export default function FirstIntakeReview() {
               value={collectionCountries
                 .map((cc) => {
                   if (cc === 'OTHER') return str('collectionOtherCountry') || '기타'
-                  return COLLECTION_LABELS[cc] ?? cc
+                  return getCountryName(cc)
                 })
                 .join(', ')}
             />
           )}
           {services.includes('remittance') && (
             <div className="grid grid-cols-2 gap-4">
-              <Field label="송금 출발 국가" value={str('remittanceFrom')} />
-              <Field label="송금 도착 국가" value={str('remittanceTo')} />
+              <Field label="송금 출발 국가" value={getCountryName(str('remittanceFrom'))} />
+              <Field
+                label="송금 도착 국가"
+                value={str('remittanceTo')
+                  .split(', ')
+                  .filter(Boolean)
+                  .map(getCountryName)
+                  .join(', ')}
+              />
             </div>
           )}
         </div>
@@ -154,7 +156,7 @@ export default function FirstIntakeReview() {
               label="사업자 유형"
               value={BUSINESS_TYPE_LABELS[str('businessType')] ?? str('businessType')}
             />
-            <Field label="설립 국가" value={str('foundingCountry')} />
+            <Field label="설립 국가" value={getCountryName(str('foundingCountry'))} />
           </div>
         </div>
 
