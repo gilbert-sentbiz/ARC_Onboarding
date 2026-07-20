@@ -38,7 +38,6 @@ function CommonQuestionRow({ q, enabled, optionFilter, onToggle, onFilterChange 
   onToggle: () => void
   onFilterChange: (values: string[] | undefined) => void
 }) {
-  const [expanded, setExpanded] = useState(false)
   const hasOptions = (q.inputType === 'select' || q.inputType === 'radio') && !!q.options?.length
 
   return (
@@ -56,15 +55,6 @@ function CommonQuestionRow({ q, enabled, optionFilter, onToggle, onFilterChange 
             {q.isRequired ? '필수' : '선택'}
           </span>
           <span className="text-[10px] font-mono text-sb-n400 px-1.5 py-0.5 border border-sb-n100 rounded">{q.inputType}</span>
-          {hasOptions && enabled && (
-            <button
-              onClick={() => setExpanded(v => !v)}
-              className="flex items-center gap-0.5 text-[10px] text-sb-n400 hover:text-sb-brand"
-            >
-              옵션필터
-              {expanded ? <CaretDown size={10} /> : <CaretRight size={10} />}
-            </button>
-          )}
           {hasOptions && enabled && optionFilter && (
             <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-sb-blue-100 text-sb-brand">
               {optionFilter.length}/{q.options!.length}
@@ -72,9 +62,9 @@ function CommonQuestionRow({ q, enabled, optionFilter, onToggle, onFilterChange 
           )}
         </div>
       </div>
-      {hasOptions && enabled && expanded && (
+      {hasOptions && enabled && (
         <div className="px-4 pb-3 bg-sb-n50">
-          <p className="text-[11px] text-sb-n400 mb-2">이 세그먼트에서 노출할 옵션 선택. 전체 선택 시 필터 없음.</p>
+          <p className="text-[11px] text-sb-n500 font-medium mb-2">노출 옵션 설정 <span className="font-normal text-sb-n400">(전체 선택 시 필터 없음)</span></p>
           <div className="flex flex-col gap-1.5">
             {q.options!.map(opt => {
               const allVals = q.options!.map(o => o.value)

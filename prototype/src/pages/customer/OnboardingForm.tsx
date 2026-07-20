@@ -391,6 +391,12 @@ export default function OnboardingForm() {
                   placeholder="+82-10-0000-0000"
                   value={data.phone}
                   onChange={(e) => set('phone', formatPhone(e.target.value))}
+                  onBlur={() => {
+                    if (data.phone) {
+                      const e = validatePhone(data.phone)
+                      if (e) setErrors(prev => ({ ...prev, phone: e }))
+                    }
+                  }}
                   error={errors.phone}
                 />
                 <Input
