@@ -6,6 +6,7 @@ import { confirmSecondIntake } from '../../services/caseService'
 import { getRuleSet } from '../../store/ruleStore'
 import type { QuestionRule } from '../../types'
 import Button from '../../components/ui/Button'
+import { getCountryName } from '../../utils/countryNames'
 
 function buildLabelMap(): Record<string, string> {
   const rs = getRuleSet()
@@ -28,11 +29,6 @@ const SERVICE_LABELS: Record<string, string> = {
   collection: '수금',
 }
 
-const COLLECTION_LABELS: Record<string, string> = {
-  KRW: '한국 (KRW)',
-  VND: '베트남 (VND)',
-  OTHER: '기타',
-}
 
 const BUSINESS_TYPE_LABELS: Record<string, string> = {
   corporation: '법인 사업자',
@@ -179,14 +175,14 @@ export default function SecondIntakeReview() {
                 <Field
                   label="수금 국가"
                   value={collectionCountries
-                    .map((cc) => (cc === 'OTHER' ? str1('collectionOtherCountry') || '기타' : COLLECTION_LABELS[cc] ?? cc))
+                    .map((cc) => (cc === 'OTHER' ? str1('collectionOtherCountry') || '기타' : getCountryName(cc)))
                     .join(', ')}
                 />
               )}
               {services.includes('remittance') && (
                 <div className="grid grid-cols-2 gap-4">
-                  <Field label="송금 출발 국가" value={str1('remittanceFrom')} />
-                  <Field label="송금 도착 국가" value={str1('remittanceTo')} />
+                  <Field label="송금 출발 국가" value={getCountryName(str1('remittanceFrom'))} />
+                  <Field label="송금 도착 국가" value={str1('remittanceTo').split(', ').map(getCountryName).join(', ')} />
                 </div>
               )}
             </div>
@@ -200,7 +196,7 @@ export default function SecondIntakeReview() {
                   label="사업자 유형"
                   value={BUSINESS_TYPE_LABELS[str1('businessType')] ?? str1('businessType')}
                 />
-                <Field label="설립 국가" value={str1('foundingCountry')} />
+                <Field label="설립 국가" value={getCountryName(str1('foundingCountry'))} />
                 <Field
                   label="예상 월간 거래 규모"
                   value={

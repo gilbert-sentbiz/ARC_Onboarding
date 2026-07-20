@@ -147,7 +147,9 @@ function OptionCard({
       onClick={disabled ? undefined : onClick}
       disabled={disabled}
       className={`flex items-center gap-4 p-4 rounded-[10px] border text-left transition-all duration-[120ms] ${
-        disabled
+        disabled && selected
+          ? 'bg-sb-blue-100 border-sb-brand cursor-not-allowed opacity-80'
+          : disabled
           ? 'bg-sb-n50 border-sb-n100 cursor-not-allowed opacity-60'
           : selected
           ? 'bg-sb-blue-100 border-sb-brand'
@@ -155,12 +157,12 @@ function OptionCard({
       }`}
     >
       <div className={`flex-shrink-0 w-10 h-10 rounded-[8px] flex items-center justify-center transition-colors duration-[120ms] ${
-        disabled ? 'bg-sb-n100 text-sb-n400' : selected ? 'bg-sb-brand text-white' : 'bg-sb-n100 text-sb-n500'
+        disabled && selected ? 'bg-sb-brand text-white' : disabled ? 'bg-sb-n100 text-sb-n400' : selected ? 'bg-sb-brand text-white' : 'bg-sb-n100 text-sb-n500'
       }`}>
         {icon}
       </div>
       <div className="flex flex-col gap-0.5">
-        <p className={`text-[14px] font-semibold leading-[20px] ${disabled ? 'text-sb-n400' : selected ? 'text-sb-brand' : 'text-sb-n800'}`}>{label}</p>
+        <p className={`text-[14px] font-semibold leading-[20px] ${disabled && selected ? 'text-sb-brand' : disabled ? 'text-sb-n400' : selected ? 'text-sb-brand' : 'text-sb-n800'}`}>{label}</p>
         <p className="text-[12px] leading-[18px] text-sb-n500">{desc}</p>
       </div>
     </button>
