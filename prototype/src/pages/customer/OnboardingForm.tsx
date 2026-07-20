@@ -145,12 +145,12 @@ function OptionCard({
     <button
       type="button"
       onClick={disabled ? undefined : onClick}
-      disabled={disabled}
+      aria-disabled={disabled || undefined}
       className={`flex items-center gap-4 p-4 rounded-[10px] border text-left transition-all duration-[120ms] ${
         disabled && selected
-          ? 'bg-sb-blue-100 border-sb-brand cursor-not-allowed opacity-80'
+          ? 'bg-sb-blue-100 border-sb-brand cursor-not-allowed opacity-80 pointer-events-none'
           : disabled
-          ? 'bg-sb-n50 border-sb-n100 cursor-not-allowed opacity-60'
+          ? 'bg-sb-n50 border-sb-n100 cursor-not-allowed opacity-60 pointer-events-none'
           : selected
           ? 'bg-sb-blue-100 border-sb-brand'
           : 'bg-white border-sb-n200 hover:border-sb-n400'
