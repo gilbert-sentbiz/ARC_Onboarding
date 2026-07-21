@@ -759,6 +759,27 @@ export const useRuleStore = create<RuleStoreState>()(
   )
 )
 
+// Merge stored segmentDocConfigs with INITIAL_RULESET:
+// - Missing segment keys → filled from initial
+// - Existing key but missing commonOverrides → filled from initial
+// Handles partial localStorage saved before PI-81 hotfix (pre-hotfix saves lacked commonOverrides)
+function mergeSegDocConfigs(
+  stored: import('../types').DocSegmentConfig[] | undefined,
+  initial: import('../types').DocSegmentConfig[]
+): import('../types').DocSegmentConfig[] {
+  if (!stored?.length) return initial
+  const initialByKey: Record<string, import('../types').DocSegmentConfig> = Object.fromEntries(initial.map(c => [c.key, c]))
+  const storedKeys = new Set(stored.map(c => c.key))
+  const merged: import('../types').DocSegmentConfig[] = stored.map(c => ({
+    ...c,
+    commonOverrides: c.commonOverrides ?? initialByKey[c.key]?.commonOverrides,
+  }))
+  for (const c of initial) {
+    if (!storedKeys.has(c.key)) merged.push(c)
+  }
+  return merged
+}
+
 export function getRuleSet(): RuleSet {
   const rs = useRuleStore.getState().currentRuleSet
   // Detect new-format entity rules (split fi_overseas rows); fall back if old format
@@ -780,6 +801,6 @@ export function getRuleSet(): RuleSet {
     documentRules: hasCanonicalDocTypes ? rs.documentRules : INITIAL_RULESET.documentRules,
     firstIntakeQuestions: rs.firstIntakeQuestions?.length ? rs.firstIntakeQuestions : INITIAL_RULESET.firstIntakeQuestions,
     docLibrary: rs.docLibrary?.length ? rs.docLibrary : INITIAL_RULESET.docLibrary,
-    segmentDocConfigs: rs.segmentDocConfigs?.length ? rs.segmentDocConfigs : INITIAL_RULESET.segmentDocConfigs,
+    segmentDocConfigs: mergeSegDocConfigs(rs.segmentDocConfigs, INITIAL_RULESET.segmentDocConfigs!),
   }
 }
