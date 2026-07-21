@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { SignOut, TreeStructure, Plus, Trash, CaretDown, CaretRight, PencilSimple, ListBullets } from '@phosphor-icons/react'
+import { SignOut, Plus, Trash, CaretDown, CaretRight, PencilSimple } from '@phosphor-icons/react'
 import { useSessionStore } from '../../store/sessionStore'
 import { useRuleStore, getRuleSet } from '../../store/ruleStore'
 import type { EntityCode, ServiceCode, SectorCode, ServiceClassificationRule, DocTemplateRule, QuestionRule, SegmentQuestionConfig, QuestionInputType, EntityClassificationRule, EntityClassificationCondition, FirstIntakeQuestion } from '../../types'
@@ -43,6 +43,27 @@ function nextVersion(current: string): string {
   return `v${m[1]}.${m[2]}.${parseInt(m[3]) + 1}`
 }
 
+function ToggleSwitch({ checked, onChange }: { checked: boolean; onChange: () => void }) {
+  return (
+    <label className="relative inline-flex items-center cursor-pointer flex-shrink-0">
+      <input type="checkbox" checked={checked} onChange={onChange} className="peer sr-only" />
+      <div className="w-8 h-[18px] bg-sb-n300 rounded-full peer-checked:bg-sb-brand transition-colors duration-150" />
+      <div className="absolute left-[3px] w-3 h-3 bg-white rounded-full shadow-sm peer-checked:translate-x-[14px] transition-transform duration-150" />
+    </label>
+  )
+}
+
+function ScreenDivider({ n }: { n: number }) {
+  return (
+    <div className="flex items-center gap-2 px-4 py-2 bg-white">
+      <span className="w-[3px] h-4 rounded-full bg-sb-brand flex-shrink-0" />
+      <span className="text-[11px] font-semibold text-sb-n700 whitespace-nowrap">고객 화면 {n}</span>
+      <span className="text-[11px] text-sb-n400 whitespace-nowrap">— 여기서부터 새 입력 화면</span>
+      <div className="flex-1 border-t border-dashed border-sb-n200" />
+    </div>
+  )
+}
+
 // ── Questions editor ──────────────────────────────────────────────────────────
 
 const INPUT_TYPE_OPTIONS: { value: QuestionInputType; label: string }[] = [
@@ -53,7 +74,7 @@ const INPUT_TYPE_OPTIONS: { value: QuestionInputType; label: string }[] = [
   { value: 'number',   label: 'number' },
 ]
 
-function CommonQuestionRow({ q, enabled, optionFilter, allConfigs, onToggle, onFilterChange }: {
+function CommonQuestionRow({ q, enabled, optionFilter, onToggle, onFilterChange }: {
   q: QuestionRule
   enabled: boolean
   optionFilter: string[] | undefined
@@ -64,93 +85,106 @@ function CommonQuestionRow({ q, enabled, optionFilter, allConfigs, onToggle, onF
   const hasOptions = (q.inputType === 'select' || q.inputType === 'radio') && !!q.options?.length
   const enabledCount = optionFilter ? optionFilter.length : (q.options?.length ?? 0)
   const totalCount = q.options?.length ?? 0
-  const sharedSegments = allConfigs.filter(c => c.enabledCommonQuestionIds.includes(q.id))
+
+  function toggleOption(value: string) {
+    const allVals = q.options!.map(o => o.value)
+    const current = optionFilter ?? allVals
+    const included = current.includes(value)
+    const next = included ? current.filter(v => v !== value) : [...current, value]
+    onFilterChange(next.length === allVals.length ? undefined : next.length ? next : [value])
+  }
 
   return (
-    <div className={`border-b border-sb-n100 last:border-0 ${!enabled ? 'opacity-50' : ''}`}>
-      <div className="flex items-center gap-3 px-4 py-3">
-        <label className="flex items-center cursor-pointer flex-shrink-0">
-          <input type="checkbox" checked={enabled} onChange={onToggle} className="rounded border-sb-n300 text-sb-brand focus:ring-sb-brand" />
-        </label>
+    <div className={`border-b border-sb-n100 last:border-0 ${!enabled ? 'opacity-40' : ''}`}>
+      <div className="flex items-start gap-3 px-4 py-3">
+        <span className="flex-shrink-0 mt-0.5">
+          <ToggleSwitch checked={enabled} onChange={onToggle} />
+        </span>
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <p className="text-[13px] text-sb-n800">{q.label}</p>
-            {sharedSegments.map(c => (
-              <span key={c.key} className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${c.enabledCommonQuestionIds.includes(q.id) ? 'bg-sb-blue-100 text-sb-brand' : 'bg-sb-n100 text-sb-n400'}`}>
-                {SEGMENT_LABELS[c.key] ?? c.key}
-              </span>
-            ))}
-          </div>
-          <p className="text-[11px] font-mono text-sb-n400">{q.id}</p>
+          <p className="text-[13px] text-sb-n800 leading-snug">{q.label}</p>
+          <p className="text-[11px] font-mono text-sb-n400 mt-0.5">{q.id}</p>
+          {hasOptions && (
+            <div className="flex flex-wrap gap-1 mt-1.5">
+              {q.options!.map(opt => {
+                const included = !optionFilter || optionFilter.includes(opt.value)
+                return (
+                  <button
+                    key={opt.value}
+                    onClick={enabled ? () => toggleOption(opt.value) : undefined}
+                    disabled={!enabled}
+                    className={`text-[11px] px-2 py-0.5 rounded-full border transition-colors ${
+                      included
+                        ? 'bg-sb-blue-50 border-sb-blue-200 text-sb-brand'
+                        : 'bg-sb-n50 border-sb-n200 text-sb-n300 line-through decoration-sb-n300'
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                )
+              })}
+            </div>
+          )}
         </div>
-        <div className="flex items-center gap-1.5 flex-shrink-0">
+        <div className="flex items-center gap-1.5 flex-shrink-0 mt-0.5">
+          {hasOptions && optionFilter && (
+            <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-sb-blue-100 text-sb-brand">
+              옵션 {enabledCount}/{totalCount}
+            </span>
+          )}
           <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${q.isRequired ? 'bg-red-50 text-sb-negative' : 'bg-sb-n50 text-sb-n400'}`}>
             {q.isRequired ? '필수' : '선택'}
           </span>
           <span className="text-[10px] font-mono text-sb-n400 px-1.5 py-0.5 border border-sb-n100 rounded">{q.inputType}</span>
-          {hasOptions && enabled && (
-            <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${optionFilter ? 'bg-sb-blue-100 text-sb-brand' : 'bg-sb-n50 text-sb-n500'}`}>
-              옵션 {enabledCount}/{totalCount}
-            </span>
-          )}
         </div>
       </div>
-      {hasOptions && enabled && (
-        <div className="px-4 pb-3 bg-sb-n50">
-          <p className="text-[11px] text-sb-n500 font-medium mb-2">노출 옵션 <span className="font-normal text-sb-n400">(체크 해제 = 이 세그먼트에서 제외)</span></p>
-          <div className="flex flex-col gap-1">
-            {q.options!.map(opt => {
-              const allVals = q.options!.map(o => o.value)
-              const isChecked = !optionFilter || optionFilter.includes(opt.value)
-              return (
-                <label key={opt.value} className="flex items-center gap-2 cursor-pointer group">
-                  <input
-                    type="checkbox"
-                    checked={isChecked}
-                    onChange={(e) => {
-                      const current = optionFilter ?? allVals
-                      const next = e.target.checked
-                        ? [...current, opt.value]
-                        : current.filter(v => v !== opt.value)
-                      onFilterChange(next.length === allVals.length ? undefined : next.length ? next : [opt.value])
-                    }}
-                    className="rounded border-sb-n300 text-sb-brand focus:ring-sb-brand"
-                  />
-                  <span className={`text-[12px] transition-colors ${isChecked ? 'text-sb-n700' : 'text-sb-n300 line-through'}`}>{opt.label}</span>
-                  <span className={`text-[10px] font-mono ${isChecked ? 'text-sb-n400' : 'text-sb-n200'}`}>{opt.value}</span>
-                </label>
-              )
-            })}
-          </div>
-        </div>
-      )}
     </div>
   )
 }
 
-function QuestionRowFixed({ q, depth = 0, allConfigs = [] }: { q: QuestionRule; depth?: number; allConfigs?: SegmentQuestionConfig[] }) {
+function QuestionRowFixed({ q, depth = 0, allConfigs = [], currentSegKey = '' }: { q: QuestionRule; depth?: number; allConfigs?: SegmentQuestionConfig[]; currentSegKey?: string }) {
   const [expanded, setExpanded] = useState(false)
   const hasChildren = !!(q.children?.length)
 
-  // Show segment chips: which entity/service segments have this question in their own or common list
-  const sharedSegments = depth === 0 && q.scope === undefined
-    ? allConfigs.filter(c => c.enabledCommonQuestionIds.includes(q.id))
+  // Segment chips for top-level own questions: which segments this question is mapped to
+  const segChips = depth === 0 && q.scope !== undefined
+    ? allConfigs.filter(c =>
+        c.key === `entity:${q.scope}` ||
+        c.key === `service:${q.scope}` ||
+        c.key === `entity:${q.scopeEntity}` ||
+        c.key === `service:${q.scopeService}`
+      )
     : []
 
   return (
     <>
-      <div className={`flex items-center gap-3 px-4 py-3 border-b border-sb-n100 last:border-0 ${depth > 0 ? 'bg-sb-n50' : ''}`} style={{ paddingLeft: depth > 0 ? `${16 + depth * 16}px` : undefined }}>
-        {hasChildren && (
-          <button onClick={() => setExpanded(v => !v)} className="text-sb-n400 hover:text-sb-brand flex-shrink-0">
-            {expanded ? <CaretDown size={12} /> : <CaretRight size={12} />}
-          </button>
-        )}
-        {!hasChildren && depth === 0 && <span className="w-[16px] flex-shrink-0" />}
+      <div
+        className={`flex items-start gap-3 border-b border-sb-n100 last:border-0 ${depth > 0 ? 'bg-sb-n50' : 'bg-white'}`}
+        style={{ paddingLeft: `${16 + depth * 20}px`, paddingRight: '16px', paddingTop: '10px', paddingBottom: '10px' }}
+      >
+        <span className="flex-shrink-0 mt-0.5">
+          {depth > 0
+            ? <span className="text-sb-n300 font-mono text-[11px] select-none">└</span>
+            : <span className="text-sb-n300 w-4 inline-block">
+                {hasChildren && (
+                  <button onClick={() => setExpanded(v => !v)} className="text-sb-n400 hover:text-sb-brand">
+                    {expanded ? <CaretDown size={12} /> : <CaretRight size={12} />}
+                  </button>
+                )}
+              </span>
+          }
+        </span>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 flex-wrap">
-            <p className="text-[13px] text-sb-n800">{q.label}</p>
-            {sharedSegments.map(c => (
-              <span key={c.key} className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-sb-blue-100 text-sb-brand">
+            <p className="text-[13px] text-sb-n800 leading-snug">{q.label}</p>
+            {segChips.map(c => (
+              <span
+                key={c.key}
+                className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full border ${
+                  c.key === currentSegKey
+                    ? 'bg-sb-blue-100 border-sb-brand text-sb-brand'
+                    : 'bg-sb-n50 border-sb-n200 text-sb-n500'
+                }`}
+              >
                 {SEGMENT_LABELS[c.key] ?? c.key}
               </span>
             ))}
@@ -160,11 +194,19 @@ function QuestionRowFixed({ q, depth = 0, allConfigs = [] }: { q: QuestionRule; 
               </span>
             )}
           </div>
-          <p className="text-[11px] font-mono text-sb-n400">{q.id}</p>
+          <p className="text-[11px] font-mono text-sb-n400 mt-0.5">{q.id}</p>
+          {q.options?.length && depth === 0 && (
+            <div className="flex flex-wrap gap-1 mt-1.5">
+              {q.options.map(opt => (
+                <span key={opt.value} className="text-[11px] px-2 py-0.5 rounded-full border bg-sb-n50 border-sb-n200 text-sb-n600">
+                  {opt.label}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
-        <div className="flex items-center gap-1.5 flex-shrink-0">
+        <div className="flex items-center gap-1.5 flex-shrink-0 mt-0.5">
           {q.repeat && <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-green-50 text-green-700">반복</span>}
-          {hasChildren && <span className="text-[10px] text-sb-n400">{q.children!.length}개 조건</span>}
           <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${q.isRequired ? 'bg-red-50 text-sb-negative' : 'bg-sb-n50 text-sb-n400'}`}>
             {q.isRequired ? '필수' : '선택'}
           </span>
@@ -172,7 +214,7 @@ function QuestionRowFixed({ q, depth = 0, allConfigs = [] }: { q: QuestionRule; 
         </div>
       </div>
       {expanded && q.children?.map(child => (
-        <QuestionRowFixed key={child.id} q={child} depth={depth + 1} />
+        <QuestionRowFixed key={child.id} q={child} depth={depth + 1} currentSegKey={currentSegKey} />
       ))}
     </>
   )
@@ -432,78 +474,87 @@ function FirstQuestionsEditor() {
   return (
     <div className="flex flex-col gap-5">
       <div>
-        <p className="text-[12px] font-semibold text-sb-n500 uppercase tracking-[0.5px] mb-2">1차 인테이크 질문</p>
-        <p className="text-[12px] text-sb-n400 mb-3">모든 고객이 분류 이전에 답하는 공통 질문입니다. 토글로 활성화/비활성화하고 편집 버튼으로 레이블을 수정합니다.</p>
-        <div className="bg-white rounded-[10px] border border-sb-n100 overflow-hidden">
-          {questions.map((q, idx) => (
-            <div key={q.id} className={`border-b border-sb-n100 last:border-0 ${!q.enabled ? 'opacity-50' : ''}`}>
-              {editId === q.id ? (
-                <div className="flex items-center gap-2 px-4 py-2.5 bg-sb-blue-50">
+        <p className="text-[12px] text-sb-n500 mb-3">모든 고객이 세그먼트 분류 전에 작성하는 인테이크 폼입니다. 여기서 받은 값으로 세그먼트가 결정됩니다.</p>
+        <div className="bg-white rounded-[12px] border border-sb-n100 overflow-hidden">
+          {questions.map((q) => (
+            <div key={q.id} className="border-b border-sb-n100 last:border-0">
+              <div className={`flex items-start gap-3 px-4 py-3 ${!q.enabled ? 'opacity-40' : ''}`}>
+                <span className="flex-shrink-0 mt-0.5">
+                  <ToggleSwitch checked={q.enabled} onChange={() => toggleEnabled(q.id)} />
+                </span>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <p className="text-[13px] text-sb-n800 leading-snug">{q.label}</p>
+                    {q.hint && (
+                      <span className="text-[10px] font-mono text-sb-n400 bg-sb-n50 border border-sb-n100 rounded px-1.5 py-0.5">{q.hint}</span>
+                    )}
+                  </div>
+                  <p className="text-[11px] font-mono text-sb-n400 mt-0.5">{q.id}</p>
+                  {q.options?.length && (
+                    <div className="flex flex-wrap gap-1 mt-1.5">
+                      {q.options.map(opt => (
+                        <span key={opt.value} className="text-[11px] px-2 py-0.5 rounded-full border bg-sb-n50 border-sb-n200 text-sb-n600">
+                          {opt.label}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <div className="flex items-center gap-1 flex-shrink-0 mt-0.5">
+                  <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${q.isRequired ? 'bg-red-50 text-sb-negative' : 'bg-sb-n50 text-sb-n400'}`}>
+                    {q.isRequired ? '필수' : '선택'}
+                  </span>
+                  <span className="text-[10px] font-mono text-sb-n400 px-1.5 py-0.5 border border-sb-n100 rounded">{q.inputType}</span>
+                  <button
+                    onClick={() => startEdit(q)}
+                    className="flex items-center justify-center w-7 h-7 rounded-[6px] text-sb-n400 hover:text-sb-brand hover:bg-sb-blue-100 transition-colors"
+                  >
+                    <PencilSimple size={13} />
+                  </button>
+                  {!q.isFixed && (
+                    <button onClick={() => removeQuestion(q.id)} className="flex items-center justify-center w-7 h-7 rounded-[6px] text-sb-n400 hover:text-sb-negative hover:bg-red-50 transition-colors">
+                      <Trash size={13} />
+                    </button>
+                  )}
+                </div>
+              </div>
+              {editId === q.id && (
+                <div className="mx-4 mb-3 rounded-[8px] bg-sb-blue-50 border border-sb-blue-200 px-4 py-3 flex items-center gap-2">
                   <input
                     autoFocus
                     value={editLabel}
                     onChange={e => setEditLabel(e.target.value)}
                     onKeyDown={e => { if (e.key === 'Enter') commitEdit(q.id); if (e.key === 'Escape') setEditId(null) }}
-                    className="flex-1 text-[13px] border border-sb-brand rounded-[6px] px-2 py-1 focus:outline-none"
+                    className="flex-1 text-[13px] border border-sb-brand rounded-[6px] px-2 py-1.5 bg-white focus:outline-none"
                   />
-                  <button onClick={() => commitEdit(q.id)} className="text-[12px] font-medium text-sb-brand px-3 py-1 rounded-[6px] border border-sb-brand hover:bg-sb-blue-100">저장</button>
-                  <button onClick={() => setEditId(null)} className="text-[12px] text-sb-n400 hover:text-sb-n700">취소</button>
-                </div>
-              ) : (
-                <div className="flex items-center gap-3 px-4 py-3">
-                  <span className="text-[11px] text-sb-n300 w-5 text-right flex-shrink-0">{idx + 1}</span>
-                  <label className="flex items-center cursor-pointer flex-shrink-0">
-                    <input type="checkbox" checked={q.enabled} onChange={() => toggleEnabled(q.id)} className="rounded border-sb-n300 text-sb-brand focus:ring-sb-brand" />
-                  </label>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5">
-                      <p className="text-[13px] text-sb-n800">{q.label}</p>
-                      {q.hint && (
-                        <span className="text-[10px] font-mono text-sb-n400 bg-sb-n50 border border-sb-n100 rounded px-1.5 py-0.5">{q.hint}</span>
-                      )}
-                    </div>
-                    <p className="text-[11px] font-mono text-sb-n400">{q.id}</p>
-                  </div>
-                  <div className="flex items-center gap-1.5 flex-shrink-0">
-                    <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${q.isRequired ? 'bg-red-50 text-sb-negative' : 'bg-sb-n50 text-sb-n400'}`}>
-                      {q.isRequired ? '필수' : '선택'}
-                    </span>
-                    <span className="text-[10px] font-mono text-sb-n400 px-1.5 py-0.5 border border-sb-n100 rounded">{q.inputType}</span>
-                    <button onClick={() => startEdit(q)} className="flex items-center justify-center w-7 h-7 rounded-[6px] text-sb-n400 hover:text-sb-brand hover:bg-sb-blue-100 transition-colors">
-                      <PencilSimple size={13} />
-                    </button>
-                    {!q.isFixed && (
-                      <button onClick={() => removeQuestion(q.id)} className="flex items-center justify-center w-7 h-7 rounded-[6px] text-sb-n400 hover:text-sb-negative hover:bg-red-50 transition-colors">
-                        <Trash size={13} />
-                      </button>
-                    )}
-                  </div>
+                  <button onClick={() => commitEdit(q.id)} className="text-[12px] font-medium text-white bg-sb-brand px-3 py-1.5 rounded-[6px] hover:opacity-90">저장</button>
+                  <button onClick={() => setEditId(null)} className="text-[12px] text-sb-n500 hover:text-sb-n800 px-2 py-1.5">취소</button>
                 </div>
               )}
             </div>
           ))}
 
           {/* Add form */}
-          <div className="px-4 py-3 border-t border-sb-n100 bg-sb-n50 flex flex-col gap-2">
-            <p className="text-[11px] font-medium text-sb-n500">질문 추가</p>
-            <div className="flex items-end gap-2">
+          <div className="px-4 py-3 bg-sb-n50 flex flex-col gap-2">
+            <p className="text-[11px] font-semibold text-sb-n500">질문 추가</p>
+            <div className="flex items-center gap-2">
               <input
                 placeholder="레이블 입력"
                 value={addLabel}
                 onChange={e => setAddLabel(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && addQuestion()}
-                className="flex-1 text-[12px] border border-sb-n200 rounded-[6px] px-2 py-1.5 focus:outline-none focus:border-sb-brand"
+                className="flex-1 text-[12px] border border-sb-n200 rounded-[6px] px-2 py-1.5 focus:outline-none focus:border-sb-brand bg-white"
               />
               <select value={addType} onChange={e => setAddType(e.target.value as QuestionInputType)}
                 className="text-[12px] border border-sb-n200 rounded-[6px] px-2 py-1.5 bg-white focus:outline-none focus:border-sb-brand w-24">
                 {INPUT_TYPE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
-              <label className="flex items-center gap-1.5 cursor-pointer mb-1">
+              <label className="flex items-center gap-1.5 cursor-pointer">
                 <input type="checkbox" checked={addRequired} onChange={e => setAddRequired(e.target.checked)} className="rounded border-sb-n300 text-sb-brand" />
                 <span className="text-[12px] text-sb-n600">필수</span>
               </label>
               <button onClick={addQuestion} disabled={!addLabel.trim()}
-                className="flex items-center gap-1 px-3 py-1.5 rounded-[6px] text-[12px] font-medium bg-sb-brand text-white disabled:opacity-40 mb-px">
+                className="flex items-center gap-1 px-3 py-1.5 rounded-[6px] text-[12px] font-medium bg-sb-brand text-white disabled:opacity-40">
                 <Plus size={12} /> 추가
               </button>
             </div>
@@ -581,12 +632,12 @@ function QuestionsEditor({ selected }: { selected: Selection }) {
     <div className="flex flex-col gap-5">
       {/* Collection FI-inheritance banner */}
       {isCollection && (
-        <div className="flex items-start gap-3 px-4 py-3 rounded-[10px] bg-blue-50 border border-blue-200">
-          <span className="text-blue-500 flex-shrink-0 mt-0.5">ℹ</span>
-          <div>
-            <p className="text-[13px] font-semibold text-blue-800">FI 상속 세그먼트</p>
-            <p className="text-[12px] text-blue-700 mt-0.5">이 고객은 FI 질문 전체 + 통화 고유 질문을 받는다 (수금=FI). 아래에서 통화 고유 질문만 편집합니다.</p>
-          </div>
+        <div className="flex items-start gap-3 px-4 py-3 rounded-[10px] bg-blue-50 border border-blue-100">
+          <span className="text-sb-brand flex-shrink-0 mt-0.5 text-[15px] font-bold leading-none">ℹ</span>
+          <p className="text-[12px] text-blue-800">
+            이 고객은 <strong>FI 질문 전체 + 아래 통화 고유 질문</strong>을 받습니다 (수금=FI).
+            FI 공통 질문은 <strong>FI 세그먼트</strong>에서 관리하고, 여기서는 통화 고유 질문만 추가합니다.
+          </p>
         </div>
       )}
 
@@ -620,9 +671,7 @@ function QuestionsEditor({ selected }: { selected: Selection }) {
                 }}
               />
               {q.id === screen1LastCommon && (
-                <div key={`div-${idx}`} className="flex items-center gap-2 px-4 py-2 bg-sb-n50 border-t border-b border-dashed border-sb-n200">
-                  <span className="text-[10px] font-semibold text-sb-n400 uppercase tracking-[0.5px]">화면 2 시작 ↓ (BO · 거래 · 자금 · VASP)</span>
-                </div>
+                <ScreenDivider key={`div-${idx}`} n={2} />
               )}
             </>
           ))}
@@ -661,11 +710,9 @@ function QuestionsEditor({ selected }: { selected: Selection }) {
           )}
           {ownFixedQuestions.filter(matchesSvcView).map((q, idx) => (
             <>
-              <QuestionRowFixed key={q.id} q={q} allConfigs={allConfigs} />
+              <QuestionRowFixed key={q.id} q={q} allConfigs={allConfigs} currentSegKey={configKey} />
               {q.id === screen1LastOwn && (
-                <div key={`div-own-${idx}`} className="flex items-center gap-2 px-4 py-2 bg-sb-n50 border-t border-b border-dashed border-sb-n200">
-                  <span className="text-[10px] font-semibold text-sb-n400 uppercase tracking-[0.5px]">화면 2 시작 ↓</span>
-                </div>
+                <ScreenDivider key={`div-own-${idx}`} n={2} />
               )}
             </>
           ))}
@@ -1696,76 +1743,70 @@ export default function InternalRulesPanel() {
 
       <div className="max-w-[1200px] mx-auto px-6 py-6 flex gap-6">
         {/* ── Left sidebar ─────────────────────────────────────────────────── */}
-        <aside className="w-[220px] flex-shrink-0 flex flex-col gap-4">
-          {/* 1차 질문 nav */}
+        <aside className="w-[220px] flex-shrink-0 flex flex-col gap-1">
+          {/* 인테이크 group */}
+          <p className="text-[10px] font-semibold text-sb-n400 uppercase tracking-[0.8px] px-3 pt-2 pb-1">인테이크</p>
           <button
             onClick={() => setSelected({ type: 'intake' })}
-            className={`flex items-center gap-2 w-full px-4 py-2.5 rounded-[10px] border text-left transition-colors ${
+            className={`flex items-center gap-2 w-full px-3 py-2 rounded-[8px] text-left transition-colors ${
               isIntake
-                ? 'bg-sb-blue-100 border-sb-brand text-sb-brand font-medium'
-                : 'bg-white border-sb-n100 text-sb-n700 hover:bg-sb-n50'
+                ? 'bg-sb-blue-100 text-sb-brand font-medium'
+                : 'text-sb-n700 hover:bg-sb-n100'
             }`}
           >
-            <ListBullets size={14} className={isIntake ? 'text-sb-brand' : 'text-sb-n500'} />
-            <div>
-              <p className="text-[10px] uppercase tracking-[0.5px] opacity-70">인테이크</p>
-              <p className="text-[13px]">1차 질문</p>
-            </div>
+            <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${isIntake ? 'bg-sb-brand' : 'bg-sb-n300'}`} />
+            <span className="text-[13px] leading-snug">1차 질문</span>
+            <span className="ml-auto text-[10px] font-mono text-sb-n400">1차</span>
           </button>
 
-          <div className="bg-white rounded-[10px] border border-sb-n100 overflow-hidden">
-            <div className="px-4 py-3 border-b border-sb-n100 flex items-center gap-2">
-              <TreeStructure size={14} className="text-sb-n500" />
-              <span className="text-[12px] font-semibold text-sb-n700 uppercase tracking-[0.5px]">분류 규칙</span>
-            </div>
+          {/* Entity group */}
+          <p className="text-[10px] font-semibold text-sb-n400 uppercase tracking-[0.8px] px-3 pt-3 pb-1">Entity</p>
+          {ENTITY_ORDER.map(code => {
+            const isActive = selected.type === 'entity' && selected.code === code
+            return (
+              <button
+                key={code}
+                onClick={() => selectEntity(code)}
+                className={`flex items-center gap-2 w-full px-3 py-2 rounded-[8px] text-left transition-colors ${
+                  isActive ? 'bg-sb-blue-100 text-sb-brand font-medium' : 'text-sb-n700 hover:bg-sb-n100'
+                }`}
+              >
+                <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${isActive ? 'bg-sb-brand' : 'bg-sb-n300'}`} />
+                <span className="text-[13px] leading-snug">{rs.entityLabels[code]}</span>
+                <span className="ml-auto text-[10px] font-mono text-sb-n400">{code.replace('ENTITY_', 'E·')}</span>
+              </button>
+            )
+          })}
 
-            {/* Entity codes */}
-            <div className="px-3 pt-2 pb-1">
-              <p className="text-[11px] text-sb-n400 uppercase tracking-[0.5px] px-1 mb-1">Entity</p>
-              {ENTITY_ORDER.map(code => (
-                <button
-                  key={code}
-                  onClick={() => selectEntity(code)}
-                  className={`w-full text-left px-3 py-2 rounded-[6px] text-[13px] transition-colors mb-0.5 ${
-                    selected.type === 'entity' && selected.code === code
-                      ? 'bg-sb-blue-100 text-sb-brand font-medium'
-                      : 'text-sb-n700 hover:bg-sb-n50'
-                  }`}
-                >
-                  <span className="block text-[11px] font-mono">{code}</span>
-                  <span className="block text-[12px]">{rs.entityLabels[code]}</span>
-                </button>
-              ))}
-            </div>
-
-            {/* Service codes — dynamic */}
-            <div className="px-3 pt-2 pb-2 border-t border-sb-n100">
-              <p className="text-[11px] text-sb-n400 uppercase tracking-[0.5px] px-1 mb-1">Service</p>
-              {serviceOrder.map(code => (
-                <button
-                  key={code}
-                  onClick={() => selectService(code)}
-                  className={`w-full text-left px-3 py-2 rounded-[6px] text-[13px] transition-colors mb-0.5 ${
-                    selected.type === 'service' && selected.code === code
-                      ? 'bg-sb-blue-100 text-sb-brand font-medium'
-                      : 'text-sb-n700 hover:bg-sb-n50'
-                  }`}
-                >
-                  <span className="block text-[11px] font-mono">{code}</span>
-                  <span className="block text-[12px]">{rs.serviceLabels[code]}</span>
-                </button>
-              ))}
-            </div>
-          </div>
+          {/* Service group */}
+          <p className="text-[10px] font-semibold text-sb-n400 uppercase tracking-[0.8px] px-3 pt-3 pb-1">Service</p>
+          {serviceOrder.map(code => {
+            const isActive = selected.type === 'service' && selected.code === code
+            return (
+              <button
+                key={code}
+                onClick={() => selectService(code)}
+                className={`flex items-center gap-2 w-full px-3 py-2 rounded-[8px] text-left transition-colors ${
+                  isActive ? 'bg-sb-blue-100 text-sb-brand font-medium' : 'text-sb-n700 hover:bg-sb-n100'
+                }`}
+              >
+                <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${isActive ? 'bg-sb-brand' : 'bg-sb-n300'}`} />
+                <span className="text-[13px] leading-snug">{rs.serviceLabels[code]}</span>
+                <span className="ml-auto text-[10px] font-mono text-sb-n400">{code.replace('SVC_COL_', 'C·')}</span>
+              </button>
+            )
+          })}
 
           {/* Add country wizard */}
-          <button
-            onClick={() => setWizardOpen(true)}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-[8px] border border-dashed border-sb-brand text-[13px] text-sb-brand font-medium hover:bg-sb-blue-100 transition-colors"
-          >
-            <Plus size={13} />
-            국가 추가
-          </button>
+          <div className="pt-3">
+            <button
+              onClick={() => setWizardOpen(true)}
+              className="flex items-center gap-2 px-3 py-2 rounded-[8px] border border-dashed border-sb-brand text-[12px] text-sb-brand font-medium hover:bg-sb-blue-100 transition-colors w-full"
+            >
+              <Plus size={13} />
+              국가 추가
+            </button>
+          </div>
         </aside>
 
         {/* Wizard modal */}
