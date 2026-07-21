@@ -1137,7 +1137,7 @@ function DocumentsEditor({ selected }: { selected: Selection }) {
   const selCode = selected.code  // narrowed: entity | service only from here
 
   const { currentRuleSet, updateRuleSet } = useRuleStore()
-  const rs = currentRuleSet
+  const rs = getRuleSet()   // use getRuleSet() so docLibrary/segmentDocConfigs fall back to INITIAL_RULESET
   const docLib = rs.docLibrary ?? []
   const segDocConfigs = rs.segmentDocConfigs ?? []
 
@@ -1162,11 +1162,13 @@ function DocumentsEditor({ selected }: { selected: Selection }) {
   const hasKRWSectors = selected.type === 'service' && selCode === 'SVC_COL_KRW'
 
   function saveSegConfig(patch: Partial<DocSegmentConfig>) {
-    const exists = segDocConfigs.some(c => c.key === configKey)
+    const latest = getRuleSet()
+    const latestConfigs = latest.segmentDocConfigs ?? []
+    const exists = latestConfigs.some(c => c.key === configKey)
     const updated: DocSegmentConfig[] = exists
-      ? segDocConfigs.map(c => c.key === configKey ? { ...c, ...patch } : c)
-      : [...segDocConfigs, { ...config, ...patch }]
-    updateRuleSet({ ...rs, version: nextVersion(rs.version), segmentDocConfigs: updated, docLibrary: docLib })
+      ? latestConfigs.map(c => c.key === configKey ? { ...c, ...patch } : c)
+      : [...latestConfigs, { ...config, ...patch }]
+    updateRuleSet({ ...currentRuleSet, version: nextVersion(currentRuleSet.version), segmentDocConfigs: updated, docLibrary: latest.docLibrary })
   }
 
   function toggleCommon(type: string) {
@@ -1223,7 +1225,7 @@ function DocumentsEditor({ selected }: { selected: Selection }) {
       if (rule.match.service !== svcCode || rule.match.sector !== sector || rule.match.entity) return rule
       return { ...rule, docs: updater(rule.docs) }
     })
-    updateRuleSet({ ...rs, version: nextVersion(rs.version), documentRules: updated })
+    updateRuleSet({ ...currentRuleSet, version: nextVersion(currentRuleSet.version), documentRules: updated })
   }
 
   const DOC_HEADER = (
@@ -1313,7 +1315,7 @@ function DocumentsEditor({ selected }: { selected: Selection }) {
                     updateSectorDocs(sector, d => [...d, doc])
                   } else {
                     const newRule = { match: { service: selCode as ServiceCode, sector }, docs: [doc] }
-                    updateRuleSet({ ...rs, version: nextVersion(rs.version), documentRules: [...rs.documentRules, newRule] })
+                    updateRuleSet({ ...currentRuleSet, version: nextVersion(currentRuleSet.version), documentRules: [...rs.documentRules, newRule] })
                   }
                 }} />
               </div>
