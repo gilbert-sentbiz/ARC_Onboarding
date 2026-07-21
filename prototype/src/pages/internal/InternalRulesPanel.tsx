@@ -633,8 +633,9 @@ function QuestionsEditor({ selected }: { selected: Selection }) {
   const [editIdx, setEditIdx] = useState<number | null>(null)
   const [svcView, setSvcView] = useState<'all' | 'payout' | 'collection'>('all')
   const [commonOpen, setCommonOpen] = useState(true)
+  const [showAddForm, setShowAddForm] = useState(false)
 
-  // Shared question edit state (common pool + fixed own)
+  // Shared question edit state (common pool + fixed own + own questions)
   const [editingQId, setEditingQId] = useState<string | null>(null)
   const [editQLabel, setEditQLabel] = useState('')
 
@@ -682,17 +683,24 @@ function QuestionsEditor({ selected }: { selected: Selection }) {
 
   function addOwn(q: QuestionRule) {
     saveConfig({ ownQuestions: [...config.ownQuestions, q] })
+    setShowAddForm(false)
   }
 
-  function updateOwn(q: QuestionRule) {
-    if (editIdx === null) return
-    saveConfig({ ownQuestions: config.ownQuestions.map((old, i) => i === editIdx ? q : old) })
+  function saveOwnEdit(idx: number) {
+    saveConfig({ ownQuestions: config.ownQuestions.map((q, i) => i === idx ? { ...q, label: editQLabel } : q) })
     setEditIdx(null)
   }
 
   function removeOwn(idx: number) {
     if (editIdx === idx) setEditIdx(null)
     saveConfig({ ownQuestions: config.ownQuestions.filter((_, i) => i !== idx) })
+  }
+
+  function startOwnEdit(q: QuestionRule, idx: number) {
+    setEditIdx(idx)
+    setEditQLabel(q.label)
+    setEditingQId(null)
+    setShowAddForm(false)
   }
 
   const allOwnForParent = [...ownFixedQuestions, ...config.ownQuestions]
@@ -835,7 +843,17 @@ function QuestionsEditor({ selected }: { selected: Selection }) {
               <div key={q.id} className={`flex items-start gap-3 px-4 py-3 border-t border-sb-n100 ${isEditingOwn ? 'bg-sb-blue-50' : ''}`}>
                 <div className="flex-1 min-w-0">
                   {isEditingOwn ? (
-                    <p className="text-[12px] font-medium text-sb-brand mb-1">질문 편집 중</p>
+                    <div className="flex items-center gap-2">
+                      <input
+                        autoFocus
+                        value={editQLabel}
+                        onChange={e => setEditQLabel(e.target.value)}
+                        onKeyDown={e => { if (e.key === 'Enter') saveOwnEdit(i); if (e.key === 'Escape') setEditIdx(null) }}
+                        className="flex-1 text-[13px] border border-sb-brand rounded-[6px] px-2 py-1 bg-white focus:outline-none"
+                      />
+                      <button onClick={() => saveOwnEdit(i)} className="text-[12px] font-medium text-white bg-sb-brand px-3 py-1 rounded-[6px]">저장</button>
+                      <button onClick={() => setEditIdx(null)} className="text-[12px] text-sb-n500 hover:text-sb-n800 px-2 py-1">취소</button>
+                    </div>
                   ) : (
                     <div className="flex items-center gap-1.5 flex-wrap">
                       <p className="text-[13px] text-sb-n800">{q.label}</p>
@@ -851,46 +869,49 @@ function QuestionsEditor({ selected }: { selected: Selection }) {
                       )}
                     </div>
                   )}
-                  <p className="text-[11px] font-mono text-sb-n400 mt-0.5">{q.id}</p>
+                  {!isEditingOwn && <p className="text-[11px] font-mono text-sb-n400 mt-0.5">{q.id}</p>}
                 </div>
-                <div className="flex items-center gap-1 flex-shrink-0">
-                  {!isEditingOwn && (
-                    <>
-                      <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${q.isRequired ? 'bg-red-50 text-sb-negative' : 'bg-sb-n50 text-sb-n400'}`}>
-                        {q.isRequired ? '필수' : '선택'}
-                      </span>
-                      <span className="text-[10px] font-mono text-sb-n400 px-1.5 py-0.5 border border-sb-n100 rounded">{q.inputType}</span>
-                    </>
-                  )}
-                  <button
-                    onClick={() => setEditIdx(isEditingOwn ? null : i)}
-                    className="flex items-center justify-center w-7 h-7 rounded-[6px] text-sb-n400 hover:text-sb-brand hover:bg-sb-blue-100 transition-colors"
-                  >
-                    <PencilSimple size={13} />
-                  </button>
-                  <button
-                    onClick={() => removeOwn(i)}
-                    className="flex items-center justify-center w-7 h-7 rounded-[6px] text-sb-n400 hover:text-sb-negative hover:bg-red-50 transition-colors"
-                  >
-                    <Trash size={13} />
-                  </button>
-                </div>
+                {!isEditingOwn && (
+                  <div className="flex items-center gap-1 flex-shrink-0">
+                    <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${q.isRequired ? 'bg-red-50 text-sb-negative' : 'bg-sb-n50 text-sb-n400'}`}>
+                      {q.isRequired ? '필수' : '선택'}
+                    </span>
+                    <span className="text-[10px] font-mono text-sb-n400 px-1.5 py-0.5 border border-sb-n100 rounded">{q.inputType}</span>
+                    <button onClick={() => startOwnEdit(q, i)} className="flex items-center justify-center w-7 h-7 rounded-[6px] text-sb-n400 hover:text-sb-brand hover:bg-sb-blue-100 transition-colors">
+                      <PencilSimple size={13} />
+                    </button>
+                    <button onClick={() => removeOwn(i)} className="flex items-center justify-center w-7 h-7 rounded-[6px] text-sb-n400 hover:text-sb-negative hover:bg-red-50 transition-colors">
+                      <Trash size={13} />
+                    </button>
+                  </div>
+                )}
               </div>
             )
           })}
-          <div className="px-4 pb-4">
-            <AddOwnQuestionForm
-              key={`${editIdx ?? 'add'}-${svcView}`}
-              parentOptions={allOwnForParent}
-              commonQuestions={commonQuestions}
-              showSvcCondition={isFI}
-              defaultSvcCondition={isFI && svcView !== 'all' ? svcView : undefined}
-              onAdd={addOwn}
-              editTarget={editIdx !== null ? config.ownQuestions[editIdx] : undefined}
-              onUpdate={updateOwn}
-              onCancelEdit={() => setEditIdx(null)}
-            />
-          </div>
+          {/* Add form — shown only when button clicked */}
+          {showAddForm ? (
+            <div className="border-t border-sb-n100 px-4 py-3 bg-sb-n50">
+              <AddOwnQuestionForm
+                key={svcView}
+                parentOptions={allOwnForParent}
+                commonQuestions={commonQuestions}
+                showSvcCondition={isFI}
+                defaultSvcCondition={isFI && svcView !== 'all' ? svcView : undefined}
+                onAdd={addOwn}
+                onCancelEdit={() => setShowAddForm(false)}
+              />
+            </div>
+          ) : (
+            <div className="px-4 py-2.5 border-t border-sb-n100">
+              <button
+                onClick={() => { setShowAddForm(true); setEditIdx(null); setEditingQId(null) }}
+                className="flex items-center gap-1.5 text-[12px] font-medium text-sb-brand hover:underline"
+              >
+                <Plus size={12} />
+                질문 추가
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
