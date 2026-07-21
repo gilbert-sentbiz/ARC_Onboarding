@@ -74,13 +74,19 @@ const INPUT_TYPE_OPTIONS: { value: QuestionInputType; label: string }[] = [
   { value: 'number',   label: 'number' },
 ]
 
-function CommonQuestionRow({ q, enabled, optionFilter, onToggle, onFilterChange }: {
+function CommonQuestionRow({ q, enabled, optionFilter, onToggle, onFilterChange, isEditing, editLabel, onEditLabelChange, onStartEdit, onSaveEdit, onCancelEdit }: {
   q: QuestionRule
   enabled: boolean
   optionFilter: string[] | undefined
   allConfigs: SegmentQuestionConfig[]
   onToggle: () => void
   onFilterChange: (values: string[] | undefined) => void
+  isEditing: boolean
+  editLabel: string
+  onEditLabelChange: (s: string) => void
+  onStartEdit: () => void
+  onSaveEdit: () => void
+  onCancelEdit: () => void
 }) {
   const hasOptions = (q.inputType === 'select' || q.inputType === 'radio') && !!q.options?.length
   const enabledCount = optionFilter ? optionFilter.length : (q.options?.length ?? 0)
@@ -95,15 +101,29 @@ function CommonQuestionRow({ q, enabled, optionFilter, onToggle, onFilterChange 
   }
 
   return (
-    <div className={`border-b border-sb-n100 last:border-0 ${!enabled ? 'opacity-40' : ''}`}>
-      <div className="flex items-start gap-3 px-4 py-3">
+    <div className={`border-b border-sb-n100 last:border-0 ${!enabled && !isEditing ? 'opacity-40' : ''}`}>
+      <div className={`flex items-start gap-3 px-4 py-3 ${isEditing ? 'bg-sb-blue-50' : ''}`}>
         <span className="flex-shrink-0 mt-0.5">
           <ToggleSwitch checked={enabled} onChange={onToggle} />
         </span>
         <div className="flex-1 min-w-0">
-          <p className="text-[13px] text-sb-n800 leading-snug">{q.label}</p>
+          {isEditing ? (
+            <div className="flex items-center gap-2">
+              <input
+                autoFocus
+                value={editLabel}
+                onChange={e => onEditLabelChange(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') onSaveEdit(); if (e.key === 'Escape') onCancelEdit() }}
+                className="flex-1 text-[13px] border border-sb-brand rounded-[6px] px-2 py-1 bg-white focus:outline-none"
+              />
+              <button onClick={onSaveEdit} className="text-[12px] font-medium text-white bg-sb-brand px-3 py-1 rounded-[6px]">저장</button>
+              <button onClick={onCancelEdit} className="text-[12px] text-sb-n500 hover:text-sb-n800 px-2 py-1">취소</button>
+            </div>
+          ) : (
+            <p className="text-[13px] text-sb-n800 leading-snug">{q.label}</p>
+          )}
           <p className="text-[11px] font-mono text-sb-n400 mt-0.5">{q.id}</p>
-          {hasOptions && (
+          {hasOptions && !isEditing && (
             <div className="flex flex-wrap gap-1 mt-1.5">
               {q.options!.map(opt => {
                 const included = !optionFilter || optionFilter.includes(opt.value)
@@ -125,27 +145,44 @@ function CommonQuestionRow({ q, enabled, optionFilter, onToggle, onFilterChange 
             </div>
           )}
         </div>
-        <div className="flex items-center gap-1.5 flex-shrink-0 mt-0.5">
-          {hasOptions && optionFilter && (
+        <div className="flex items-center gap-1 flex-shrink-0 mt-0.5">
+          {!isEditing && hasOptions && optionFilter && (
             <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-sb-blue-100 text-sb-brand">
               옵션 {enabledCount}/{totalCount}
             </span>
           )}
-          <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${q.isRequired ? 'bg-red-50 text-sb-negative' : 'bg-sb-n50 text-sb-n400'}`}>
-            {q.isRequired ? '필수' : '선택'}
-          </span>
-          <span className="text-[10px] font-mono text-sb-n400 px-1.5 py-0.5 border border-sb-n100 rounded">{q.inputType}</span>
+          {!isEditing && (
+            <>
+              <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${q.isRequired ? 'bg-red-50 text-sb-negative' : 'bg-sb-n50 text-sb-n400'}`}>
+                {q.isRequired ? '필수' : '선택'}
+              </span>
+              <span className="text-[10px] font-mono text-sb-n400 px-1.5 py-0.5 border border-sb-n100 rounded">{q.inputType}</span>
+              <button onClick={onStartEdit} className="flex items-center justify-center w-7 h-7 rounded-[6px] text-sb-n400 hover:text-sb-brand hover:bg-sb-blue-100 transition-colors">
+                <PencilSimple size={13} />
+              </button>
+            </>
+          )}
         </div>
       </div>
     </div>
   )
 }
 
-function QuestionRowFixed({ q, depth = 0, allConfigs = [], currentSegKey = '' }: { q: QuestionRule; depth?: number; allConfigs?: SegmentQuestionConfig[]; currentSegKey?: string }) {
+function QuestionRowFixed({ q, depth = 0, allConfigs = [], currentSegKey = '', isEditing = false, editLabel = '', onEditLabelChange, onStartEdit, onSaveEdit, onCancelEdit }: {
+  q: QuestionRule
+  depth?: number
+  allConfigs?: SegmentQuestionConfig[]
+  currentSegKey?: string
+  isEditing?: boolean
+  editLabel?: string
+  onEditLabelChange?: (s: string) => void
+  onStartEdit?: () => void
+  onSaveEdit?: () => void
+  onCancelEdit?: () => void
+}) {
   const [expanded, setExpanded] = useState(false)
   const hasChildren = !!(q.children?.length)
 
-  // Segment chips for top-level own questions: which segments this question is mapped to
   const segChips = depth === 0 && q.scope !== undefined
     ? allConfigs.filter(c =>
         c.key === `entity:${q.scope}` ||
@@ -158,13 +195,13 @@ function QuestionRowFixed({ q, depth = 0, allConfigs = [], currentSegKey = '' }:
   return (
     <>
       <div
-        className={`flex items-start gap-3 border-b border-sb-n100 last:border-0 ${depth > 0 ? 'bg-sb-n50' : 'bg-white'}`}
+        className={`flex items-start gap-3 border-b border-sb-n100 last:border-0 ${depth > 0 ? 'bg-sb-n50' : isEditing ? 'bg-sb-blue-50' : 'bg-white'}`}
         style={{ paddingLeft: `${16 + depth * 20}px`, paddingRight: '16px', paddingTop: '10px', paddingBottom: '10px' }}
       >
         <span className="flex-shrink-0 mt-0.5">
           {depth > 0
             ? <span className="text-sb-n300 font-mono text-[11px] select-none">└</span>
-            : <span className="text-sb-n300 w-4 inline-block">
+            : <span className="w-4 inline-block flex-shrink-0">
                 {hasChildren && (
                   <button onClick={() => setExpanded(v => !v)} className="text-sb-n400 hover:text-sb-brand">
                     {expanded ? <CaretDown size={12} /> : <CaretRight size={12} />}
@@ -174,28 +211,42 @@ function QuestionRowFixed({ q, depth = 0, allConfigs = [], currentSegKey = '' }:
           }
         </span>
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <p className="text-[13px] text-sb-n800 leading-snug">{q.label}</p>
-            {segChips.map(c => (
-              <span
-                key={c.key}
-                className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full border ${
-                  c.key === currentSegKey
-                    ? 'bg-sb-blue-100 border-sb-brand text-sb-brand'
-                    : 'bg-sb-n50 border-sb-n200 text-sb-n500'
-                }`}
-              >
-                {SEGMENT_LABELS[c.key] ?? c.key}
-              </span>
-            ))}
-            {q.showWhen && (
-              <span className="text-[10px] font-mono text-sb-n400 bg-sb-n50 border border-sb-n100 rounded px-1.5 py-0.5">
-                if {q.showWhen.parentId} = {q.showWhen.value}
-              </span>
-            )}
-          </div>
+          {isEditing && depth === 0 ? (
+            <div className="flex items-center gap-2">
+              <input
+                autoFocus
+                value={editLabel}
+                onChange={e => onEditLabelChange?.(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') onSaveEdit?.(); if (e.key === 'Escape') onCancelEdit?.() }}
+                className="flex-1 text-[13px] border border-sb-brand rounded-[6px] px-2 py-1 bg-white focus:outline-none"
+              />
+              <button onClick={onSaveEdit} className="text-[12px] font-medium text-white bg-sb-brand px-3 py-1 rounded-[6px]">저장</button>
+              <button onClick={onCancelEdit} className="text-[12px] text-sb-n500 hover:text-sb-n800 px-2 py-1">취소</button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <p className="text-[13px] text-sb-n800 leading-snug">{q.label}</p>
+              {segChips.map(c => (
+                <span
+                  key={c.key}
+                  className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full border ${
+                    c.key === currentSegKey
+                      ? 'bg-sb-blue-100 border-sb-brand text-sb-brand'
+                      : 'bg-sb-n50 border-sb-n200 text-sb-n500'
+                  }`}
+                >
+                  {SEGMENT_LABELS[c.key] ?? c.key}
+                </span>
+              ))}
+              {q.showWhen && (
+                <span className="text-[10px] font-mono text-sb-n400 bg-sb-n50 border border-sb-n100 rounded px-1.5 py-0.5">
+                  if {q.showWhen.parentId} = {q.showWhen.value}
+                </span>
+              )}
+            </div>
+          )}
           <p className="text-[11px] font-mono text-sb-n400 mt-0.5">{q.id}</p>
-          {q.options?.length && depth === 0 && (
+          {q.options?.length && depth === 0 && !isEditing && (
             <div className="flex flex-wrap gap-1 mt-1.5">
               {q.options.map(opt => (
                 <span key={opt.value} className="text-[11px] px-2 py-0.5 rounded-full border bg-sb-n50 border-sb-n200 text-sb-n600">
@@ -205,13 +256,24 @@ function QuestionRowFixed({ q, depth = 0, allConfigs = [], currentSegKey = '' }:
             </div>
           )}
         </div>
-        <div className="flex items-center gap-1.5 flex-shrink-0 mt-0.5">
-          {q.repeat && <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-green-50 text-green-700">반복</span>}
-          <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${q.isRequired ? 'bg-red-50 text-sb-negative' : 'bg-sb-n50 text-sb-n400'}`}>
-            {q.isRequired ? '필수' : '선택'}
-          </span>
-          <span className="text-[10px] font-mono text-sb-n400 px-1.5 py-0.5 border border-sb-n100 rounded">{q.inputType}</span>
-        </div>
+        {depth === 0 && (
+          <div className="flex items-center gap-1 flex-shrink-0 mt-0.5">
+            {!isEditing && (
+              <>
+                {q.repeat && <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-green-50 text-green-700">반복</span>}
+                <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${q.isRequired ? 'bg-red-50 text-sb-negative' : 'bg-sb-n50 text-sb-n400'}`}>
+                  {q.isRequired ? '필수' : '선택'}
+                </span>
+                <span className="text-[10px] font-mono text-sb-n400 px-1.5 py-0.5 border border-sb-n100 rounded">{q.inputType}</span>
+                {onStartEdit && (
+                  <button onClick={onStartEdit} className="flex items-center justify-center w-7 h-7 rounded-[6px] text-sb-n400 hover:text-sb-brand hover:bg-sb-blue-100 transition-colors">
+                    <PencilSimple size={13} />
+                  </button>
+                )}
+              </>
+            )}
+          </div>
+        )}
       </div>
       {expanded && q.children?.map(child => (
         <QuestionRowFixed key={child.id} q={child} depth={depth + 1} currentSegKey={currentSegKey} />
@@ -570,6 +632,11 @@ function QuestionsEditor({ selected }: { selected: Selection }) {
   const { currentRuleSet, updateRuleSet } = useRuleStore()
   const [editIdx, setEditIdx] = useState<number | null>(null)
   const [svcView, setSvcView] = useState<'all' | 'payout' | 'collection'>('all')
+  const [commonOpen, setCommonOpen] = useState(true)
+
+  // Shared question edit state (common pool + fixed own)
+  const [editingQId, setEditingQId] = useState<string | null>(null)
+  const [editQLabel, setEditQLabel] = useState('')
 
   const isFI = selected.type === 'entity' && selected.code === 'ENTITY_FI'
   const isCollection = selected.type === 'service' && COLLECTION_CODES.has(selected.code)
@@ -600,6 +667,19 @@ function QuestionsEditor({ selected }: { selected: Selection }) {
     updateRuleSet({ ...currentRuleSet, version: nextVersion(currentRuleSet.version), segmentQuestionConfigs: updated, questionPool: fullRs.questionPool })
   }
 
+  function savePoolQuestion(id: string, label: string) {
+    const fullRs = getRuleSet()
+    const updatedPool = fullRs.questionPool.map(q => q.id === id ? { ...q, label } : q)
+    updateRuleSet({ ...currentRuleSet, version: nextVersion(currentRuleSet.version), questionPool: updatedPool, segmentQuestionConfigs: fullRs.segmentQuestionConfigs })
+    setEditingQId(null)
+  }
+
+  function startEditQ(q: QuestionRule) {
+    setEditingQId(q.id)
+    setEditQLabel(q.label)
+    setEditIdx(null)
+  }
+
   function addOwn(q: QuestionRule) {
     saveConfig({ ownQuestions: [...config.ownQuestions, q] })
   }
@@ -620,7 +700,7 @@ function QuestionsEditor({ selected }: { selected: Selection }) {
   function matchesSvcView(q: QuestionRule): boolean {
     if (svcView === 'all') return true
     const cond = q.showWhen?.parentId === '_svc' ? q.showWhen.value : null
-    if (!cond) return true  // no service condition → shown in all views
+    if (!cond) return true
     return cond === svcView
   }
 
@@ -641,47 +721,65 @@ function QuestionsEditor({ selected }: { selected: Selection }) {
         </div>
       )}
 
-      {/* 공통 질문 — enable/disable + option filter per segment */}
+      {/* 공통 질문 — collapsible, enable/disable + option filter per segment */}
       <div>
-        <p className="text-[12px] font-semibold text-sb-n500 uppercase tracking-[0.5px] mb-2">공통 질문</p>
-        <div className="bg-white rounded-[10px] border border-sb-n100 overflow-hidden">
-          {commonQuestions.length === 0 && (
-            <p className="text-[12px] text-sb-n400 px-4 py-3">공통 질문 없음</p>
-          )}
-          {commonQuestions.map((q, idx) => (
-            <>
-              <CommonQuestionRow
-                key={q.id}
-                q={q}
-                enabled={config.enabledCommonQuestionIds.includes(q.id)}
-                optionFilter={config.commonOptionFilters?.[q.id]}
-                allConfigs={allConfigs}
-                onToggle={() => {
-                  const ids = config.enabledCommonQuestionIds.includes(q.id)
-                    ? config.enabledCommonQuestionIds.filter(id => id !== q.id)
-                    : [...config.enabledCommonQuestionIds, q.id]
-                  saveConfig({ enabledCommonQuestionIds: ids })
-                }}
-                onFilterChange={(values) => {
-                  const current = config.commonOptionFilters ?? {}
-                  const next = { ...current }
-                  if (values === undefined) delete next[q.id]
-                  else next[q.id] = values
-                  saveConfig({ commonOptionFilters: Object.keys(next).length ? next : undefined })
-                }}
-              />
-              {q.id === screen1LastCommon && (
-                <ScreenDivider key={`div-${idx}`} n={2} />
-              )}
-            </>
-          ))}
-        </div>
+        <button
+          onClick={() => setCommonOpen(v => !v)}
+          className="flex items-center gap-2 w-full mb-2 group"
+        >
+          <span className={`transition-transform ${commonOpen ? 'rotate-0' : '-rotate-90'}`}>
+            <CaretDown size={12} className="text-sb-n500" />
+          </span>
+          <span className="text-[12px] font-semibold text-sb-n700">공통 질문 (2차)</span>
+          <span className="text-[12px] text-sb-n400">{commonQuestions.length}</span>
+          <span className="text-[12px] text-sb-n400">· 전 세그먼트 자동 적용</span>
+        </button>
+        {commonOpen && (
+          <div className="bg-white rounded-[10px] border border-sb-n100 overflow-hidden">
+            {commonQuestions.length === 0 && (
+              <p className="text-[12px] text-sb-n400 px-4 py-3">공통 질문 없음</p>
+            )}
+            {commonQuestions.map((q, idx) => (
+              <>
+                <CommonQuestionRow
+                  key={q.id}
+                  q={q}
+                  enabled={config.enabledCommonQuestionIds.includes(q.id)}
+                  optionFilter={config.commonOptionFilters?.[q.id]}
+                  allConfigs={allConfigs}
+                  isEditing={editingQId === q.id}
+                  editLabel={editQLabel}
+                  onEditLabelChange={setEditQLabel}
+                  onStartEdit={() => startEditQ(q)}
+                  onSaveEdit={() => savePoolQuestion(q.id, editQLabel)}
+                  onCancelEdit={() => setEditingQId(null)}
+                  onToggle={() => {
+                    const ids = config.enabledCommonQuestionIds.includes(q.id)
+                      ? config.enabledCommonQuestionIds.filter(id => id !== q.id)
+                      : [...config.enabledCommonQuestionIds, q.id]
+                    saveConfig({ enabledCommonQuestionIds: ids })
+                  }}
+                  onFilterChange={(values) => {
+                    const current = config.commonOptionFilters ?? {}
+                    const next = { ...current }
+                    if (values === undefined) delete next[q.id]
+                    else next[q.id] = values
+                    saveConfig({ commonOptionFilters: Object.keys(next).length ? next : undefined })
+                  }}
+                />
+                {q.id === screen1LastCommon && (
+                  <ScreenDivider key={`div-${idx}`} n={2} />
+                )}
+              </>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* FI 서비스 뷰 탭 */}
       {isFI && (
         <div>
-          <p className="text-[12px] font-semibold text-sb-n500 uppercase tracking-[0.5px] mb-2">서비스 뷰 (FI)</p>
+          <p className="text-[12px] font-semibold text-sb-n700 mb-2">서비스 뷰 (FI)</p>
           <div className="flex border border-sb-n100 rounded-[8px] overflow-hidden bg-white text-[12px]">
             {(['all', 'payout', 'collection'] as const).map((v, i) => (
               <button
@@ -703,14 +801,28 @@ function QuestionsEditor({ selected }: { selected: Selection }) {
 
       {/* 고유 질문 */}
       <div>
-        <p className="text-[12px] font-semibold text-sb-n500 uppercase tracking-[0.5px] mb-2">고유 질문</p>
+        <div className="flex items-center gap-2 mb-2">
+          <p className="text-[12px] font-semibold text-sb-n700">이 세그먼트 질문</p>
+          <span className="text-[12px] text-sb-n400">· 고유 + 공유(다중 매핑)</span>
+        </div>
         <div className="bg-white rounded-[10px] border border-sb-n100 overflow-hidden">
           {ownFixedQuestions.filter(matchesSvcView).length === 0 && config.ownQuestions.filter(matchesSvcView).length === 0 && (
             <p className="text-[12px] text-sb-n400 px-4 py-3">고유 질문 없음</p>
           )}
           {ownFixedQuestions.filter(matchesSvcView).map((q, idx) => (
             <>
-              <QuestionRowFixed key={q.id} q={q} allConfigs={allConfigs} currentSegKey={configKey} />
+              <QuestionRowFixed
+                key={q.id}
+                q={q}
+                allConfigs={allConfigs}
+                currentSegKey={configKey}
+                isEditing={editingQId === q.id}
+                editLabel={editQLabel}
+                onEditLabelChange={setEditQLabel}
+                onStartEdit={() => startEditQ(q)}
+                onSaveEdit={() => savePoolQuestion(q.id, editQLabel)}
+                onCancelEdit={() => setEditingQId(null)}
+              />
               {q.id === screen1LastOwn && (
                 <ScreenDivider key={`div-own-${idx}`} n={2} />
               )}
@@ -718,31 +830,40 @@ function QuestionsEditor({ selected }: { selected: Selection }) {
           ))}
           {config.ownQuestions.map((q, i) => {
             if (!matchesSvcView(q)) return null
+            const isEditingOwn = editIdx === i
             return (
-              <div key={q.id} className={`flex items-center gap-3 px-4 py-3 border-t border-sb-n100 ${editIdx === i ? 'bg-sb-blue-50' : ''}`}>
+              <div key={q.id} className={`flex items-start gap-3 px-4 py-3 border-t border-sb-n100 ${isEditingOwn ? 'bg-sb-blue-50' : ''}`}>
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    <p className="text-[13px] text-sb-n800">{q.label}</p>
-                    {q.showWhen?.parentId === '_svc' && (
-                      <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-sb-blue-100 text-sb-brand">
-                        {q.showWhen.value === 'payout' ? '송금' : '수금'}
-                      </span>
-                    )}
-                    {q.showWhen && q.showWhen.parentId !== '_svc' && (
-                      <span className="text-[10px] font-mono text-sb-n400 bg-sb-n50 border border-sb-n100 rounded px-1.5 py-0.5">
-                        if {q.showWhen.parentId} = {q.showWhen.value}
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-[11px] font-mono text-sb-n400">{q.id}</p>
+                  {isEditingOwn ? (
+                    <p className="text-[12px] font-medium text-sb-brand mb-1">질문 편집 중</p>
+                  ) : (
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <p className="text-[13px] text-sb-n800">{q.label}</p>
+                      {q.showWhen?.parentId === '_svc' && (
+                        <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-sb-blue-100 text-sb-brand">
+                          {q.showWhen.value === 'payout' ? '송금' : '수금'}
+                        </span>
+                      )}
+                      {q.showWhen && q.showWhen.parentId !== '_svc' && (
+                        <span className="text-[10px] font-mono text-sb-n400 bg-sb-n50 border border-sb-n100 rounded px-1.5 py-0.5">
+                          if {q.showWhen.parentId} = {q.showWhen.value}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                  <p className="text-[11px] font-mono text-sb-n400 mt-0.5">{q.id}</p>
                 </div>
-                <div className="flex items-center gap-1.5 flex-shrink-0">
-                  <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${q.isRequired ? 'bg-red-50 text-sb-negative' : 'bg-sb-n50 text-sb-n400'}`}>
-                    {q.isRequired ? '필수' : '선택'}
-                  </span>
-                  <span className="text-[10px] font-mono text-sb-n400 px-1.5 py-0.5 border border-sb-n100 rounded">{q.inputType}</span>
+                <div className="flex items-center gap-1 flex-shrink-0">
+                  {!isEditingOwn && (
+                    <>
+                      <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${q.isRequired ? 'bg-red-50 text-sb-negative' : 'bg-sb-n50 text-sb-n400'}`}>
+                        {q.isRequired ? '필수' : '선택'}
+                      </span>
+                      <span className="text-[10px] font-mono text-sb-n400 px-1.5 py-0.5 border border-sb-n100 rounded">{q.inputType}</span>
+                    </>
+                  )}
                   <button
-                    onClick={() => setEditIdx(editIdx === i ? null : i)}
+                    onClick={() => setEditIdx(isEditingOwn ? null : i)}
                     className="flex items-center justify-center w-7 h-7 rounded-[6px] text-sb-n400 hover:text-sb-brand hover:bg-sb-blue-100 transition-colors"
                   >
                     <PencilSimple size={13} />
