@@ -729,7 +729,6 @@ function QuestionsEditor({ selected }: { selected: Selection }) {
   }
 
   const segmentCode = selected.type === 'entity' ? selected.code : selected.type === 'service' ? selected.code : ''
-  const screen1LastCommon = SCREEN1_LAST_ID['COMMON']
   const screen1LastOwn = SCREEN1_LAST_ID[segmentCode] ?? ''
 
   return (
@@ -763,38 +762,33 @@ function QuestionsEditor({ selected }: { selected: Selection }) {
             {commonQuestions.length === 0 && (
               <p className="text-[12px] text-sb-n400 px-4 py-3">공통 질문 없음</p>
             )}
-            {commonQuestions.map((q, idx) => (
-              <>
-                <CommonQuestionRow
-                  key={q.id}
-                  q={q}
-                  enabled={config.enabledCommonQuestionIds.includes(q.id)}
-                  optionFilter={config.commonOptionFilters?.[q.id]}
-                  allConfigs={allConfigs}
-                  isEditing={editingQId === q.id}
-                  editLabel={editQLabel}
-                  onEditLabelChange={setEditQLabel}
-                  onStartEdit={() => startEditQ(q)}
-                  onSaveEdit={() => savePoolQuestion(q.id, editQLabel)}
-                  onCancelEdit={() => setEditingQId(null)}
-                  onToggle={() => {
-                    const ids = config.enabledCommonQuestionIds.includes(q.id)
-                      ? config.enabledCommonQuestionIds.filter(id => id !== q.id)
-                      : [...config.enabledCommonQuestionIds, q.id]
-                    saveConfig({ enabledCommonQuestionIds: ids })
-                  }}
-                  onFilterChange={(values) => {
-                    const current = config.commonOptionFilters ?? {}
-                    const next = { ...current }
-                    if (values === undefined) delete next[q.id]
-                    else next[q.id] = values
-                    saveConfig({ commonOptionFilters: Object.keys(next).length ? next : undefined })
-                  }}
-                />
-                {q.id === screen1LastCommon && (
-                  <ScreenDivider key={`div-${idx}`} n={2} />
-                )}
-              </>
+            {commonQuestions.map((q) => (
+              <CommonQuestionRow
+                key={q.id}
+                q={q}
+                enabled={config.enabledCommonQuestionIds.includes(q.id)}
+                optionFilter={config.commonOptionFilters?.[q.id]}
+                allConfigs={allConfigs}
+                isEditing={editingQId === q.id}
+                editLabel={editQLabel}
+                onEditLabelChange={setEditQLabel}
+                onStartEdit={() => startEditQ(q)}
+                onSaveEdit={() => savePoolQuestion(q.id, editQLabel)}
+                onCancelEdit={() => setEditingQId(null)}
+                onToggle={() => {
+                  const ids = config.enabledCommonQuestionIds.includes(q.id)
+                    ? config.enabledCommonQuestionIds.filter(id => id !== q.id)
+                    : [...config.enabledCommonQuestionIds, q.id]
+                  saveConfig({ enabledCommonQuestionIds: ids })
+                }}
+                onFilterChange={(values) => {
+                  const current = config.commonOptionFilters ?? {}
+                  const next = { ...current }
+                  if (values === undefined) delete next[q.id]
+                  else next[q.id] = values
+                  saveConfig({ commonOptionFilters: Object.keys(next).length ? next : undefined })
+                }}
+              />
             ))}
           </div>
         )}
