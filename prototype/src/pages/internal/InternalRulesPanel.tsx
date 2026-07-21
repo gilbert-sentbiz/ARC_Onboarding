@@ -1,13 +1,35 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { SignOut, TreeStructure, Plus, Trash, CaretDown, CaretRight, PencilSimple } from '@phosphor-icons/react'
+import { SignOut, TreeStructure, Plus, Trash, CaretDown, CaretRight, PencilSimple, ListBullets } from '@phosphor-icons/react'
 import { useSessionStore } from '../../store/sessionStore'
 import { useRuleStore, getRuleSet } from '../../store/ruleStore'
-import type { EntityCode, ServiceCode, SectorCode, ServiceClassificationRule, DocTemplateRule, QuestionRule, SegmentQuestionConfig, QuestionInputType, EntityClassificationRule, EntityClassificationCondition } from '../../types'
+import type { EntityCode, ServiceCode, SectorCode, ServiceClassificationRule, DocTemplateRule, QuestionRule, SegmentQuestionConfig, QuestionInputType, EntityClassificationRule, EntityClassificationCondition, FirstIntakeQuestion } from '../../types'
 
 type Selection =
   | { type: 'entity'; code: EntityCode }
   | { type: 'service'; code: ServiceCode }
+  | { type: 'intake' }
+
+const SEGMENT_LABELS: Record<string, string> = {
+  'entity:ENTITY_CORP': '법인',
+  'entity:ENTITY_INDIV': '개인',
+  'entity:ENTITY_FI': 'FI',
+  'service:SVC_COL_KRW': 'KRW',
+  'service:SVC_COL_VND': 'VND',
+  'service:SVC_COL_ETC': '기타',
+  'service:SVC_PAYOUT': 'Payout',
+}
+
+// After which question ID does Screen 1 end (Screen 2 begins)?
+const SCREEN1_LAST_ID: Record<string, string> = {
+  ENTITY_CORP: 'qe_corp_rep_group',
+  ENTITY_INDIV: 'qe_indiv_rep_nation',
+  ENTITY_FI: 'qe_fi_biz_category',
+  SVC_COL_VND: 'qs_vnd_contact_email',
+  COMMON: 'qc_biz_category',
+}
+
+const COLLECTION_CODES = new Set(['SVC_COL_KRW', 'SVC_COL_VND', 'SVC_COL_ETC'])
 
 type EntityTab = 'classification' | 'documents' | 'questions'
 type ServiceTab = 'condition' | 'documents' | 'questions'
@@ -31,14 +53,18 @@ const INPUT_TYPE_OPTIONS: { value: QuestionInputType; label: string }[] = [
   { value: 'number',   label: 'number' },
 ]
 
-function CommonQuestionRow({ q, enabled, optionFilter, onToggle, onFilterChange }: {
+function CommonQuestionRow({ q, enabled, optionFilter, allConfigs, onToggle, onFilterChange }: {
   q: QuestionRule
   enabled: boolean
   optionFilter: string[] | undefined
+  allConfigs: SegmentQuestionConfig[]
   onToggle: () => void
   onFilterChange: (values: string[] | undefined) => void
 }) {
   const hasOptions = (q.inputType === 'select' || q.inputType === 'radio') && !!q.options?.length
+  const enabledCount = optionFilter ? optionFilter.length : (q.options?.length ?? 0)
+  const totalCount = q.options?.length ?? 0
+  const sharedSegments = allConfigs.filter(c => c.enabledCommonQuestionIds.includes(q.id))
 
   return (
     <div className={`border-b border-sb-n100 last:border-0 ${!enabled ? 'opacity-50' : ''}`}>
@@ -47,7 +73,14 @@ function CommonQuestionRow({ q, enabled, optionFilter, onToggle, onFilterChange 
           <input type="checkbox" checked={enabled} onChange={onToggle} className="rounded border-sb-n300 text-sb-brand focus:ring-sb-brand" />
         </label>
         <div className="flex-1 min-w-0">
-          <p className="text-[13px] text-sb-n800">{q.label}</p>
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <p className="text-[13px] text-sb-n800">{q.label}</p>
+            {sharedSegments.map(c => (
+              <span key={c.key} className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${c.enabledCommonQuestionIds.includes(q.id) ? 'bg-sb-blue-100 text-sb-brand' : 'bg-sb-n100 text-sb-n400'}`}>
+                {SEGMENT_LABELS[c.key] ?? c.key}
+              </span>
+            ))}
+          </div>
           <p className="text-[11px] font-mono text-sb-n400">{q.id}</p>
         </div>
         <div className="flex items-center gap-1.5 flex-shrink-0">
@@ -55,22 +88,22 @@ function CommonQuestionRow({ q, enabled, optionFilter, onToggle, onFilterChange 
             {q.isRequired ? '필수' : '선택'}
           </span>
           <span className="text-[10px] font-mono text-sb-n400 px-1.5 py-0.5 border border-sb-n100 rounded">{q.inputType}</span>
-          {hasOptions && enabled && optionFilter && (
-            <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-sb-blue-100 text-sb-brand">
-              {optionFilter.length}/{q.options!.length}
+          {hasOptions && enabled && (
+            <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${optionFilter ? 'bg-sb-blue-100 text-sb-brand' : 'bg-sb-n50 text-sb-n500'}`}>
+              옵션 {enabledCount}/{totalCount}
             </span>
           )}
         </div>
       </div>
       {hasOptions && enabled && (
         <div className="px-4 pb-3 bg-sb-n50">
-          <p className="text-[11px] text-sb-n500 font-medium mb-2">노출 옵션 설정 <span className="font-normal text-sb-n400">(전체 선택 시 필터 없음)</span></p>
-          <div className="flex flex-col gap-1.5">
+          <p className="text-[11px] text-sb-n500 font-medium mb-2">노출 옵션 <span className="font-normal text-sb-n400">(체크 해제 = 이 세그먼트에서 제외)</span></p>
+          <div className="flex flex-col gap-1">
             {q.options!.map(opt => {
               const allVals = q.options!.map(o => o.value)
               const isChecked = !optionFilter || optionFilter.includes(opt.value)
               return (
-                <label key={opt.value} className="flex items-center gap-2 cursor-pointer">
+                <label key={opt.value} className="flex items-center gap-2 cursor-pointer group">
                   <input
                     type="checkbox"
                     checked={isChecked}
@@ -83,8 +116,8 @@ function CommonQuestionRow({ q, enabled, optionFilter, onToggle, onFilterChange 
                     }}
                     className="rounded border-sb-n300 text-sb-brand focus:ring-sb-brand"
                   />
-                  <span className="text-[12px] text-sb-n700">{opt.label}</span>
-                  <span className="text-[10px] font-mono text-sb-n400">{opt.value}</span>
+                  <span className={`text-[12px] transition-colors ${isChecked ? 'text-sb-n700' : 'text-sb-n300 line-through'}`}>{opt.label}</span>
+                  <span className={`text-[10px] font-mono ${isChecked ? 'text-sb-n400' : 'text-sb-n200'}`}>{opt.value}</span>
                 </label>
               )
             })}
@@ -95,9 +128,14 @@ function CommonQuestionRow({ q, enabled, optionFilter, onToggle, onFilterChange 
   )
 }
 
-function QuestionRowFixed({ q, depth = 0 }: { q: QuestionRule; depth?: number }) {
+function QuestionRowFixed({ q, depth = 0, allConfigs = [] }: { q: QuestionRule; depth?: number; allConfigs?: SegmentQuestionConfig[] }) {
   const [expanded, setExpanded] = useState(false)
   const hasChildren = !!(q.children?.length)
+
+  // Show segment chips: which entity/service segments have this question in their own or common list
+  const sharedSegments = depth === 0 && q.scope === undefined
+    ? allConfigs.filter(c => c.enabledCommonQuestionIds.includes(q.id))
+    : []
 
   return (
     <>
@@ -109,8 +147,13 @@ function QuestionRowFixed({ q, depth = 0 }: { q: QuestionRule; depth?: number })
         )}
         {!hasChildren && depth === 0 && <span className="w-[16px] flex-shrink-0" />}
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 flex-wrap">
             <p className="text-[13px] text-sb-n800">{q.label}</p>
+            {sharedSegments.map(c => (
+              <span key={c.key} className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-sb-blue-100 text-sb-brand">
+                {SEGMENT_LABELS[c.key] ?? c.key}
+              </span>
+            ))}
             {q.showWhen && (
               <span className="text-[10px] font-mono text-sb-n400 bg-sb-n50 border border-sb-n100 rounded px-1.5 py-0.5">
                 if {q.showWhen.parentId} = {q.showWhen.value}
@@ -168,6 +211,9 @@ function AddOwnQuestionForm({
     svcCondition: initSvc(),
   })
 
+  const [optionRows, setOptionRows] = useState<{ value: string; label: string }[]>(
+    editTarget?.options ?? []
+  )
   const isEditing = !!editTarget
 
   // Find parent question to resolve its options for the trigger-value dropdown
@@ -180,6 +226,7 @@ function AddOwnQuestionForm({
     let showWhen: { parentId: string; value: string } | undefined
     if (form.svcCondition) showWhen = { parentId: '_svc', value: form.svcCondition }
     else if (form.parentId) showWhen = { parentId: form.parentId, value: form.parentValue }
+    const validOptions = optionRows.filter(o => o.value && o.label)
     const q: QuestionRule = {
       id: editTarget?.id ?? `q_own_${Date.now()}`,
       label: form.label,
@@ -187,6 +234,7 @@ function AddOwnQuestionForm({
       isRequired: form.isRequired,
       classification: 'service-own',
       ...(showWhen ? { showWhen } : {}),
+      ...(validOptions.length ? { options: validOptions } : {}),
     }
     if (isEditing && onUpdate) {
       onUpdate(q)
@@ -260,6 +308,28 @@ function AddOwnQuestionForm({
         </button>
       </div>
 
+      {/* Options editing (for select / radio) */}
+      {(form.inputType === 'select' || form.inputType === 'radio') && (
+        <div className="flex flex-col gap-1.5">
+          <p className="text-[11px] text-sb-n400">옵션 <span className="text-sb-n300">(value / label)</span></p>
+          {optionRows.map((opt, i) => (
+            <div key={i} className="flex items-center gap-1.5">
+              <input placeholder="value" value={opt.value} onChange={e => setOptionRows(r => r.map((o, j) => j === i ? { ...o, value: e.target.value } : o))}
+                className="w-28 text-[11px] font-mono border border-sb-n200 rounded-[6px] px-2 py-1 focus:outline-none focus:border-sb-brand" />
+              <input placeholder="레이블" value={opt.label} onChange={e => setOptionRows(r => r.map((o, j) => j === i ? { ...o, label: e.target.value } : o))}
+                className="flex-1 text-[12px] border border-sb-n200 rounded-[6px] px-2 py-1 focus:outline-none focus:border-sb-brand" />
+              <button onClick={() => setOptionRows(r => r.filter((_, j) => j !== i))} className="text-sb-n300 hover:text-sb-negative">
+                <Trash size={12} />
+              </button>
+            </div>
+          ))}
+          <button onClick={() => setOptionRows(r => [...r, { value: '', label: '' }])}
+            className="flex items-center gap-1 text-[11px] text-sb-brand hover:underline self-start">
+            <Plus size={11} /> 옵션 추가
+          </button>
+        </div>
+      )}
+
       {/* Display condition (only when no svc condition) */}
       {!form.svcCondition && (
         <div className="flex items-center gap-2">
@@ -307,22 +377,167 @@ function AddOwnQuestionForm({
   )
 }
 
+// ── 1차 인테이크 질문 에디터 ──────────────────────────────────────────────────
+
+function FirstQuestionsEditor() {
+  const { currentRuleSet, updateRuleSet } = useRuleStore()
+  const rs = getRuleSet()
+  const questions: FirstIntakeQuestion[] = (rs.firstIntakeQuestions ?? []) as FirstIntakeQuestion[]
+
+  const [editId, setEditId] = useState<string | null>(null)
+  const [editLabel, setEditLabel] = useState('')
+  const [addLabel, setAddLabel] = useState('')
+  const [addType, setAddType] = useState<QuestionInputType>('text')
+  const [addRequired, setAddRequired] = useState(false)
+
+  function save(next: FirstIntakeQuestion[]) {
+    updateRuleSet({ ...currentRuleSet, version: nextVersion(currentRuleSet.version), firstIntakeQuestions: next })
+  }
+
+  function toggleEnabled(id: string) {
+    save(questions.map(q => q.id === id ? { ...q, enabled: !q.enabled } : q))
+  }
+
+  function startEdit(q: FirstIntakeQuestion) {
+    setEditId(q.id)
+    setEditLabel(q.label)
+  }
+
+  function commitEdit(id: string) {
+    if (!editLabel.trim()) return
+    save(questions.map(q => q.id === id ? { ...q, label: editLabel.trim() } : q))
+    setEditId(null)
+  }
+
+  function removeQuestion(id: string) {
+    save(questions.filter(q => q.id !== id))
+  }
+
+  function addQuestion() {
+    if (!addLabel.trim()) return
+    const newQ: FirstIntakeQuestion = {
+      id: `fi_custom_${Date.now()}`,
+      label: addLabel.trim(),
+      inputType: addType,
+      isRequired: addRequired,
+      classification: 'common',
+      enabled: true,
+    }
+    save([...questions, newQ])
+    setAddLabel('')
+    setAddType('text')
+    setAddRequired(false)
+  }
+
+  return (
+    <div className="flex flex-col gap-5">
+      <div>
+        <p className="text-[12px] font-semibold text-sb-n500 uppercase tracking-[0.5px] mb-2">1차 인테이크 질문</p>
+        <p className="text-[12px] text-sb-n400 mb-3">모든 고객이 분류 이전에 답하는 공통 질문입니다. 토글로 활성화/비활성화하고 편집 버튼으로 레이블을 수정합니다.</p>
+        <div className="bg-white rounded-[10px] border border-sb-n100 overflow-hidden">
+          {questions.map((q, idx) => (
+            <div key={q.id} className={`border-b border-sb-n100 last:border-0 ${!q.enabled ? 'opacity-50' : ''}`}>
+              {editId === q.id ? (
+                <div className="flex items-center gap-2 px-4 py-2.5 bg-sb-blue-50">
+                  <input
+                    autoFocus
+                    value={editLabel}
+                    onChange={e => setEditLabel(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter') commitEdit(q.id); if (e.key === 'Escape') setEditId(null) }}
+                    className="flex-1 text-[13px] border border-sb-brand rounded-[6px] px-2 py-1 focus:outline-none"
+                  />
+                  <button onClick={() => commitEdit(q.id)} className="text-[12px] font-medium text-sb-brand px-3 py-1 rounded-[6px] border border-sb-brand hover:bg-sb-blue-100">저장</button>
+                  <button onClick={() => setEditId(null)} className="text-[12px] text-sb-n400 hover:text-sb-n700">취소</button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-3 px-4 py-3">
+                  <span className="text-[11px] text-sb-n300 w-5 text-right flex-shrink-0">{idx + 1}</span>
+                  <label className="flex items-center cursor-pointer flex-shrink-0">
+                    <input type="checkbox" checked={q.enabled} onChange={() => toggleEnabled(q.id)} className="rounded border-sb-n300 text-sb-brand focus:ring-sb-brand" />
+                  </label>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <p className="text-[13px] text-sb-n800">{q.label}</p>
+                      {q.hint && (
+                        <span className="text-[10px] font-mono text-sb-n400 bg-sb-n50 border border-sb-n100 rounded px-1.5 py-0.5">{q.hint}</span>
+                      )}
+                    </div>
+                    <p className="text-[11px] font-mono text-sb-n400">{q.id}</p>
+                  </div>
+                  <div className="flex items-center gap-1.5 flex-shrink-0">
+                    <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${q.isRequired ? 'bg-red-50 text-sb-negative' : 'bg-sb-n50 text-sb-n400'}`}>
+                      {q.isRequired ? '필수' : '선택'}
+                    </span>
+                    <span className="text-[10px] font-mono text-sb-n400 px-1.5 py-0.5 border border-sb-n100 rounded">{q.inputType}</span>
+                    <button onClick={() => startEdit(q)} className="flex items-center justify-center w-7 h-7 rounded-[6px] text-sb-n400 hover:text-sb-brand hover:bg-sb-blue-100 transition-colors">
+                      <PencilSimple size={13} />
+                    </button>
+                    {!q.isFixed && (
+                      <button onClick={() => removeQuestion(q.id)} className="flex items-center justify-center w-7 h-7 rounded-[6px] text-sb-n400 hover:text-sb-negative hover:bg-red-50 transition-colors">
+                        <Trash size={13} />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+
+          {/* Add form */}
+          <div className="px-4 py-3 border-t border-sb-n100 bg-sb-n50 flex flex-col gap-2">
+            <p className="text-[11px] font-medium text-sb-n500">질문 추가</p>
+            <div className="flex items-end gap-2">
+              <input
+                placeholder="레이블 입력"
+                value={addLabel}
+                onChange={e => setAddLabel(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && addQuestion()}
+                className="flex-1 text-[12px] border border-sb-n200 rounded-[6px] px-2 py-1.5 focus:outline-none focus:border-sb-brand"
+              />
+              <select value={addType} onChange={e => setAddType(e.target.value as QuestionInputType)}
+                className="text-[12px] border border-sb-n200 rounded-[6px] px-2 py-1.5 bg-white focus:outline-none focus:border-sb-brand w-24">
+                {INPUT_TYPE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+              </select>
+              <label className="flex items-center gap-1.5 cursor-pointer mb-1">
+                <input type="checkbox" checked={addRequired} onChange={e => setAddRequired(e.target.checked)} className="rounded border-sb-n300 text-sb-brand" />
+                <span className="text-[12px] text-sb-n600">필수</span>
+              </label>
+              <button onClick={addQuestion} disabled={!addLabel.trim()}
+                className="flex items-center gap-1 px-3 py-1.5 rounded-[6px] text-[12px] font-medium bg-sb-brand text-white disabled:opacity-40 mb-px">
+                <Plus size={12} /> 추가
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p className="text-[11px] text-sb-n400">버전: <span className="font-mono font-medium text-sb-n700">{currentRuleSet.version}</span></p>
+    </div>
+  )
+}
+
 function QuestionsEditor({ selected }: { selected: Selection }) {
   const { currentRuleSet, updateRuleSet } = useRuleStore()
   const [editIdx, setEditIdx] = useState<number | null>(null)
   const [svcView, setSvcView] = useState<'all' | 'payout' | 'collection'>('all')
 
   const isFI = selected.type === 'entity' && selected.code === 'ENTITY_FI'
-  const configKey = selected.type === 'entity' ? `entity:${selected.code}` : `service:${selected.code}`
+  const isCollection = selected.type === 'service' && COLLECTION_CODES.has(selected.code)
+  const configKey = selected.type === 'entity'
+    ? `entity:${selected.code}`
+    : selected.type === 'service'
+      ? `service:${selected.code}`
+      : ''
   const rs = getRuleSet()
 
   const config: SegmentQuestionConfig = rs.segmentQuestionConfigs.find(c => c.key === configKey)
     ?? { key: configKey, enabledCommonQuestionIds: [], ownQuestions: [] }
 
+  const allConfigs = rs.segmentQuestionConfigs
   const commonQuestions = rs.questionPool.filter(q => q.classification === 'common')
   const ownFixedQuestions = rs.questionPool.filter(q => {
     if (selected.type === 'entity') return q.classification === 'entity-own' && (q.scope === selected.code || q.scopeEntity === selected.code)
-    return q.classification === 'service-own' && (q.scope === selected.code || q.scopeService === selected.code)
+    if (selected.type === 'service') return q.classification === 'service-own' && (q.scope === selected.code || q.scopeService === selected.code)
+    return false
   })
 
   function saveConfig(patch: Partial<SegmentQuestionConfig>) {
@@ -358,8 +573,23 @@ function QuestionsEditor({ selected }: { selected: Selection }) {
     return cond === svcView
   }
 
+  const segmentCode = selected.type === 'entity' ? selected.code : selected.type === 'service' ? selected.code : ''
+  const screen1LastCommon = SCREEN1_LAST_ID['COMMON']
+  const screen1LastOwn = SCREEN1_LAST_ID[segmentCode] ?? ''
+
   return (
     <div className="flex flex-col gap-5">
+      {/* Collection FI-inheritance banner */}
+      {isCollection && (
+        <div className="flex items-start gap-3 px-4 py-3 rounded-[10px] bg-blue-50 border border-blue-200">
+          <span className="text-blue-500 flex-shrink-0 mt-0.5">ℹ</span>
+          <div>
+            <p className="text-[13px] font-semibold text-blue-800">FI 상속 세그먼트</p>
+            <p className="text-[12px] text-blue-700 mt-0.5">이 고객은 FI 질문 전체 + 통화 고유 질문을 받는다 (수금=FI). 아래에서 통화 고유 질문만 편집합니다.</p>
+          </div>
+        </div>
+      )}
+
       {/* 공통 질문 — enable/disable + option filter per segment */}
       <div>
         <p className="text-[12px] font-semibold text-sb-n500 uppercase tracking-[0.5px] mb-2">공통 질문</p>
@@ -367,26 +597,34 @@ function QuestionsEditor({ selected }: { selected: Selection }) {
           {commonQuestions.length === 0 && (
             <p className="text-[12px] text-sb-n400 px-4 py-3">공통 질문 없음</p>
           )}
-          {commonQuestions.map(q => (
-            <CommonQuestionRow
-              key={q.id}
-              q={q}
-              enabled={config.enabledCommonQuestionIds.includes(q.id)}
-              optionFilter={config.commonOptionFilters?.[q.id]}
-              onToggle={() => {
-                const ids = config.enabledCommonQuestionIds.includes(q.id)
-                  ? config.enabledCommonQuestionIds.filter(id => id !== q.id)
-                  : [...config.enabledCommonQuestionIds, q.id]
-                saveConfig({ enabledCommonQuestionIds: ids })
-              }}
-              onFilterChange={(values) => {
-                const current = config.commonOptionFilters ?? {}
-                const next = { ...current }
-                if (values === undefined) delete next[q.id]
-                else next[q.id] = values
-                saveConfig({ commonOptionFilters: Object.keys(next).length ? next : undefined })
-              }}
-            />
+          {commonQuestions.map((q, idx) => (
+            <>
+              <CommonQuestionRow
+                key={q.id}
+                q={q}
+                enabled={config.enabledCommonQuestionIds.includes(q.id)}
+                optionFilter={config.commonOptionFilters?.[q.id]}
+                allConfigs={allConfigs}
+                onToggle={() => {
+                  const ids = config.enabledCommonQuestionIds.includes(q.id)
+                    ? config.enabledCommonQuestionIds.filter(id => id !== q.id)
+                    : [...config.enabledCommonQuestionIds, q.id]
+                  saveConfig({ enabledCommonQuestionIds: ids })
+                }}
+                onFilterChange={(values) => {
+                  const current = config.commonOptionFilters ?? {}
+                  const next = { ...current }
+                  if (values === undefined) delete next[q.id]
+                  else next[q.id] = values
+                  saveConfig({ commonOptionFilters: Object.keys(next).length ? next : undefined })
+                }}
+              />
+              {q.id === screen1LastCommon && (
+                <div key={`div-${idx}`} className="flex items-center gap-2 px-4 py-2 bg-sb-n50 border-t border-b border-dashed border-sb-n200">
+                  <span className="text-[10px] font-semibold text-sb-n400 uppercase tracking-[0.5px]">화면 2 시작 ↓ (BO · 거래 · 자금 · VASP)</span>
+                </div>
+              )}
+            </>
           ))}
         </div>
       </div>
@@ -421,8 +659,15 @@ function QuestionsEditor({ selected }: { selected: Selection }) {
           {ownFixedQuestions.filter(matchesSvcView).length === 0 && config.ownQuestions.filter(matchesSvcView).length === 0 && (
             <p className="text-[12px] text-sb-n400 px-4 py-3">고유 질문 없음</p>
           )}
-          {ownFixedQuestions.filter(matchesSvcView).map(q => (
-            <QuestionRowFixed key={q.id} q={q} />
+          {ownFixedQuestions.filter(matchesSvcView).map((q, idx) => (
+            <>
+              <QuestionRowFixed key={q.id} q={q} allConfigs={allConfigs} />
+              {q.id === screen1LastOwn && (
+                <div key={`div-own-${idx}`} className="flex items-center gap-2 px-4 py-2 bg-sb-n50 border-t border-b border-dashed border-sb-n200">
+                  <span className="text-[10px] font-semibold text-sb-n400 uppercase tracking-[0.5px]">화면 2 시작 ↓</span>
+                </div>
+              )}
+            </>
           ))}
           {config.ownQuestions.map((q, i) => {
             if (!matchesSvcView(q)) return null
@@ -618,6 +863,8 @@ function DocumentsEditor({ selected }: { selected: Selection }) {
       <span />
     </div>
   )
+
+  if (selected.type === 'intake') return null
 
   if (selected.type === 'entity') {
     const code = selected.code
@@ -1349,6 +1596,8 @@ export default function InternalRulesPanel() {
   const [serviceTab, setServiceTab] = useState<ServiceTab>('condition')
   const [wizardOpen, setWizardOpen] = useState(false)
 
+  const isIntake = selected.type === 'intake'
+
   // Dynamic service order: seeded + wizard-created codes
   const serviceOrder = Object.keys(rs.serviceLabels) as ServiceCode[]
 
@@ -1448,6 +1697,22 @@ export default function InternalRulesPanel() {
       <div className="max-w-[1200px] mx-auto px-6 py-6 flex gap-6">
         {/* ── Left sidebar ─────────────────────────────────────────────────── */}
         <aside className="w-[220px] flex-shrink-0 flex flex-col gap-4">
+          {/* 1차 질문 nav */}
+          <button
+            onClick={() => setSelected({ type: 'intake' })}
+            className={`flex items-center gap-2 w-full px-4 py-2.5 rounded-[10px] border text-left transition-colors ${
+              isIntake
+                ? 'bg-sb-blue-100 border-sb-brand text-sb-brand font-medium'
+                : 'bg-white border-sb-n100 text-sb-n700 hover:bg-sb-n50'
+            }`}
+          >
+            <ListBullets size={14} className={isIntake ? 'text-sb-brand' : 'text-sb-n500'} />
+            <div>
+              <p className="text-[10px] uppercase tracking-[0.5px] opacity-70">인테이크</p>
+              <p className="text-[13px]">1차 질문</p>
+            </div>
+          </button>
+
           <div className="bg-white rounded-[10px] border border-sb-n100 overflow-hidden">
             <div className="px-4 py-3 border-b border-sb-n100 flex items-center gap-2">
               <TreeStructure size={14} className="text-sb-n500" />
@@ -1510,6 +1775,21 @@ export default function InternalRulesPanel() {
 
         {/* ── Content area ─────────────────────────────────────────────────── */}
         <main className="flex-1 bg-white rounded-[12px] border border-sb-n100 p-6 overflow-auto">
+          {selected.type === 'intake' && (
+            <div>
+              <div className="flex items-center gap-3 pb-4 border-b border-sb-n100 mb-5">
+                <div>
+                  <p className="text-[11px] font-mono text-sb-n400">인테이크</p>
+                  <h2 className="text-[18px] font-semibold text-sb-n900">1차 질문</h2>
+                </div>
+                <span className="ml-auto text-[11px] font-mono bg-sb-n50 border border-sb-n100 px-2 py-1 rounded text-sb-n500">
+                  {rs.version}
+                </span>
+              </div>
+              <FirstQuestionsEditor />
+            </div>
+          )}
+
           {selected.type === 'entity' && (
             <div>
               <div className="flex items-center gap-3 pb-4 border-b border-sb-n100 mb-0">

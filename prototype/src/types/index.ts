@@ -111,6 +111,11 @@ export interface SegmentQuestionConfig {
   commonOptionFilters?: Record<string, string[]>  // questionId -> allowed option values for this segment
 }
 
+export interface FirstIntakeQuestion extends QuestionRule {
+  enabled: boolean
+  hint?: string
+}
+
 export interface RuleSet {
   version: string
   entityLabels: Record<EntityCode, string>
@@ -121,6 +126,7 @@ export interface RuleSet {
   serviceClassificationRules: ServiceClassificationRule[]
   questionPool: QuestionRule[]
   segmentQuestionConfigs: SegmentQuestionConfig[]
+  firstIntakeQuestions?: FirstIntakeQuestion[]
 }
 
 export interface RuleSetHistoryEntry {

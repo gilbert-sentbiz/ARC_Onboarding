@@ -599,6 +599,33 @@ export const INITIAL_RULESET: RuleSet = {
     { key: 'service:SVC_PAYOUT',     enabledCommonQuestionIds: [], ownQuestions: [] },
     { key: 'service:SVC_COL_ETC', enabledCommonQuestionIds: [], ownQuestions: [] },
   ],
+
+  // ── 1차 인테이크 질문 (16개) ───────────────────────────────────────────────
+  firstIntakeQuestions: [
+    { id: 'fi_company_name',          label: '회사명',                  inputType: 'text',     isRequired: true,  classification: 'common', enabled: true },
+    { id: 'fi_contact_name',          label: '담당자 이름',              inputType: 'text',     isRequired: true,  classification: 'common', enabled: true },
+    { id: 'fi_contact_title',         label: '직함',                   inputType: 'text',     isRequired: false, classification: 'common', enabled: true },
+    { id: 'fi_phone',                 label: '연락처',                  inputType: 'text',     isRequired: true,  classification: 'common', enabled: true },
+    { id: 'fi_services',              label: '신청 서비스',              inputType: 'select',   isRequired: true,  classification: 'common', enabled: true,
+      options: [{ value: 'remittance', label: '해외 송금' }, { value: 'collection', label: '수금' }] },
+    { id: 'fi_collection_countries',  label: '수금 국가',               inputType: 'select',   isRequired: true,  classification: 'common', enabled: true,
+      showWhen: { parentId: 'fi_services', value: 'collection' }, hint: 'if 서비스=수금' },
+    { id: 'fi_collection_other',      label: '기타 수금 국가',           inputType: 'text',     isRequired: false, classification: 'common', enabled: true,
+      showWhen: { parentId: 'fi_collection_countries', value: 'OTHER' }, hint: 'if 수금 국가=기타' },
+    { id: 'fi_remittance_from',       label: '송금 출발 국가',           inputType: 'select',   isRequired: true,  classification: 'common', enabled: true,
+      showWhen: { parentId: 'fi_services', value: 'remittance' }, hint: 'if 서비스=송금' },
+    { id: 'fi_remittance_to',         label: '송금 도착 국가',           inputType: 'select',   isRequired: true,  classification: 'common', enabled: true,
+      showWhen: { parentId: 'fi_services', value: 'remittance' }, hint: 'if 서비스=송금' },
+    { id: 'fi_business_type',         label: '사업자 유형',              inputType: 'radio',    isRequired: true,  classification: 'common', enabled: true,
+      options: [{ value: 'financial', label: '금융업' }, { value: 'corporation', label: '법인 사업자' }, { value: 'individual', label: '개인 사업자' }] },
+    { id: 'fi_founding_country',      label: '설립 국가',               inputType: 'select',   isRequired: true,  classification: 'common', enabled: true },
+    { id: 'fi_monthly_volume',        label: '예상 월간 거래 규모',       inputType: 'number',   isRequired: false, classification: 'common', enabled: true },
+    { id: 'fi_monthly_currency',      label: '거래 규모 통화',           inputType: 'select',   isRequired: false, classification: 'common', enabled: true },
+    { id: 'fi_monthly_currency_other',label: '기타 통화 직접 입력',      inputType: 'text',     isRequired: false, classification: 'common', enabled: true,
+      showWhen: { parentId: 'fi_monthly_currency', value: 'OTHER' }, hint: 'if 통화=기타' },
+    { id: 'fi_monthly_count',         label: '예상 월간 거래 건수',       inputType: 'number',   isRequired: false, classification: 'common', enabled: true },
+    { id: 'fi_additional_note',       label: '추가 문의사항',            inputType: 'textarea', isRequired: false, classification: 'common', enabled: true },
+  ] as import('../types').FirstIntakeQuestion[],
 }
 
 // ── Store ─────────────────────────────────────────────────────────────────────
@@ -645,5 +672,6 @@ export function getRuleSet(): RuleSet {
     questionPool: (rs.questionPool?.length && hasUnifiedVasp) ? rs.questionPool : INITIAL_RULESET.questionPool,
     segmentQuestionConfigs: rs.segmentQuestionConfigs?.length ? rs.segmentQuestionConfigs : INITIAL_RULESET.segmentQuestionConfigs,
     documentRules: hasCanonicalDocTypes ? rs.documentRules : INITIAL_RULESET.documentRules,
+    firstIntakeQuestions: rs.firstIntakeQuestions?.length ? rs.firstIntakeQuestions : INITIAL_RULESET.firstIntakeQuestions,
   }
 }
