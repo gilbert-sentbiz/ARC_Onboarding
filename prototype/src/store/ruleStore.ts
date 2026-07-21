@@ -235,17 +235,17 @@ export const INITIAL_RULESET: RuleSet = {
   ],
 
   segmentDocConfigs: [
-    // 법인: 공통 8종 모두 + 신분증/은행증빙 오버라이드
+    // 법인: DIRECTOR_LIST 제외 (FI·KRW·VND만) + 오버라이드
     {
       key: 'entity:ENTITY_CORP',
-      enabledCommonDocTypes: ['BIZ_REGISTRATION', 'ID_COPY', 'SHAREHOLDER_LIST', 'DIRECTOR_LIST', 'CONTRACT', 'SAMPLE_INVOICE_SHIPPING', 'BANK_PROOF', 'WEBSITE_URL'],
+      enabledCommonDocTypes: ['BIZ_REGISTRATION', 'ID_COPY', 'SHAREHOLDER_LIST', 'CONTRACT', 'SAMPLE_INVOICE_SHIPPING', 'BANK_PROOF', 'WEBSITE_URL'],
       ownDocs: [],
       commonOverrides: {
         ID_COPY:    { displayName: '대표자 신분증 사본 (CEO ID Copy, 공동대표 전원)' },
         BANK_PROOF: { displayName: '은행계좌 사본 (Bank Account Copy)' },
       },
     },
-    // 개인사업자: 6종 (주주·이사명부 제외) + 오버라이드
+    // 개인사업자: SHAREHOLDER_LIST·DIRECTOR_LIST 제외 + 오버라이드
     {
       key: 'entity:ENTITY_INDIV',
       enabledCommonDocTypes: ['BIZ_REGISTRATION', 'ID_COPY', 'CONTRACT', 'SAMPLE_INVOICE_SHIPPING', 'BANK_PROOF', 'WEBSITE_URL'],
@@ -255,33 +255,35 @@ export const INITIAL_RULESET: RuleSet = {
         BANK_PROOF: { displayName: '은행계좌 사본 (Bank Account Copy)' },
       },
     },
-    // FI: 4종 + 오버라이드 (고유 서류는 라이브러리에서 가져옴)
+    // FI: SHAREHOLDER_LIST(=Ownership Chart) 추가, CONTRACT·SAMPLE_INVOICE_SHIPPING·WEBSITE_URL 제외
     {
       key: 'entity:ENTITY_FI',
-      enabledCommonDocTypes: ['BIZ_REGISTRATION', 'ID_COPY', 'DIRECTOR_LIST', 'BANK_PROOF'],
+      enabledCommonDocTypes: ['BIZ_REGISTRATION', 'ID_COPY', 'SHAREHOLDER_LIST', 'DIRECTOR_LIST', 'BANK_PROOF'],
       ownDocs: [],
       commonOverrides: {
-        ID_COPY:    { displayName: 'Certified ID Copies — 이사 전원 + UBO 25%+' },
-        BANK_PROOF: { displayName: 'Proof of Bank Account (최근 3개월 내)' },
+        ID_COPY:         { displayName: 'Certified ID Copies — 이사 전원 + UBO 25%+' },
+        SHAREHOLDER_LIST: { displayName: 'Ownership Chart' },
+        BANK_PROOF:      { displayName: 'Proof of Bank Account (최근 3개월 내)' },
       },
     },
-    // KRW: 7종 (WEBSITE_URL 제외) + 오버라이드
+    // KRW: CONTRACT·SAMPLE_INVOICE_SHIPPING 제외 (섹터별 고유로 처리)
     {
       key: 'service:SVC_COL_KRW',
-      enabledCommonDocTypes: ['BIZ_REGISTRATION', 'ID_COPY', 'SHAREHOLDER_LIST', 'DIRECTOR_LIST', 'CONTRACT', 'SAMPLE_INVOICE_SHIPPING', 'BANK_PROOF'],
+      enabledCommonDocTypes: ['BIZ_REGISTRATION', 'ID_COPY', 'SHAREHOLDER_LIST', 'DIRECTOR_LIST', 'BANK_PROOF'],
       ownDocs: [],
       commonOverrides: {
         ID_COPY:    { displayName: 'ID Copies — CEO, 이사, UBO 25%+' },
         BANK_PROOF: { displayName: 'Bank/E-wallet Statement (회사명 기재)' },
       },
     },
-    // VND: 6종 (공통 → CONTRACT·SAMPLE_INVOICE_SHIPPING·ID_COPY·BIZ·SHAREHOLDER·DIRECTOR) + 오버라이드
+    // VND: BANK_PROOF·WEBSITE_URL 추가
     {
       key: 'service:SVC_COL_VND',
-      enabledCommonDocTypes: ['BIZ_REGISTRATION', 'ID_COPY', 'SHAREHOLDER_LIST', 'DIRECTOR_LIST', 'CONTRACT', 'SAMPLE_INVOICE_SHIPPING'],
+      enabledCommonDocTypes: ['BIZ_REGISTRATION', 'ID_COPY', 'SHAREHOLDER_LIST', 'DIRECTOR_LIST', 'CONTRACT', 'SAMPLE_INVOICE_SHIPPING', 'BANK_PROOF', 'WEBSITE_URL'],
       ownDocs: [],
       commonOverrides: {
-        ID_COPY: { displayName: 'Passport/ID Copy — UBO, 이사, 대표자' },
+        ID_COPY:    { displayName: 'Passport/ID Copy — UBO, 이사, 대표자' },
+        BANK_PROOF: { displayName: 'Bank Statement (SentBe App 사용자만)' },
       },
     },
     // Payout: 기본 3종
