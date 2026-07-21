@@ -1,0 +1,494 @@
+<title>ARC 룰 관리 — 질문 룰 목업</title>
+<style>
+  :root{
+    --brand:#0746CA; --brand-soft:#EEF2FD; --brand-line:#D3DFFA;
+    --bg:#F8FAFC; --surface:#FFFFFF; --sunken:#F1F5F9;
+    --n900:#0F172A; --n800:#1E293B; --n700:#334155; --n600:#475569;
+    --n500:#64748B; --n400:#94A3B8; --n300:#CBD5E1; --n200:#E2E8F0; --n100:#EEF1F5;
+    --line:#E2E8F0; --line-subtle:#EEF1F5;
+    --pos:#0F9D58; --pos-soft:#E7F6EE; --warn:#B45309; --warn-soft:#FEF3E2; --neg:#DC2626; --neg-soft:#FDECEC;
+    --mono:"SF Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+    --ui:"Pretendard","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Malgun Gothic",sans-serif;
+  }
+  @media (prefers-color-scheme:dark){:root{
+    --brand:#5B8DEF; --brand-soft:#16203A; --brand-line:#28345A; --bg:#0B1120; --surface:#111827; --sunken:#0E1524;
+    --n900:#F1F5F9; --n800:#E2E8F0; --n700:#CBD5E1; --n600:#AEBACD; --n500:#8A98AD; --n400:#6B7A90; --n300:#3A4557; --n200:#26313F; --n100:#1B2432;
+    --line:#26313F; --line-subtle:#1B2432; --pos:#34D399; --pos-soft:#0E2A20; --warn:#FBBF24; --warn-soft:#2A2110; --neg:#F87171; --neg-soft:#2A1616;
+  }}
+  :root[data-theme="dark"]{
+    --brand:#5B8DEF; --brand-soft:#16203A; --brand-line:#28345A; --bg:#0B1120; --surface:#111827; --sunken:#0E1524;
+    --n900:#F1F5F9; --n800:#E2E8F0; --n700:#CBD5E1; --n600:#AEBACD; --n500:#8A98AD; --n400:#6B7A90; --n300:#3A4557; --n200:#26313F; --n100:#1B2432;
+    --line:#26313F; --line-subtle:#1B2432; --pos:#34D399; --pos-soft:#0E2A20; --warn:#FBBF24; --warn-soft:#2A2110; --neg:#F87171; --neg-soft:#2A1616;
+  }
+  :root[data-theme="light"]{
+    --brand:#0746CA; --brand-soft:#EEF2FD; --brand-line:#D3DFFA; --bg:#F8FAFC; --surface:#FFFFFF; --sunken:#F1F5F9;
+    --n900:#0F172A; --n800:#1E293B; --n700:#334155; --n600:#475569; --n500:#64748B; --n400:#94A3B8; --n300:#CBD5E1; --n200:#E2E8F0; --n100:#EEF1F5;
+    --line:#E2E8F0; --line-subtle:#EEF1F5; --pos:#0F9D58; --pos-soft:#E7F6EE; --warn:#B45309; --warn-soft:#FEF3E2; --neg:#DC2626; --neg-soft:#FDECEC;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--n800);font-family:var(--ui);-webkit-font-smoothing:antialiased;font-size:13px;line-height:1.45}
+  .mono{font-family:var(--mono)}
+  button{font-family:inherit;cursor:pointer;border:0;background:none;color:inherit}
+  input,select{font-family:inherit}
+  .app{display:flex;flex-direction:column;min-height:100vh}
+  .topbar{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 24px;background:var(--surface);border-bottom:1px solid var(--line)}
+  .brandmark{display:flex;align-items:center;gap:10px}
+  .brandmark .dot{width:22px;height:22px;border-radius:6px;background:var(--brand);display:grid;place-items:center}
+  .brandmark .dot svg{color:#fff}
+  .brandmark h1{margin:0;font-size:14px;font-weight:700;letter-spacing:-.2px}
+  .brandmark .sub{font-size:11px;color:var(--n400);font-weight:500}
+  .topbar .right{display:flex;align-items:center;gap:10px}
+  .verpill{font-family:var(--mono);font-size:11px;color:var(--n500);background:var(--sunken);border:1px solid var(--line);border-radius:999px;padding:4px 10px}
+  .btn{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;border-radius:8px;padding:8px 12px;border:1px solid var(--line);color:var(--n700);background:var(--surface)}
+  .btn:hover{border-color:var(--n300)}
+  .btn.primary{background:var(--brand);color:#fff;border-color:var(--brand)}
+  .btn svg{flex:none}
+  .body{display:grid;grid-template-columns:236px 1fr;flex:1;min-height:0}
+  .rail{background:var(--surface);border-right:1px solid var(--line);padding:16px 12px;display:flex;flex-direction:column;gap:18px}
+  .rail .grouplabel{font-size:11px;font-weight:700;color:var(--n400);letter-spacing:.6px;text-transform:uppercase;padding:0 8px 6px}
+  .navitem{display:flex;align-items:center;gap:9px;width:100%;text-align:left;padding:9px 10px;border-radius:8px;font-size:13px;color:var(--n600);font-weight:500}
+  .navitem:hover{background:var(--sunken)}
+  .navitem.active{background:var(--brand-soft);color:var(--brand);font-weight:600}
+  .navitem .code{margin-left:auto;font-family:var(--mono);font-size:10px;color:var(--n400)}
+  .navitem.active .code{color:var(--brand)}
+  .navdot{width:6px;height:6px;border-radius:2px;background:var(--n300);flex:none}
+  .navitem.active .navdot{background:var(--brand)}
+  .main{padding:24px 32px;overflow-y:auto}
+  .crumb{font-size:11px;color:var(--n400);margin-bottom:4px}
+  .seghead{display:flex;align-items:center;gap:10px}
+  .seghead h2{margin:0;font-size:19px;font-weight:700;letter-spacing:-.3px;color:var(--n900)}
+  .seghead .kind{font-size:11px;font-weight:600;color:var(--n500);background:var(--sunken);border:1px solid var(--line);border-radius:6px;padding:3px 8px}
+  .seghead .code{font-family:var(--mono);font-size:11px;color:var(--n400)}
+  .subline{font-size:12px;color:var(--n500);margin:6px 0 18px}
+  .tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);margin-bottom:22px}
+  .tab{padding:9px 14px;font-size:13px;font-weight:600;color:var(--n500);border-bottom:2px solid transparent;margin-bottom:-1px}
+  .tab:hover{color:var(--n700)}
+  .tab.active{color:var(--brand);border-bottom-color:var(--brand)}
+  .section{margin-bottom:26px}
+  .sectitle{display:flex;align-items:center;gap:8px;margin:0 0 10px;width:100%;text-align:left}
+  .sectitle .cbtn{display:flex;align-items:center;gap:8px;background:none}
+  .sectitle h3{margin:0;font-size:12px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--n500)}
+  .sectitle .caret{color:var(--n400);transition:transform .15s;display:grid;place-items:center}
+  .sectitle .caret.collapsed{transform:rotate(-90deg)}
+  .sectitle .hint{font-size:11px;color:var(--n400);font-weight:500}
+  .sectitle .count{font-size:11px;font-weight:600;color:var(--n400);background:var(--sunken);border-radius:999px;padding:1px 8px}
+  .sectitle .libbtn{margin-left:auto;font-size:11px;font-weight:600;color:var(--brand);display:inline-flex;align-items:center;gap:4px}
+  .sectitle .libbtn:hover{text-decoration:underline}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  .row{display:flex;align-items:flex-start;gap:12px;padding:11px 16px;border-bottom:1px solid var(--line-subtle)}
+  .row:last-child{border-bottom:0}
+  .row.off{opacity:.45}
+  .row.child{background:var(--sunken)}
+  .row .lead{flex:none;display:flex;align-items:center;padding-top:1px}
+  .handle{color:var(--n300);cursor:grab;display:grid;place-items:center}
+  .branch{color:var(--n300);font-family:var(--mono);font-size:13px}
+  .qbody{flex:1;min-width:0}
+  .qlabel{font-size:13px;color:var(--n800);display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+  .qlabel .txt{font-weight:500}
+  .qlabel.note .txt{color:var(--n500);font-style:italic;font-weight:400}
+  .qid{font-family:var(--mono);font-size:11px;color:var(--n400);margin-top:3px}
+  .opts{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px}
+  .optchip{font-size:11px;color:var(--n600);background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:2px 8px}
+  .row.child .optchip{background:var(--bg)}
+  .optchip.onfilt{background:var(--brand-soft);color:var(--brand);border-color:var(--brand-line)}
+  .optchip.ofilt{opacity:.5;text-decoration:line-through}
+  .segchip{font-size:10px;font-weight:600;padding:2px 8px;border-radius:999px;border:1px solid var(--line);color:var(--n500);background:var(--surface)}
+  .segchip.cur{background:var(--brand-soft);color:var(--brand);border-color:var(--brand-line)}
+  .showwhen{font-size:10px;font-family:var(--mono);color:var(--n400);background:var(--surface);border:1px solid var(--line);border-radius:5px;padding:1px 6px}
+  .tags{display:flex;align-items:center;gap:6px;flex:none;padding-top:1px}
+  .tag{font-size:10px;font-weight:600;padding:2px 7px;border-radius:999px;white-space:nowrap}
+  .tag.req{background:var(--neg-soft);color:var(--neg)}
+  .tag.opt{background:var(--sunken);color:var(--n400)}
+  .tag.type{font-family:var(--mono);color:var(--n500);background:transparent;border:1px solid var(--line);border-radius:5px;padding:2px 6px}
+  .tag.repeat{background:var(--pos-soft);color:var(--pos)}
+  .tag.svc{background:var(--brand-soft);color:var(--brand)}
+  .tag.filter{background:var(--warn-soft);color:var(--warn)}
+  .tag.note{background:var(--sunken);color:var(--n400)}
+  .iconbtn{width:28px;height:28px;border-radius:7px;display:grid;place-items:center;color:var(--n400)}
+  .iconbtn:hover{background:var(--sunken);color:var(--brand)}
+  .iconbtn.danger:hover{background:var(--neg-soft);color:var(--neg)}
+  .switch{position:relative;width:34px;height:20px;flex:none;cursor:pointer}
+  .switch input{opacity:0;width:0;height:0;position:absolute}
+  .switch .track{position:absolute;inset:0;background:var(--n300);border-radius:999px;transition:background .15s}
+  .switch .thumb{position:absolute;top:2px;left:2px;width:16px;height:16px;background:#fff;border-radius:50%;transition:transform .15s;box-shadow:0 1px 2px rgba(0,0,0,.25)}
+  .switch input:checked + .track{background:var(--brand)}
+  .switch input:checked + .track + .thumb{transform:translateX(14px)}
+  .screendiv{display:flex;align-items:center;gap:10px;padding:9px 16px;background:var(--brand-soft);border-bottom:1px solid var(--line-subtle)}
+  .screendiv .bar{width:3px;height:14px;border-radius:2px;background:var(--brand)}
+  .screendiv .t{font-size:11px;font-weight:700;color:var(--brand);letter-spacing:.3px}
+  .screendiv .d{font-size:11px;color:var(--n400)}
+  .screendiv .line{flex:1;height:1px;background:repeating-linear-gradient(90deg,var(--brand-line) 0 4px,transparent 4px 8px)}
+  .editrow{padding:14px 16px;border-bottom:1px solid var(--line-subtle);background:var(--brand-soft)}
+  .fld{display:block;margin-bottom:10px}
+  .fld .lbl{font-size:11px;font-weight:600;color:var(--n500);margin-bottom:4px}
+  .inp{width:100%;font-size:13px;color:var(--n900);background:var(--surface);border:1px solid var(--n300);border-radius:7px;padding:8px 10px}
+  .inp:focus{outline:none;border-color:var(--brand);box-shadow:0 0 0 3px color-mix(in srgb,var(--brand) 18%,transparent)}
+  .optedit{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+  .optedit .oi{flex:1;font-size:12px}
+  .optedit .ov{width:120px;font-size:11px;font-family:var(--mono);color:var(--n500)}
+  .optedit .rm{width:26px;height:26px;border-radius:6px;display:grid;place-items:center;color:var(--n400);flex:none}
+  .optedit .rm:hover{background:var(--neg-soft);color:var(--neg)}
+  .addopt{font-size:11px;font-weight:600;color:var(--brand);display:inline-flex;align-items:center;gap:4px;margin-top:2px}
+  .editactions{display:flex;gap:8px;margin-top:12px}
+  .editactions .save{background:var(--brand);color:#fff;font-size:12px;font-weight:600;border-radius:7px;padding:8px 16px}
+  .editactions .cancel{font-size:12px;font-weight:600;color:var(--n500);border-radius:7px;padding:8px 14px;border:1px solid var(--line)}
+  .svcbar{display:flex;align-items:center;gap:10px;margin:0 0 12px}
+  .svcseg{display:inline-flex;background:var(--surface);border:1px solid var(--line);border-radius:9px;overflow:hidden}
+  .svcseg button{padding:7px 16px;font-size:12px;font-weight:600;color:var(--n500);border-right:1px solid var(--line)}
+  .svcseg button:last-child{border-right:0}
+  .svcseg button.active{background:var(--brand);color:#fff}
+  .svcnote{font-size:11px;color:var(--n400)}
+  .infobar{display:flex;gap:9px;align-items:flex-start;background:var(--brand-soft);border:1px solid var(--brand-line);border-radius:10px;padding:11px 14px;margin-bottom:16px;font-size:12px;color:var(--n700)}
+  .infobar b{color:var(--n900)}
+  .infobar .ic{flex:none;color:var(--brand);margin-top:1px}
+  .addrow{padding:12px 16px}
+  .addbtn{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--brand)}
+  .addbtn:hover{text-decoration:underline}
+  .footnote{font-size:11px;color:var(--n400);margin-top:8px}
+  .empty{padding:16px;font-size:12px;color:var(--n400)}
+  @media (max-width:820px){.body{grid-template-columns:1fr}.rail{flex-direction:row;flex-wrap:wrap;border-right:0;border-bottom:1px solid var(--line)}.main{padding:20px 16px}}
+</style>
+
+<div class="app">
+  <div class="topbar">
+    <div class="brandmark">
+      <span class="dot"><svg width="13" height="13" viewBox="0 0 256 256" fill="currentColor"><path d="M104 40H56a16 16 0 0 0-16 16v48a16 16 0 0 0 16 16h48a16 16 0 0 0 16-16V56a16 16 0 0 0-16-16Zm96 0h-48a16 16 0 0 0-16 16v48a16 16 0 0 0 16 16h48a16 16 0 0 0 16-16V56a16 16 0 0 0-16-16ZM104 136H56a16 16 0 0 0-16 16v48a16 16 0 0 0 16 16h48a16 16 0 0 0 16-16v-48a16 16 0 0 0-16-16Zm96 0h-48a16 16 0 0 0-16 16v48a16 16 0 0 0 16 16h48a16 16 0 0 0 16-16v-48a16 16 0 0 0-16-16Z"/></svg></span>
+      <h1>ARC 룰 관리 <span class="sub">· 질문 룰</span></h1>
+    </div>
+    <div class="right">
+      <span class="verpill">v1.4.2</span>
+      <button class="btn" id="themeBtn" title="테마 전환"><svg width="15" height="15" viewBox="0 0 256 256" fill="currentColor"><path d="M233.54 142.23a8 8 0 0 0-8-2 88.08 88.08 0 0 1-109.8-109.8 8 8 0 0 0-10-10 104.84 104.84 0 0 0-52.91 37A104 104 0 0 0 136 224a103.09 103.09 0 0 0 62.52-20.88 104.84 104.84 0 0 0 37-52.91 8 8 0 0 0-1.98-7.98Z"/></svg></button>
+      <button class="btn primary"><svg width="14" height="14" viewBox="0 0 256 256" fill="currentColor"><path d="M216 128a8 8 0 0 1-8 8h-72v72a8 8 0 0 1-16 0v-72H48a8 8 0 0 1 0-16h72V48a8 8 0 0 1 16 0v72h72a8 8 0 0 1 8 8Z"/></svg> 질문 라이브러리 관리</button>
+    </div>
+  </div>
+  <div class="body"><nav class="rail" id="rail"></nav><main class="main" id="main"></main></div>
+</div>
+
+<script>
+const ICON={
+  caret:'<svg width="12" height="12" viewBox="0 0 256 256" fill="currentColor"><path d="M213.66 101.66l-80 80a8 8 0 0 1-11.32 0l-80-80A8 8 0 0 1 53.66 90.34L128 164.69l74.34-74.35a8 8 0 0 1 11.32 11.32Z"/></svg>',
+  pencil:'<svg width="14" height="14" viewBox="0 0 256 256" fill="currentColor"><path d="M227.31 73.37 182.63 28.68a16 16 0 0 0-22.63 0L36.69 152a15.86 15.86 0 0 0-4.69 11.31V208a16 16 0 0 0 16 16h44.69a15.86 15.86 0 0 0 11.31-4.69L227.31 96a16 16 0 0 0 0-22.63ZM92.69 208H48v-44.69l88-88L180.69 120Z"/></svg>',
+  trash:'<svg width="14" height="14" viewBox="0 0 256 256" fill="currentColor"><path d="M216 48h-40v-8a24 24 0 0 0-24-24h-48a24 24 0 0 0-24 24v8H40a8 8 0 0 0 0 16h8v144a16 16 0 0 0 16 16h128a16 16 0 0 0 16-16V64h8a8 8 0 0 0 0-16ZM96 40a8 8 0 0 1 8-8h48a8 8 0 0 1 8 8v8H96Zm96 168H64V64h128Z"/></svg>',
+  dots:'<svg width="14" height="14" viewBox="0 0 256 256" fill="currentColor"><path d="M108 60a20 20 0 1 1 20 20 20 20 0 0 1-20-20Zm20 48a20 20 0 1 0 20 20 20 20 0 0 0-20-20Zm0 68a20 20 0 1 0 20 20 20 20 0 0 0-20-20Z"/></svg>',
+  plus:'<svg width="13" height="13" viewBox="0 0 256 256" fill="currentColor"><path d="M216 128a8 8 0 0 1-8 8h-72v72a8 8 0 0 1-16 0v-72H48a8 8 0 0 1 0-16h72V48a8 8 0 0 1 16 0v72h72a8 8 0 0 1 8 8Z"/></svg>',
+  info:'<svg width="15" height="15" viewBox="0 0 256 256" fill="currentColor"><path d="M128 24a104 104 0 1 0 104 104A104.11 104.11 0 0 0 128 24Zm-4 48a12 12 0 1 1-12 12 12 12 0 0 1 12-12Zm12 112a16 16 0 0 1-16-16v-40a8 8 0 0 1 0-16 16 16 0 0 1 16 16v40a8 8 0 0 1 0 16Z"/></svg>',
+};
+const SEGMENTS=[
+  {id:'ENTITY_CORP',label:'법인 사업자',kind:'entity',kindLabel:'Entity'},
+  {id:'ENTITY_INDIV',label:'개인 사업자',kind:'entity',kindLabel:'Entity'},
+  {id:'ENTITY_FI',label:'금융기관 (FI)',kind:'entity',kindLabel:'Entity'},
+  {id:'SVC_COL_KRW',label:'KRW Collection',kind:'service',kindLabel:'Service'},
+  {id:'SVC_COL_VND',label:'VND Collection',kind:'service',kindLabel:'Service'},
+];
+const SEGNAME=Object.fromEntries(SEGMENTS.map(s=>[s.id,s.label]));
+const YN=[['yes','예'],['no','아니오']];
+
+// 1차 질문 (전 고객 공통 · 세그먼트 분류 전 인테이크)
+const FIRST=[
+  {id:'f_company',label:'회사명을 입력해주세요',type:'text',req:true},
+  {id:'f_contact_name',label:'담당자 이름을 입력해주세요',type:'text',req:true},
+  {id:'f_contact_title',label:'담당자 직함을 입력해주세요',type:'text',req:true},
+  {id:'f_phone',label:'연락 가능한 전화번호를 입력해주세요',type:'phone',req:true},
+  {id:'f_email',label:'이메일 주소를 입력해주세요',type:'email',req:true},
+  {id:'f_services',label:'이용하려는 서비스를 선택해주세요',type:'multi',req:true,options:[['payout','해외 송금'],['collect','수금']]},
+  {id:'f_collect_country',label:'수금을 원하는 국가를 선택해주세요',type:'multi',req:true,when:'서비스=수금',options:[['kr','한국(KRW)'],['vn','베트남(VND)'],['etc','기타(직접 입력)']]},
+  {id:'f_remit_from',label:'송금 출발 국가를 선택해주세요',type:'select',req:true,when:'서비스=해외송금'},
+  {id:'f_remit_to',label:'송금 도착 국가를 선택해주세요',type:'multi',req:true,when:'서비스=해외송금'},
+  {id:'f_biz_type',label:'사업자 유형을 선택해주세요',type:'select',req:true,note:'수금 선택 시 금융업 자동 고정',options:[['fin','금융업'],['corp','법인 사업자'],['indiv','개인 사업자']]},
+  {id:'f_found_country',label:'법인/사업자가 설립된 국가를 선택해주세요',type:'select',req:true,options:[['kr','한국'],['overseas','해외(국가명 직접 입력)']]},
+  {id:'f_volume',label:'예상 월간 거래 규모를 입력해주세요',type:'number',req:true},
+  {id:'f_count',label:'예상 월간 거래 건수를 입력해주세요',type:'number',req:true},
+  {id:'f_referral',label:'센트비를 어떻게 알게 되셨나요?',type:'select',req:false,options:[['search','검색'],['refer','지인 추천'],['sns','SNS'],['news','뉴스 기사'],['etc','기타']]},
+  {id:'f_note',label:'추가로 문의하실 내용이 있으면 입력해주세요',type:'textarea',req:false},
+  {id:'f_consent',label:'개인정보 수집 및 이용에 동의합니다',type:'checkbox',req:true},
+];
+// 공통 질문 중 고객 화면 2로 넘어가는 문항
+const COMMON_SCREEN2=new Set(['qc_bo_name_kr','qc_bo_name_en','qc_bo_dob','qc_bo_nation','qc_bo_country','qc_purpose','qc_fund_source','qc_vasp']);
+
+const COMMON=[
+  {id:'qc_name_kr',label:'회사명을 한글로 입력해주세요',type:'text',req:true},
+  {id:'qc_name_en',label:'회사명을 영문으로 입력해주세요',type:'text',req:true},
+  {id:'qc_biz_reg_no',label:'사업자등록번호를 입력해주세요',type:'text',req:true},
+  {id:'qc_contact',label:'연락처를 입력해주세요',type:'phone',req:true},
+  {id:'qc_biz_category',label:'업종을 입력해주세요',type:'text',req:true},
+  {id:'qc_rep_name_kr',label:'대표자 성명을 한글로 입력해주세요',type:'text',req:true},
+  {id:'qc_rep_name_en',label:'대표자 성명을 영문으로 입력해주세요',type:'text',req:true},
+  {id:'qc_rep_dob',label:'대표자 생년월일을 입력해주세요',type:'date',req:true},
+  {id:'qc_rep_gender',label:'대표자 성별을 선택해주세요',type:'radio',req:true,options:[['m','남'],['f','여']]},
+  {id:'qc_rep_nation',label:'대표자 국적을 입력해주세요',type:'text',req:true},
+  {id:'qc_bo_name_kr',label:'실제소유자(BO) 성명을 한글로 입력해주세요',type:'text',req:true},
+  {id:'qc_bo_name_en',label:'실제소유자(BO) 성명을 영문으로 입력해주세요',type:'text',req:true},
+  {id:'qc_bo_dob',label:'실제소유자(BO) 생년월일을 입력해주세요',type:'date',req:true},
+  {id:'qc_bo_nation',label:'실제소유자(BO) 국적을 입력해주세요',type:'text',req:true},
+  {id:'qc_bo_country',label:'실제소유자(BO) 거주국가를 입력해주세요',type:'text',req:true},
+  {id:'qc_purpose',label:'센트비를 이용한 거래 목적을 선택해주세요',type:'select',req:true,options:[['settle','판매대금 정산대행'],['etc','기타(직접 입력)']]},
+  {id:'qc_fund_source',label:'자금 및 재산의 원천을 선택해주세요 (복수 선택 가능)',type:'multi',req:true,options:[['biz','사업소득'],['labor','근로·연금소득'],['rent','부동산 임대소득'],['transfer','부동산 양도소득'],['fin','금융소득(이자·배당)'],['inherit','상속·증여'],['onetime','일시 재산양도로 인한 소득'],['etc','기타(직접 입력)']]},
+  {id:'qc_vasp',label:'가상자산사업자(VASP)에 해당하나요?',type:'radio',req:true,options:YN,children:[
+    {id:'qc_vasp_custody',label:'자산 수탁 장소를 입력해주세요',type:'text',req:true,showWhen:'VASP=예'},
+    {id:'qc_vasp_outside',label:'설립/인허가 국가 외 고객을 온보딩하나요?',type:'radio',req:true,options:YN,showWhen:'VASP=예',children:[
+      {id:'qc_vasp_cust_country',label:'해당 고객의 거주 국가를 입력해주세요',type:'text',req:true,showWhen:'위=예'},
+      {id:'qc_vasp_lic',label:'비거주 고객 온보딩에 사용하는 인허가를 입력해주세요',type:'text',req:true,showWhen:'위=예'},
+    ]},
+    {id:'qc_vasp_purpose',label:'가상자산 출금·법정화폐 전환 요청의 주요 목적을 입력해주세요',type:'text',req:true,showWhen:'VASP=예'},
+  ]},
+];
+
+const OWN=[
+  {id:'q_biz_subtype',label:'업태를 입력해주세요 (사업자등록증 기재)',type:'text',req:true,mappedTo:['ENTITY_CORP','ENTITY_INDIV'],screen:{ENTITY_CORP:1,ENTITY_INDIV:1}},
+  {id:'q_biz_address',label:'사업장 주소를 입력해주세요',type:'text',req:true,mappedTo:['ENTITY_CORP','ENTITY_INDIV'],screen:{ENTITY_CORP:1,ENTITY_INDIV:1}},
+  {id:'q_corp_type',label:'법인 유형을 선택해주세요',type:'radio',req:true,mappedTo:['ENTITY_CORP'],screen:{ENTITY_CORP:1},options:[['profit','영리법인'],['nonprofit','비영리법인(단체)']]},
+  {id:'q_corp_reg_no',label:'법인 등록번호를 입력해주세요',type:'text',req:true,mappedTo:['ENTITY_CORP'],screen:{ENTITY_CORP:1}},
+  {id:'q_corp_hq_addr',label:'본점 주소를 입력해주세요 (사업장 주소와 다른 경우)',type:'text',req:false,mappedTo:['ENTITY_CORP'],screen:{ENTITY_CORP:1}},
+  {id:'q_corp_domestic_office',label:'국내 거소 또는 사무소 소재지를 입력해주세요 (외국 법인/단체만)',type:'text',req:false,mappedTo:['ENTITY_CORP'],screen:{ENTITY_CORP:1}},
+  {id:'q_corp_rep_type',label:'대표자 유형을 선택해주세요',type:'radio',req:true,mappedTo:['ENTITY_CORP'],screen:{ENTITY_CORP:1},options:[['sole','단독대표'],['joint','공동대표']]},
+  {id:'q_corp_bo_exempt',label:'확인생략 대상을 선택해주세요 (해당 시 실제소유자 입력 생략)',type:'radio',req:false,mappedTo:['ENTITY_CORP'],screen:{ENTITY_CORP:1},options:[['gov','국가·지자체'],['public','공공기관'],['fin','금융회사'],['listed','사업보고서 제출대상 법인(상장회사)'],['none','해당없음']],children:[
+    {id:'q_corp_bo_has25',label:'지분 25% 이상을 보유한 자연인이 있나요?',type:'radio',req:true,options:YN,showWhen:'확인생략=해당없음',children:[
+      {id:'q_corp_bo_kind',label:'실제소유자 구분을 선택해주세요',type:'radio',req:true,showWhen:'위=아니오',options:[['max','최대 지분 소유자'],['exec','대표자·임원 과반수 선임 주주'],['de_facto','사실상 지배자']]},
+      {id:'q_corp_bo_rep_note',label:'법인 대표자가 실제 소유자로 지정됩니다',type:'note'},
+    ]},
+  ]},
+  {id:'q_corp_bo_fields_note',label:'실제소유자(BO) 필드(성명·생년월일·국적·거주국가)는 공통 질문에서 입력',type:'note',mappedTo:['ENTITY_CORP'],screen:{ENTITY_CORP:1}},
+  {id:'q_corp_size',label:'회사 규모를 선택해주세요',type:'radio',req:true,mappedTo:['ENTITY_CORP'],screen:{ENTITY_CORP:1},options:[['large','대기업'],['sme','중소기업']]},
+  {id:'q_corp_listed',label:'상장 정보를 선택해주세요',type:'select',req:true,mappedTo:['ENTITY_CORP'],screen:{ENTITY_CORP:1},options:[['no','비상장'],['kospi','유가증권시장(코스피)'],['kosdaq','코스닥'],['etc','기타']]},
+  {id:'q_corp_fund_filter',label:'자금 및 재산의 원천 (공통 질문 · 세그먼트 옵션 필터)',type:'multi',req:true,filter:true,filterOff:['labor','inherit','onetime'],mappedTo:['ENTITY_CORP'],screen:{ENTITY_CORP:1},options:[['biz','사업소득'],['labor','근로·연금소득'],['rent','부동산 임대소득'],['transfer','부동산 양도소득'],['fin','금융소득(이자·배당)'],['inherit','상속·증여'],['onetime','일시 재산양도로 인한 소득'],['etc','기타(직접 입력)']]},
+  {id:'q_founded_date',label:'설립일자를 입력해주세요',type:'date',req:true,mappedTo:['ENTITY_CORP','ENTITY_FI'],screen:{ENTITY_CORP:1,ENTITY_FI:1}},
+  {id:'q_indiv_residence',label:'거주지를 선택해주세요',type:'radio',req:true,mappedTo:['ENTITY_INDIV'],screen:{ENTITY_INDIV:1},options:[['dom','국내'],['abroad','국외']]},
+  {id:'q_indiv_bo_same',label:'대표자와 실제소유자가 동일한가요?',type:'radio',req:true,mappedTo:['ENTITY_INDIV'],screen:{ENTITY_INDIV:1},options:YN,children:[
+    {id:'q_indiv_bo_fields_note',label:'실제소유자(BO) 필드는 공통 질문에서 입력 (동일 = 아니오일 때)',type:'note'},
+  ]},
+  {id:'q_fi_legal_form',label:'법적 형태를 입력해주세요 (예: 주식회사, 합자회사 등)',type:'text',req:true,mappedTo:['ENTITY_FI'],screen:{ENTITY_FI:1}},
+  {id:'q_fi_prev_name',label:'이전 명칭이 있으면 입력해주세요',type:'text',req:false,mappedTo:['ENTITY_FI'],screen:{ENTITY_FI:1}},
+  {id:'q_fi_website',label:'회사 웹사이트를 입력해주세요',type:'url',req:true,mappedTo:['ENTITY_FI'],screen:{ENTITY_FI:1}},
+  {id:'q_fi_reg_addr',label:'등록 주소를 입력해주세요',type:'text',req:true,mappedTo:['ENTITY_FI'],screen:{ENTITY_FI:1}},
+  {id:'q_fi_biz_addr',label:'실제 영업 주소를 입력해주세요 (등록 주소와 다른 경우)',type:'text',req:false,mappedTo:['ENTITY_FI'],screen:{ENTITY_FI:1}},
+  {id:'q_fi_tax',label:'과세 여부를 선택해주세요',type:'radio',req:true,mappedTo:['ENTITY_FI'],screen:{ENTITY_FI:1},options:[['taxed','과세 대상'],['exempt','면세 대상']]},
+  {id:'q_fi_lic_body',label:'인허가 기관 및 감독 기관명을 입력해주세요',type:'text',req:true,mappedTo:['ENTITY_FI'],screen:{ENTITY_FI:1}},
+  {id:'q_fi_lic_country',label:'관할 국가를 입력해주세요',type:'text',req:true,mappedTo:['ENTITY_FI'],screen:{ENTITY_FI:1}},
+  {id:'q_fi_lic_type',label:'인허가 유형을 입력해주세요',type:'text',req:true,mappedTo:['ENTITY_FI'],screen:{ENTITY_FI:1}},
+  {id:'q_fi_lic_issue',label:'인허가 발급일을 입력해주세요',type:'date',req:true,mappedTo:['ENTITY_FI'],screen:{ENTITY_FI:1}},
+  {id:'q_fi_lic_expiry',label:'인허가 만료일을 입력해주세요',type:'date',req:true,mappedTo:['ENTITY_FI'],screen:{ENTITY_FI:1}},
+  {id:'q_fi_auditor',label:'외부 감사인 명칭을 입력해주세요',type:'text',req:true,mappedTo:['ENTITY_FI'],screen:{ENTITY_FI:1}},
+  {id:'q_fi_branch_dom',label:'국내 지점 수를 입력해주세요',type:'number',req:true,mappedTo:['ENTITY_FI'],screen:{ENTITY_FI:1}},
+  {id:'q_fi_branch_ovs',label:'해외 지점 수를 입력해주세요',type:'number',req:true,mappedTo:['ENTITY_FI'],screen:{ENTITY_FI:1}},
+  {id:'q_fi_payout_purpose',label:'송금 거래 목적 상위 5가지 이상을 입력해주세요',type:'text',req:true,mappedTo:['ENTITY_FI'],svc:'payout',screen:{ENTITY_FI:1}},
+  {id:'q_fi_collect_purpose',label:'수금 거래 목적 상위 5가지 이상을 입력해주세요',type:'text',req:true,mappedTo:['ENTITY_FI'],svc:'collection',screen:{ENTITY_FI:1}},
+  {id:'q_fi_intermediary',label:'다른 FI/MSB/PSP 등 상위 고객으로부터 전달받은 자금을 송금하나요?',type:'radio',req:true,mappedTo:['ENTITY_FI'],svc:'payout',screen:{ENTITY_FI:1},options:YN,children:[
+    {id:'q_fi_inter_steps',label:'몇 단계의 중개 구조인가요?',type:'text',req:true,showWhen:'위=예'},
+    {id:'q_fi_inter_unlic',label:'미인가 FI/PSP/MSB와 거래하나요?',type:'radio',req:true,options:YN,showWhen:'위=예'},
+    {id:'q_fi_inter_origin',label:'상위 고객 거래의 출발 국가를 입력해주세요',type:'text',req:true,showWhen:'위=예'},
+  ]},
+  {id:'q_fi_owner25',label:'지분 25% 이상 소유자 정보 (성명·국적·생년월일·지분율·여권번호)',type:'group',req:true,repeat:true,mappedTo:['ENTITY_FI'],screen:{ENTITY_FI:2},children:[
+    {id:'q_fi_owner_corp',label:'소유자가 법인인 경우: 해당 법인 주주 정보 (성명·국적·생년월일·지분율·여권번호)',type:'group',req:true,showWhen:'소유자=법인'},
+  ]},
+  {id:'q_fi_director',label:'이사 정보 (성명·재직기간·국적·생년월일·여권번호)',type:'group',req:true,repeat:true,mappedTo:['ENTITY_FI'],screen:{ENTITY_FI:2}},
+  {id:'q_fi_mgmt',label:'경영진 정보 (성명·직위·재직기간·국적·생년월일·여권번호)',type:'group',req:true,repeat:true,mappedTo:['ENTITY_FI'],screen:{ENTITY_FI:2}},
+  {id:'q_fi_parent',label:'모회사 정보 (명칭·주소·관계·관할 국가)',type:'group',req:false,mappedTo:['ENTITY_FI'],screen:{ENTITY_FI:2}},
+  {id:'q_fi_parent_listed',label:'모회사가 상장되어 있나요?',type:'radio',req:false,mappedTo:['ENTITY_FI'],screen:{ENTITY_FI:2},options:YN,children:[
+    {id:'q_fi_parent_ticker',label:'상장 거래소와 종목코드를 입력해주세요',type:'text',req:true,showWhen:'위=예'},
+  ]},
+  {id:'q_fi_bankruptcy',label:'현재 또는 과거 임원/이사 중 파산 신청 이력이 있나요?',type:'radio',req:true,mappedTo:['ENTITY_FI'],screen:{ENTITY_FI:2},options:YN,children:[
+    {id:'q_fi_bankruptcy_detail',label:'파산 관련 상세 내용을 입력해주세요',type:'text',req:true,showWhen:'위=예'},
+  ]},
+  {id:'q_fi_products',label:'주요 금융 상품/서비스를 입력해주세요',type:'text',req:true,mappedTo:['ENTITY_FI'],screen:{ENTITY_FI:2}},
+  {id:'q_fi_region',label:'영업 지역(지리적 시장)을 입력해주세요',type:'text',req:true,mappedTo:['ENTITY_FI'],screen:{ENTITY_FI:2}},
+  {id:'q_fi_shell',label:'페이퍼컴퍼니(Shell Company)와의 거래를 금지하는 정책이 있나요?',type:'radio',req:true,mappedTo:['ENTITY_FI'],screen:{ENTITY_FI:2},options:YN},
+  {id:'q_fi_fatf',label:'회사·모회사·지점·자회사·관계사가 FATF 블랙/그레이 리스트 국가에서 영업하나요?',type:'radio',req:true,mappedTo:['ENTITY_FI'],screen:{ENTITY_FI:2},options:YN},
+  {id:'q_fi_aml_sanction',label:'AML 위반으로 행정/금전적 제재를 받은 적이 있나요?',type:'radio',req:true,mappedTo:['ENTITY_FI'],screen:{ENTITY_FI:2},options:YN,children:[
+    {id:'q_fi_aml_sanction_detail',label:'제재 관련 상세 내용을 입력해주세요',type:'text',req:true,showWhen:'위=예'},
+  ]},
+  {id:'q_fi_litigation',label:'회사·계열사·현재/과거 임원·UBO에 대한 형사/행정 소송이나 조사가 있었나요?',type:'radio',req:true,mappedTo:['ENTITY_FI'],screen:{ENTITY_FI:2},options:YN,children:[
+    {id:'q_fi_litigation_detail',label:'소송/조사 관련 상세 내용을 입력해주세요',type:'text',req:true,showWhen:'위=예'},
+  ]},
+  {id:'q_fi_litigation_now',label:'현재 진행 중인 소송이나 조사가 있나요?',type:'radio',req:true,mappedTo:['ENTITY_FI'],screen:{ENTITY_FI:2},options:YN,children:[
+    {id:'q_fi_litigation_now_detail',label:'진행 중 소송/조사 상세 내용을 입력해주세요',type:'text',req:true,showWhen:'위=예'},
+  ]},
+  {id:'q_fi_policy',label:'보유하고 있는 정책을 모두 선택해주세요',type:'multi',req:true,mappedTo:['ENTITY_FI'],screen:{ENTITY_FI:2},options:[['bribe','뇌물방지'],['aml','AML'],['bcp','사업연속성'],['privacy','개인정보보호'],['infosec','정보보안'],['risk','리스크관리']]},
+  {id:'q_fi_training',label:'직원 교육을 실시하는 항목을 모두 선택해주세요',type:'multi',req:true,mappedTo:['ENTITY_FI'],screen:{ENTITY_FI:2},options:[['bribe','뇌물방지'],['aml','AML'],['bcp','사업연속성'],['privacy','개인정보보호'],['infosec','정보보안'],['risk','리스크관리']]},
+  {id:'q_krw_sector',label:'업종(섹터)을 선택해주세요',type:'select',req:true,mappedTo:['SVC_COL_KRW'],screen:{SVC_COL_KRW:1},options:[['b2b','Trading(B2B)'],['b2c','Trading(B2C)'],['consult','Consulting'],['dev','Development-Design'],['ad','Advertising-Marketing'],['research','Research'],['it','IT & Computer'],['coupang','쿠팡(Sunrate 또는 Payful)']]},
+  {id:'q_vnd_activity',label:'주요 사업 활동을 입력해주세요',type:'text',req:true,mappedTo:['SVC_COL_VND'],screen:{SVC_COL_VND:1}},
+  {id:'q_vnd_purpose',label:'계좌 개설 목적을 입력해주세요',type:'text',req:true,mappedTo:['SVC_COL_VND'],screen:{SVC_COL_VND:1}},
+  {id:'q_vnd_payer_rel',label:'입금자와의 관계를 입력해주세요',type:'text',req:true,mappedTo:['SVC_COL_VND'],screen:{SVC_COL_VND:1}},
+  {id:'q_vnd_payer_type',label:'입금자가 법인인가요, 개인인가요?',type:'radio',req:true,mappedTo:['SVC_COL_VND'],screen:{SVC_COL_VND:1},options:[['corp','법인'],['indiv','개인']]},
+];
+
+let state={seg:'ENTITY_CORP',svc:'all',firstOpen:true,commonOpen:true,editing:null};
+let draft=null;
+const enabled={};
+function isEnabled(seg,id){return enabled[seg+':'+id]!==false;}
+function findQ(id,list){list=list||[...FIRST,...COMMON,...OWN];for(const q of list){if(q.id===id)return q;if(q.children){const f=findQ(id,q.children);if(f)return f;}}return null;}
+function hasOptions(q){return ['select','radio','multi'].includes(q.type)&&q.options;}
+
+function renderRail(){
+  let html=`<div><div class="grouplabel">인테이크</div><button class="navitem ${state.seg==='__first'?'active':''}" data-seg="__first"><span class="navdot"></span>1차 질문<span class="code">1차</span></button></div>`;
+  const groups=[['Entity','entity'],['Service','service']];
+  for(const[label,kind]of groups){
+    html+=`<div><div class="grouplabel">${label}</div>`;
+    for(const s of SEGMENTS.filter(x=>x.kind===kind)){
+      const a=s.id===state.seg;
+      html+=`<button class="navitem ${a?'active':''}" data-seg="${s.id}"><span class="navdot"></span>${s.label}<span class="code">${s.id.replace('ENTITY_','E·').replace('SVC_COL_','C·')}</span></button>`;
+    }
+    html+=`</div>`;
+  }
+  document.getElementById('rail').innerHTML=html;
+  document.querySelectorAll('[data-seg]').forEach(b=>b.onclick=()=>{state.seg=b.dataset.seg;state.svc='all';state.editing=null;draft=null;render();});
+}
+function optsChips(q){
+  if(!hasOptions(q))return '';
+  return `<div class="opts">${q.options.map(([v,l])=>`<span class="optchip">${l}</span>`).join('')}</div>`;
+}
+function filterOpts(q){
+  const off=q.filterOff||[];
+  return `<div class="opts">${q.options.map(([v,l])=>`<span class="optchip ${off.includes(v)?'ofilt':'onfilt'}">${l}</span>`).join('')}</div>`;
+}
+function editForm(q){
+  const showOpts=hasOptions(q);let optHtml='';
+  if(showOpts){
+    optHtml=`<div class="fld"><div class="lbl">선택지</div><div>${draft.options.map((o,i)=>`
+      <div class="optedit"><input class="inp oi" value="${o[1].replace(/"/g,'&quot;')}" oninput="draft.options[${i}][1]=this.value">
+        <input class="inp ov" value="${o[0].replace(/"/g,'&quot;')}" oninput="draft.options[${i}][0]=this.value">
+        <button class="rm" onclick="rmOpt(${i})">${ICON.trash}</button></div>`).join('')}</div>
+      <button class="addopt" onclick="addOpt()">${ICON.plus} 선택지 추가</button></div>`;
+  }
+  return `<div class="editrow"><div class="fld"><div class="lbl">질문 문구</div>
+    <input class="inp" value="${draft.label.replace(/"/g,'&quot;')}" oninput="draft.label=this.value" autofocus></div>${optHtml}
+    <div class="editactions"><button class="save" onclick="saveEdit()">저장</button><button class="cancel" onclick="cancelEdit()">취소</button></div></div>`;
+}
+function childRows(q,depth){
+  if(!q.children)return '';
+  return q.children.map(c=>{
+    if(state.editing===c.id)return editForm(c);
+    const pad=16+depth*24;
+    if(c.type==='note'){
+      return `<div class="row child" style="padding-left:${pad}px"><span class="lead"><span class="branch">└</span></span><div class="qbody"><div class="qlabel note"><span class="txt">${c.label}</span><span class="tag note">안내</span></div></div></div>`+childRows(c,depth+1);
+    }
+    const sw=c.showWhen?`<span class="showwhen">if ${c.showWhen}</span>`:'';
+    return `<div class="row child" style="padding-left:${pad}px">
+      <span class="lead"><span class="branch">└</span></span>
+      <div class="qbody"><div class="qlabel"><span class="txt">${c.label}</span>${sw}</div><div class="qid">${c.id}</div>${optsChips(c)}</div>
+      <div class="tags"><span class="tag ${c.req?'req':'opt'}">${c.req?'필수':'선택'}</span><span class="tag type">${c.type}</span>
+        <button class="iconbtn" title="수정" onclick="startEdit('${c.id}')">${ICON.pencil}</button></div></div>`+childRows(c,depth+1);
+  }).join('');
+}
+function commonRow(q){
+  if(state.editing===q.id)return editForm(q)+childRows(q,1);
+  const on=isEnabled(state.seg,q.id);
+  return `<div class="row ${on?'':'off'}">
+    <span class="lead"><label class="switch"><input type="checkbox" ${on?'checked':''} onchange="toggleCommon('${q.id}')"><span class="track"></span><span class="thumb"></span></label></span>
+    <div class="qbody"><div class="qlabel"><span class="txt">${q.label}</span></div><div class="qid">${q.id}</div>${optsChips(q)}</div>
+    <div class="tags"><span class="tag ${q.req?'req':'opt'}">${q.req?'필수':'선택'}</span><span class="tag type">${q.type}</span>
+      <button class="iconbtn" title="수정" onclick="startEdit('${q.id}')">${ICON.pencil}</button></div></div>`+childRows(q,1);
+}
+function ownRow(q){
+  if(q.type==='note'){
+    return `<div class="row"><span class="lead"><span class="handle">${ICON.dots}</span></span><div class="qbody"><div class="qlabel note"><span class="txt">${q.label}</span><span class="tag note">안내</span></div></div></div>`;
+  }
+  if(state.editing===q.id)return editForm(q)+childRows(q,1);
+  const segchips=q.mappedTo.map(sg=>`<span class="segchip ${sg===state.seg?'cur':''}">${SEGNAME[sg]}</span>`).join('');
+  let chips='';
+  if(q.repeat)chips+=`<span class="tag repeat">반복</span>`;
+  if(q.svc)chips+=`<span class="tag svc">${q.svc==='payout'?'송금':'수금'}</span>`;
+  if(q.filter)chips+=`<span class="tag filter">옵션 ${q.options.length-(q.filterOff?q.filterOff.length:0)}/${q.options.length}</span>`;
+  return `<div class="row">
+    <span class="lead"><span class="handle">${ICON.dots}</span></span>
+    <div class="qbody"><div class="qlabel"><span class="txt">${q.label}</span>${segchips}${chips}</div><div class="qid">${q.id}</div>${q.filter?filterOpts(q):optsChips(q)}</div>
+    <div class="tags"><span class="tag ${q.req?'req':'opt'}">${q.req?'필수':'선택'}</span><span class="tag type">${q.type}</span>
+      <button class="iconbtn" title="수정" onclick="startEdit('${q.id}')">${ICON.pencil}</button>
+      <button class="iconbtn danger" title="삭제">${ICON.trash}</button></div></div>`+childRows(q,1);
+}
+function firstRow(q){
+  if(state.editing===q.id)return editForm(q);
+  const on=isEnabled('FIRST',q.id);
+  const when=q.when?`<span class="showwhen">if ${q.when}</span>`:'';
+  const note=q.note?`<span class="tag note">${q.note}</span>`:'';
+  return `<div class="row ${on?'':'off'}">
+    <span class="lead"><label class="switch"><input type="checkbox" ${on?'checked':''} onchange="toggleFirst('${q.id}')"><span class="track"></span><span class="thumb"></span></label></span>
+    <div class="qbody"><div class="qlabel"><span class="txt">${q.label}</span>${when}${note}</div><div class="qid">${q.id}</div>${optsChips(q)}</div>
+    <div class="tags"><span class="tag ${q.req?'req':'opt'}">${q.req?'필수':'선택'}</span><span class="tag type">${q.type}</span>
+      <button class="iconbtn" title="수정" onclick="startEdit('${q.id}')">${ICON.pencil}</button></div></div>`;
+}
+function commonBody(){
+  let h='',last=null;
+  for(const q of COMMON){
+    const sc=COMMON_SCREEN2.has(q.id)?2:1;
+    if(sc!==last){h+=screenDivider(sc);last=sc;}
+    h+=commonRow(q);
+  }
+  return h;
+}
+function screenDivider(n){return `<div class="screendiv"><span class="bar"></span><span class="t">고객 화면 ${n}</span><span class="d">— 여기서부터 새 입력 화면</span><span class="line"></span></div>`;}
+
+function render(){
+  renderRail();
+  if(state.seg==='__first'){
+    const body=FIRST.map(firstRow).join('');
+    document.getElementById('main').innerHTML=`
+      <div class="crumb">룰 관리 · 인테이크</div>
+      <div class="seghead"><h2>1차 질문</h2><span class="kind">Intake</span></div>
+      <div class="subline">전 고객이 세그먼트 분류 전에 작성하는 인테이크 폼입니다. 여기서 받은 값으로 세그먼트가 결정됩니다.</div>
+      <div class="tabs"><button class="tab active">1차 질문</button></div>
+      <div class="section"><div class="card">${body}<div class="addrow"><button class="addbtn">${ICON.plus} 1차 질문 추가</button></div></div></div>`;
+    const af0=document.querySelector('.editrow input[autofocus]');if(af0){af0.focus();af0.setSelectionRange(af0.value.length,af0.value.length);}
+    return;
+  }
+  const s=SEGMENTS.find(x=>x.id===state.seg);
+  const isFI=s.id==='ENTITY_FI';
+  let own=OWN.filter(q=>q.mappedTo&&q.mappedTo.includes(s.id));
+  if(isFI)own=own.filter(q=>state.svc==='all'||!q.svc||q.svc===state.svc);
+  own=own.slice().sort((a,b)=>(a.screen?.[s.id]||1)-(b.screen?.[s.id]||1));
+  const screens=[...new Set(own.map(q=>q.screen?.[s.id]||1))];
+  const multiScreen=screens.length>1;
+
+  let html=`
+    <div class="crumb">룰 관리 · 세그먼트</div>
+    <div class="seghead"><h2>${s.label}</h2><span class="kind">${s.kindLabel}</span><span class="code">${s.id}</span></div>
+    <div class="subline">이 세그먼트 고객이 받는 2차 질문을 구성합니다. 공통 질문은 자동 적용되고, 고유 질문만 편집합니다.</div>
+    <div class="tabs"><button class="tab">분류 룰</button><button class="tab active">질문 룰</button><button class="tab">서류 룰</button></div>
+    <div class="section">
+      <div class="sectitle">
+        <button class="cbtn" onclick="toggleCommon('__sec')"><span class="caret ${state.commonOpen?'':'collapsed'}">${ICON.caret}</span><h3>공통 질문 (2차)</h3></button>
+        <span class="count">${COMMON.length}</span><span class="hint">· 전 세그먼트 자동 적용</span>
+        <button class="libbtn">${ICON.plus} 라이브러리에서 관리</button>
+      </div>
+      ${state.commonOpen?`<div class="card">${commonBody()}<div class="addrow"><button class="addbtn">${ICON.plus} 공통 질문 추가</button></div></div>`:''}
+    </div>`;
+
+  if(s.kind==='service'){
+    html+=`<div class="infobar"><span class="ic">${ICON.info}</span><div>이 고객은 <b>FI 질문 전체 + 아래 통화 고유 질문</b>을 받습니다 (수금=FI). FI 공통 질문은 <b>FI 세그먼트</b>에서 관리하고, 여기서는 통화 고유 질문만 추가합니다.</div></div>`;
+  }
+  if(isFI){
+    html+=`<div class="svcbar"><div class="svcseg">
+      ${['all','payout','collection'].map(v=>`<button class="${state.svc===v?'active':''}" data-svc="${v}">${v==='all'?'전체':v==='payout'?'송금':'수금'}</button>`).join('')}
+    </div><span class="svcnote">${state.svc==='all'?'송금만·수금만·둘다 = 서비스 조건부만 갈립니다':(state.svc==='payout'?'송금 고객에게만 표시':'수금 고객에게만 표시')}</span></div>`;
+  }
+
+  let ownHtml='',last=null;
+  if(own.length===0)ownHtml='<div class="empty">이 조건에 해당하는 질문 없음</div>';
+  for(const q of own){
+    const sc=q.screen?.[s.id]||1;
+    if(multiScreen&&sc!==last){ownHtml+=screenDivider(sc);last=sc;}
+    ownHtml+=ownRow(q);
+  }
+  html+=`<div class="section">
+      <div class="sectitle"><h3>이 세그먼트 질문</h3><span class="hint">· 고유 + 공유(다중 매핑)</span></div>
+      <div class="card">${ownHtml}<div class="addrow"><button class="addbtn">${ICON.plus} 질문 추가 · 적용 세그먼트 지정</button></div></div>
+      <div class="footnote">${multiScreen?'구분선 = 고객 입력 화면 전환 지점. ':''}질문 추가 시 적용 세그먼트를 여러 개 지정 → 중복 없음.</div>
+    </div>`;
+
+  document.getElementById('main').innerHTML=html;
+  document.querySelectorAll('[data-svc]').forEach(b=>b.onclick=()=>{state.svc=b.dataset.svc;state.editing=null;draft=null;render();});
+  const af=document.querySelector('.editrow input[autofocus]');if(af){af.focus();af.setSelectionRange(af.value.length,af.value.length);}
+}
+window.toggleCommon=(id)=>{if(id==='__first'){state.firstOpen=!state.firstOpen;render();return;}if(id==='__sec'){state.commonOpen=!state.commonOpen;render();return;}enabled[state.seg+':'+id]=!isEnabled(state.seg,id);render();};
+window.toggleFirst=(id)=>{enabled['FIRST:'+id]=!isEnabled('FIRST',id);render();};
+window.startEdit=(id)=>{const q=findQ(id);draft={label:q.label,options:hasOptions(q)?q.options.map(o=>[...o]):null};state.editing=id;render();};
+window.cancelEdit=()=>{state.editing=null;draft=null;render();};
+window.saveEdit=()=>{const q=findQ(state.editing);if(q){q.label=draft.label;if(draft.options)q.options=draft.options;}state.editing=null;draft=null;render();};
+window.addOpt=()=>{draft.options.push(['opt'+(draft.options.length+1),'']);render();};
+window.rmOpt=(i)=>{draft.options.splice(i,1);render();};
+document.getElementById('themeBtn').onclick=()=>{
+  const cur=document.documentElement.getAttribute('data-theme');
+  const next=cur==='dark'?'light':(cur==='light'?'dark':(matchMedia('(prefers-color-scheme: dark)').matches?'light':'dark'));
+  document.documentElement.setAttribute('data-theme',next);
+};
+render();
+</script>
