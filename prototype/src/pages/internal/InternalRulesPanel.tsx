@@ -168,7 +168,7 @@ function CommonQuestionRow({ q, enabled, optionFilter, onToggle, onFilterChange,
   )
 }
 
-function QuestionRowFixed({ q, depth = 0, allConfigs = [], currentSegKey = '', isEditing = false, editLabel = '', onEditLabelChange, onStartEdit, onSaveEdit, onCancelEdit }: {
+function QuestionRowFixed({ q, depth = 0, allConfigs = [], currentSegKey = '', isEditing = false, editLabel = '', onEditLabelChange, onStartEdit, onSaveEdit, onCancelEdit, enabled, onToggle }: {
   q: QuestionRule
   depth?: number
   allConfigs?: SegmentQuestionConfig[]
@@ -179,6 +179,8 @@ function QuestionRowFixed({ q, depth = 0, allConfigs = [], currentSegKey = '', i
   onStartEdit?: () => void
   onSaveEdit?: () => void
   onCancelEdit?: () => void
+  enabled?: boolean
+  onToggle?: () => void
 }) {
   const [expanded, setExpanded] = useState(false)
   const hasChildren = !!(q.children?.length)
@@ -192,22 +194,26 @@ function QuestionRowFixed({ q, depth = 0, allConfigs = [], currentSegKey = '', i
       )
     : []
 
+  const isOn = enabled !== false
+
   return (
     <>
       <div
-        className={`flex items-start gap-3 border-b border-sb-n100 last:border-0 ${depth > 0 ? 'bg-sb-n50' : isEditing ? 'bg-sb-blue-50' : 'bg-white'}`}
+        className={`flex items-start gap-3 border-b border-sb-n100 last:border-0 ${depth > 0 ? 'bg-sb-n50' : isEditing ? 'bg-sb-blue-50' : 'bg-white'} ${!isOn && depth === 0 ? 'opacity-40' : ''}`}
         style={{ paddingLeft: `${16 + depth * 20}px`, paddingRight: '16px', paddingTop: '10px', paddingBottom: '10px' }}
       >
         <span className="flex-shrink-0 mt-0.5">
           {depth > 0
             ? <span className="text-sb-n300 font-mono text-[11px] select-none">└</span>
-            : <span className="w-4 inline-block flex-shrink-0">
-                {hasChildren && (
-                  <button onClick={() => setExpanded(v => !v)} className="text-sb-n400 hover:text-sb-brand">
-                    {expanded ? <CaretDown size={12} /> : <CaretRight size={12} />}
-                  </button>
-                )}
-              </span>
+            : onToggle
+              ? <ToggleSwitch checked={isOn} onChange={onToggle} />
+              : <span className="w-4 inline-block flex-shrink-0">
+                  {hasChildren && (
+                    <button onClick={() => setExpanded(v => !v)} className="text-sb-n400 hover:text-sb-brand">
+                      {expanded ? <CaretDown size={12} /> : <CaretRight size={12} />}
+                    </button>
+                  )}
+                </span>
           }
         </span>
         <div className="flex-1 min-w-0">
@@ -703,6 +709,16 @@ function QuestionsEditor({ selected }: { selected: Selection }) {
     setShowAddForm(false)
   }
 
+  function isOwnEnabled(id: string): boolean {
+    return !(config.disabledOwnQuestionIds ?? []).includes(id)
+  }
+
+  function toggleOwn(id: string) {
+    const disabled = config.disabledOwnQuestionIds ?? []
+    const next = disabled.includes(id) ? disabled.filter(x => x !== id) : [...disabled, id]
+    saveConfig({ disabledOwnQuestionIds: next.length ? next : undefined })
+  }
+
   const allOwnForParent = [...ownFixedQuestions, ...config.ownQuestions]
 
   function matchesSvcView(q: QuestionRule): boolean {
@@ -830,6 +846,8 @@ function QuestionsEditor({ selected }: { selected: Selection }) {
                 onStartEdit={() => startEditQ(q)}
                 onSaveEdit={() => savePoolQuestion(q.id, editQLabel)}
                 onCancelEdit={() => setEditingQId(null)}
+                enabled={isOwnEnabled(q.id)}
+                onToggle={() => toggleOwn(q.id)}
               />
               {q.id === screen1LastOwn && (
                 <ScreenDivider key={`div-own-${idx}`} n={2} />
@@ -840,7 +858,10 @@ function QuestionsEditor({ selected }: { selected: Selection }) {
             if (!matchesSvcView(q)) return null
             const isEditingOwn = editIdx === i
             return (
-              <div key={q.id} className={`flex items-start gap-3 px-4 py-3 border-t border-sb-n100 ${isEditingOwn ? 'bg-sb-blue-50' : ''}`}>
+              <div key={q.id} className={`flex items-start gap-3 px-4 py-3 border-t border-sb-n100 ${isEditingOwn ? 'bg-sb-blue-50' : !isOwnEnabled(q.id) ? 'opacity-40' : ''}`}>
+                <span className="flex-shrink-0 mt-0.5">
+                  <ToggleSwitch checked={isOwnEnabled(q.id)} onChange={() => toggleOwn(q.id)} />
+                </span>
                 <div className="flex-1 min-w-0">
                   {isEditingOwn ? (
                     <div className="flex items-center gap-2">

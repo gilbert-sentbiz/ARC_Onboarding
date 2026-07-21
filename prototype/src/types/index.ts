@@ -109,6 +109,7 @@ export interface SegmentQuestionConfig {
   enabledCommonQuestionIds: string[]
   ownQuestions: QuestionRule[]
   commonOptionFilters?: Record<string, string[]>  // questionId -> allowed option values for this segment
+  disabledOwnQuestionIds?: string[]  // own questions turned off for this segment (undefined = all on)
 }
 
 export interface FirstIntakeQuestion extends QuestionRule {
