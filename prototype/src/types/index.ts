@@ -112,6 +112,30 @@ export interface SegmentQuestionConfig {
   disabledOwnQuestionIds?: string[]  // own questions turned off for this segment (undefined = all on)
 }
 
+// PI-81: Document library + segment-mapping model (mirrors question model)
+export interface DocLibraryItem {
+  type: string
+  displayName: string
+  isRequired: boolean
+  isConditional: boolean
+  classification: 'common' | 'entity-own' | 'service-own'
+  scope?: EntityCode | ServiceCode   // owning segment for entity-own / service-own
+}
+
+export interface DocSegmentOverride {
+  displayName?: string
+  isRequired?: boolean
+  isConditional?: boolean
+}
+
+export interface DocSegmentConfig {
+  key: string                        // 'entity:ENTITY_CORP' | 'service:SVC_COL_KRW' etc.
+  enabledCommonDocTypes: string[]
+  ownDocs: DocLibraryItem[]
+  commonOverrides?: Record<string, DocSegmentOverride>   // type → per-segment override
+  disabledOwnDocTypes?: string[]     // fixed own docs turned off for this segment
+}
+
 export interface FirstIntakeQuestion extends QuestionRule {
   enabled: boolean
   hint?: string
@@ -128,6 +152,8 @@ export interface RuleSet {
   questionPool: QuestionRule[]
   segmentQuestionConfigs: SegmentQuestionConfig[]
   firstIntakeQuestions?: FirstIntakeQuestion[]
+  docLibrary?: DocLibraryItem[]
+  segmentDocConfigs?: DocSegmentConfig[]
 }
 
 export interface RuleSetHistoryEntry {

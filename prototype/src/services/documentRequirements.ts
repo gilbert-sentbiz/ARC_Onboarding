@@ -35,6 +35,8 @@ function resolveServices(seg: SegmentInfo): ServiceCode[] {
   })
 }
 
+type DocTemplate = { type: string; displayName: string; isRequired: boolean; isConditional: boolean }
+
 export function buildDocuments(
   caseId: string,
   segmentInfo: SegmentInfo,
@@ -46,19 +48,75 @@ export function buildDocuments(
   const sectors = segmentInfo.sectors ?? []
 
   const seenTypes = new Set<string>()
-  const templates: Array<{ type: string; displayName: string; isRequired: boolean; isConditional: boolean }> = []
+  const templates: DocTemplate[] = []
 
-  for (const rule of rs.documentRules) {
-    const { entity: rEntity, service: rService, sector: rSector } = rule.match
-    if (rEntity !== undefined && rEntity !== entity) continue
-    if (rService !== undefined && !services.includes(rService)) continue
-    if (rSector !== undefined && !sectors.includes(rSector)) continue
+  function add(t: DocTemplate) {
+    if (!seenTypes.has(t.type)) {
+      seenTypes.add(t.type)
+      templates.push(t)
+    }
+  }
 
-    for (const doc of rule.docs) {
-      if (!seenTypes.has(doc.type)) {
-        seenTypes.add(doc.type)
-        templates.push(doc)
+  // ── New model (PI-81): docLibrary + segmentDocConfigs ──────────────────────
+  if (rs.docLibrary && rs.segmentDocConfigs) {
+    const commonDocs = rs.docLibrary.filter(d => d.classification === 'common')
+
+    // Helper: apply enabled common docs for one segment key
+    function applyCommon(segKey: string) {
+      const cfg = rs.segmentDocConfigs!.find(c => c.key === segKey)
+      if (!cfg) return
+      for (const type of cfg.enabledCommonDocTypes) {
+        const base = commonDocs.find(d => d.type === type)
+        if (!base) continue
+        const ov = cfg.commonOverrides?.[type]
+        add({
+          type,
+          displayName: ov?.displayName ?? base.displayName,
+          isRequired: ov?.isRequired ?? base.isRequired,
+          isConditional: ov?.isConditional ?? base.isConditional,
+        })
       }
+    }
+
+    // Entity common → service common (dedup by type)
+    applyCommon(`entity:${entity}`)
+    for (const svc of services) applyCommon(`service:${svc}`)
+
+    // Entity own docs from library
+    const entityCfg = rs.segmentDocConfigs.find(c => c.key === `entity:${entity}`)
+    const entityDisabled = entityCfg?.disabledOwnDocTypes ?? []
+    for (const doc of rs.docLibrary.filter(d => d.classification === 'entity-own' && d.scope === entity)) {
+      if (!entityDisabled.includes(doc.type)) add(doc)
+    }
+    for (const doc of entityCfg?.ownDocs ?? []) add(doc)
+
+    // Service own docs from library
+    for (const svc of services) {
+      const svcCfg = rs.segmentDocConfigs.find(c => c.key === `service:${svc}`)
+      const svcDisabled = svcCfg?.disabledOwnDocTypes ?? []
+      for (const doc of rs.docLibrary.filter(d => d.classification === 'service-own' && d.scope === svc)) {
+        if (!svcDisabled.includes(doc.type)) add(doc)
+      }
+      for (const doc of svcCfg?.ownDocs ?? []) add(doc)
+    }
+
+    // Sector-specific docs remain in documentRules (sector only, no entity/service base)
+    for (const rule of rs.documentRules) {
+      const { entity: rEntity, service: rService, sector: rSector } = rule.match
+      if (!rSector) continue  // only sector-scoped rules in new model
+      if (rEntity !== undefined && rEntity !== entity) continue
+      if (rService !== undefined && !services.includes(rService)) continue
+      if (!sectors.includes(rSector)) continue
+      for (const doc of rule.docs) add(doc)
+    }
+  } else {
+    // ── Legacy model: plain documentRules ────────────────────────────────────
+    for (const rule of rs.documentRules) {
+      const { entity: rEntity, service: rService, sector: rSector } = rule.match
+      if (rEntity !== undefined && rEntity !== entity) continue
+      if (rService !== undefined && !services.includes(rService)) continue
+      if (rSector !== undefined && !sectors.includes(rSector)) continue
+      for (const doc of rule.docs) add(doc)
     }
   }
 

@@ -196,6 +196,112 @@ export const INITIAL_RULESET: RuleSet = {
     },
   ],
 
+  // ── PI-81: Document library + segment-mapping model ──────────────────────────
+  docLibrary: [
+    // 공통 서류 (8) — mapped to segments via segmentDocConfigs
+    { type: 'BIZ_REGISTRATION',        displayName: '사업자등록증 (Business Registration Certificate)',    isRequired: true,  isConditional: false, classification: 'common' },
+    { type: 'ID_COPY',                 displayName: '신분증 사본',                                         isRequired: true,  isConditional: false, classification: 'common' },
+    { type: 'SHAREHOLDER_LIST',        displayName: '주주명부 (Shareholder List)',                          isRequired: true,  isConditional: false, classification: 'common' },
+    { type: 'DIRECTOR_LIST',           displayName: '이사명부 (Director List)',                             isRequired: true,  isConditional: false, classification: 'common' },
+    { type: 'CONTRACT',                displayName: '계약서 (Contract)',                                    isRequired: true,  isConditional: false, classification: 'common' },
+    { type: 'SAMPLE_INVOICE_SHIPPING', displayName: '샘플 인보이스 및 선적자료 (Sample Invoice & Shipping)', isRequired: true,  isConditional: false, classification: 'common' },
+    { type: 'BANK_PROOF',              displayName: '은행 증빙',                                            isRequired: true,  isConditional: false, classification: 'common' },
+    { type: 'WEBSITE_URL',             displayName: '홈페이지 주소 (Website URL)',                          isRequired: false, isConditional: true,  classification: 'common' },
+    // 법인 고유
+    { type: 'CORPORATE_REGISTRY', displayName: '법인등기부등본 (Corporate Registry Extract)', isRequired: true,  isConditional: false, classification: 'entity-own', scope: 'ENTITY_CORP' },
+    { type: 'SEAL_CERTIFICATE',   displayName: '법인인감증명서 (Corporate Seal Certificate)',  isRequired: true,  isConditional: false, classification: 'entity-own', scope: 'ENTITY_CORP' },
+    // FI 고유
+    { type: 'REMITTANCE_LICENSE',   displayName: 'Remittance License (또는 동등 인허가)',          isRequired: true,  isConditional: false, classification: 'entity-own', scope: 'ENTITY_FI' },
+    { type: 'INTERNAL_POLICIES',    displayName: 'Internal Policies (Compliance/Risk)',            isRequired: true,  isConditional: false, classification: 'entity-own', scope: 'ENTITY_FI' },
+    { type: 'FINANCIAL_STATEMENTS', displayName: 'Audited Financial Statements (최근 3년)',        isRequired: true,  isConditional: false, classification: 'entity-own', scope: 'ENTITY_FI' },
+    { type: 'AML_AUDIT',            displayName: 'Latest AML Audit Report',                       isRequired: true,  isConditional: false, classification: 'entity-own', scope: 'ENTITY_FI' },
+    { type: 'ORG_CHART',            displayName: 'Organisational Chart',                          isRequired: true,  isConditional: false, classification: 'entity-own', scope: 'ENTITY_FI' },
+    { type: 'WOLFSBERG',            displayName: 'Wolfsberg AML Questionnaire',                   isRequired: true,  isConditional: false, classification: 'entity-own', scope: 'ENTITY_FI' },
+    { type: 'BOARD_RESOLUTION',     displayName: 'Board Resolution (서명 권한 위임)',              isRequired: true,  isConditional: false, classification: 'entity-own', scope: 'ENTITY_FI' },
+    { type: 'KYC_MERCHANTS',        displayName: 'KYC Documents for Sample Merchants (2건)',      isRequired: false, isConditional: true,  classification: 'entity-own', scope: 'ENTITY_FI' },
+    // KRW 고유
+    { type: 'ARTICLES_OF_INCORP', displayName: 'Articles of Incorporation', isRequired: true, isConditional: false, classification: 'service-own', scope: 'SVC_COL_KRW' },
+    // VND 고유 (9)
+    { type: 'VND_COMPANY_CHARTER',  displayName: 'Company Charter',                                              isRequired: false, isConditional: true,  classification: 'service-own', scope: 'SVC_COL_VND' },
+    { type: 'VND_INCORPORATION',    displayName: 'Certificate of Incorporation',                                 isRequired: true,  isConditional: false, classification: 'service-own', scope: 'SVC_COL_VND' },
+    { type: 'VND_BOARD_RESOLUTION', displayName: 'Board Resolution (서명자가 법적 대표가 아닌 경우)',             isRequired: false, isConditional: true,  classification: 'service-own', scope: 'SVC_COL_VND' },
+    { type: 'VND_LICENSES',         displayName: 'Licenses (해당 시)',                                           isRequired: false, isConditional: true,  classification: 'service-own', scope: 'SVC_COL_VND' },
+    { type: 'VND_ADDRESS',          displayName: 'Address of UBOs, Directors, Reps, Shareholders',               isRequired: true,  isConditional: false, classification: 'service-own', scope: 'SVC_COL_VND' },
+    { type: 'VND_BANK_STATEMENT',   displayName: 'Bank Statement (SentBe App 사용자만)',                         isRequired: false, isConditional: true,  classification: 'service-own', scope: 'SVC_COL_VND' },
+    { type: 'VND_ACCOUNTANT_ID',    displayName: "Accountant's ID (베트남 법인만)",                              isRequired: false, isConditional: true,  classification: 'service-own', scope: 'SVC_COL_VND' },
+    { type: 'VND_ACCOUNTANT_ADDR',  displayName: "Accountant's Proof of Address (베트남 법인만)",                isRequired: false, isConditional: true,  classification: 'service-own', scope: 'SVC_COL_VND' },
+    { type: 'VND_OFFICE_PHOTO',     displayName: 'Office Photo with Company Logo',                               isRequired: false, isConditional: true,  classification: 'service-own', scope: 'SVC_COL_VND' },
+    { type: 'VND_WEBSITE_IMAGE',    displayName: 'Image of Product/Service Website',                             isRequired: false, isConditional: true,  classification: 'service-own', scope: 'SVC_COL_VND' },
+  ],
+
+  segmentDocConfigs: [
+    // 법인: 공통 8종 모두 + 신분증/은행증빙 오버라이드
+    {
+      key: 'entity:ENTITY_CORP',
+      enabledCommonDocTypes: ['BIZ_REGISTRATION', 'ID_COPY', 'SHAREHOLDER_LIST', 'DIRECTOR_LIST', 'CONTRACT', 'SAMPLE_INVOICE_SHIPPING', 'BANK_PROOF', 'WEBSITE_URL'],
+      ownDocs: [],
+      commonOverrides: {
+        ID_COPY:    { displayName: '대표자 신분증 사본 (CEO ID Copy, 공동대표 전원)' },
+        BANK_PROOF: { displayName: '은행계좌 사본 (Bank Account Copy)' },
+      },
+    },
+    // 개인사업자: 6종 (주주·이사명부 제외) + 오버라이드
+    {
+      key: 'entity:ENTITY_INDIV',
+      enabledCommonDocTypes: ['BIZ_REGISTRATION', 'ID_COPY', 'CONTRACT', 'SAMPLE_INVOICE_SHIPPING', 'BANK_PROOF', 'WEBSITE_URL'],
+      ownDocs: [],
+      commonOverrides: {
+        ID_COPY:    { displayName: '대표자 신분증 사본 (Representative ID Copy)' },
+        BANK_PROOF: { displayName: '은행계좌 사본 (Bank Account Copy)' },
+      },
+    },
+    // FI: 4종 + 오버라이드 (고유 서류는 라이브러리에서 가져옴)
+    {
+      key: 'entity:ENTITY_FI',
+      enabledCommonDocTypes: ['BIZ_REGISTRATION', 'ID_COPY', 'DIRECTOR_LIST', 'BANK_PROOF'],
+      ownDocs: [],
+      commonOverrides: {
+        ID_COPY:    { displayName: 'Certified ID Copies — 이사 전원 + UBO 25%+' },
+        BANK_PROOF: { displayName: 'Proof of Bank Account (최근 3개월 내)' },
+      },
+    },
+    // KRW: 7종 (WEBSITE_URL 제외) + 오버라이드
+    {
+      key: 'service:SVC_COL_KRW',
+      enabledCommonDocTypes: ['BIZ_REGISTRATION', 'ID_COPY', 'SHAREHOLDER_LIST', 'DIRECTOR_LIST', 'CONTRACT', 'SAMPLE_INVOICE_SHIPPING', 'BANK_PROOF'],
+      ownDocs: [],
+      commonOverrides: {
+        ID_COPY:    { displayName: 'ID Copies — CEO, 이사, UBO 25%+' },
+        BANK_PROOF: { displayName: 'Bank/E-wallet Statement (회사명 기재)' },
+      },
+    },
+    // VND: 6종 (공통 → CONTRACT·SAMPLE_INVOICE_SHIPPING·ID_COPY·BIZ·SHAREHOLDER·DIRECTOR) + 오버라이드
+    {
+      key: 'service:SVC_COL_VND',
+      enabledCommonDocTypes: ['BIZ_REGISTRATION', 'ID_COPY', 'SHAREHOLDER_LIST', 'DIRECTOR_LIST', 'CONTRACT', 'SAMPLE_INVOICE_SHIPPING'],
+      ownDocs: [],
+      commonOverrides: {
+        ID_COPY: { displayName: 'Passport/ID Copy — UBO, 이사, 대표자' },
+      },
+    },
+    // Payout: 기본 3종
+    {
+      key: 'service:SVC_PAYOUT',
+      enabledCommonDocTypes: ['BIZ_REGISTRATION', 'ID_COPY', 'BANK_PROOF'],
+      ownDocs: [],
+      commonOverrides: {
+        BANK_PROOF: { displayName: '은행계좌 사본 (Bank Account Copy)' },
+      },
+    },
+    // 기타 Collection
+    {
+      key: 'service:SVC_COL_ETC',
+      enabledCommonDocTypes: ['BIZ_REGISTRATION', 'ID_COPY', 'CONTRACT', 'BANK_PROOF'],
+      ownDocs: [],
+      commonOverrides: {},
+    },
+  ],
+
   // ── Entity classification rules (explicit 6-case, priority-ordered, no default) ──
   entityClassificationRules: [
     {
@@ -673,5 +779,7 @@ export function getRuleSet(): RuleSet {
     segmentQuestionConfigs: rs.segmentQuestionConfigs?.length ? rs.segmentQuestionConfigs : INITIAL_RULESET.segmentQuestionConfigs,
     documentRules: hasCanonicalDocTypes ? rs.documentRules : INITIAL_RULESET.documentRules,
     firstIntakeQuestions: rs.firstIntakeQuestions?.length ? rs.firstIntakeQuestions : INITIAL_RULESET.firstIntakeQuestions,
+    docLibrary: rs.docLibrary?.length ? rs.docLibrary : INITIAL_RULESET.docLibrary,
+    segmentDocConfigs: rs.segmentDocConfigs?.length ? rs.segmentDocConfigs : INITIAL_RULESET.segmentDocConfigs,
   }
 }
