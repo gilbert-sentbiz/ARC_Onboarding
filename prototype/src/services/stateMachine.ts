@@ -78,8 +78,8 @@ export const STATUS_ORDER: CaseStatus[] = [
 
 const MIN_VIEW_INDEX: Partial<Record<UserRole, number>> = {
   SALES: STATUS_ORDER.indexOf('DOCUMENT_SUBMISSION_REQUIRED'),
-  COMPLIANCE: STATUS_ORDER.indexOf('COMPLIANCE_REVIEW_REQUIRED'),
-  OPS: STATUS_ORDER.indexOf('OPS_REVIEW_REQUIRED'),
+  COMPLIANCE: STATUS_ORDER.indexOf('DOCUMENT_SUBMISSION_REQUIRED'),
+  OPS: STATUS_ORDER.indexOf('DOCUMENT_SUBMISSION_REQUIRED'),
 }
 
 export function canView(status: CaseStatus, role: UserRole): boolean {
