@@ -193,12 +193,13 @@ function hasOptions(inputType: QuestionInputType): boolean {
   return inputType === 'select' || inputType === 'radio' || inputType === 'multi'
 }
 
-function CommonQuestionRow({ q, enabled, optionFilter, onToggle, onFilterChange }: {
+function CommonQuestionRow({ q, enabled, optionFilter, onToggle, onFilterChange, onDelete }: {
   q: QuestionRule
   enabled: boolean
   optionFilter: string[] | undefined
   onToggle: () => void
   onFilterChange: (values: string[] | undefined) => void
+  onDelete?: () => void
 }) {
   const [expanded, setExpanded] = useState(false)
   const qHasChildren = !!(q.children?.length)
@@ -261,6 +262,11 @@ function CommonQuestionRow({ q, enabled, optionFilter, onToggle, onFilterChange 
               {q.isRequired ? '필수' : '선택'}
             </span>
             <span className="text-[10px] font-mono text-sb-n400 px-1.5 py-0.5 border border-sb-n100 rounded">{q.inputType}</span>
+            {onDelete && (
+              <button onClick={onDelete} className="flex items-center justify-center w-7 h-7 rounded-[6px] text-sb-n400 hover:text-sb-negative hover:bg-red-50 transition-colors">
+                <Trash size={13} />
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -271,13 +277,14 @@ function CommonQuestionRow({ q, enabled, optionFilter, onToggle, onFilterChange 
   )
 }
 
-function QuestionRowFixed({ q, depth = 0, allConfigs = [], currentSegKey = '', enabled, onToggle }: {
+function QuestionRowFixed({ q, depth = 0, allConfigs = [], currentSegKey = '', enabled, onToggle, onDelete }: {
   q: QuestionRule
   depth?: number
   allConfigs?: SegmentQuestionConfig[]
   currentSegKey?: string
   enabled?: boolean
   onToggle?: () => void
+  onDelete?: () => void
 }) {
   const [expanded, setExpanded] = useState(false)
   const qHasChildren = !!(q.children?.length)
@@ -362,6 +369,11 @@ function QuestionRowFixed({ q, depth = 0, allConfigs = [], currentSegKey = '', e
               {q.isRequired ? '필수' : '선택'}
             </span>
             <span className="text-[10px] font-mono text-sb-n400 px-1.5 py-0.5 border border-sb-n100 rounded">{q.inputType}</span>
+            {onDelete && (
+              <button onClick={onDelete} className="flex items-center justify-center w-7 h-7 rounded-[6px] text-sb-n400 hover:text-sb-negative hover:bg-red-50 transition-colors">
+                <Trash size={13} />
+              </button>
+            )}
           </div>
         )}
       </div>
@@ -571,6 +583,7 @@ function FirstQuestionsEditor() {
   }
 
   function removeQuestion(id: string) {
+    if (!window.confirm('이 질문을 삭제하시겠습니까?')) return
     save(questions.filter(q => q.id !== id))
   }
 
@@ -710,7 +723,42 @@ function QuestionsEditor({ selected }: { selected: Selection }) {
   }
 
   function removeOwn(idx: number) {
+    if (!window.confirm('이 질문을 삭제하시겠습니까?')) return
     saveConfig({ ownQuestions: config.ownQuestions.filter((_, i) => i !== idx) })
+  }
+
+  function deleteCommonQuestion(q: QuestionRule) {
+    const fullRs = getRuleSet()
+    const mappedCount = fullRs.segmentQuestionConfigs.filter(c => c.enabledCommonQuestionIds.includes(q.id)).length
+    const msg = mappedCount > 1
+      ? `"${q.label}" 질문을 이 세그먼트에서만 해제합니다. 다른 ${mappedCount - 1}개 세그먼트에는 유지됩니다.\n계속하시겠습니까?`
+      : `"${q.label}" 질문을 라이브러리에서 완전히 삭제합니다. 하위 질문도 함께 삭제됩니다.\n계속하시겠습니까?`
+    if (!window.confirm(msg)) return
+    if (mappedCount > 1) {
+      const updatedConfigs = fullRs.segmentQuestionConfigs.map(c =>
+        c.key === configKey
+          ? { ...c, enabledCommonQuestionIds: c.enabledCommonQuestionIds.filter(id => id !== q.id) }
+          : c
+      )
+      updateRuleSet({ ...currentRuleSet, version: nextVersion(currentRuleSet.version), questionPool: fullRs.questionPool, segmentQuestionConfigs: updatedConfigs })
+    } else {
+      const updatedPool = fullRs.questionPool.filter(pq => pq.id !== q.id)
+      const updatedConfigs = fullRs.segmentQuestionConfigs.map(c => ({
+        ...c, enabledCommonQuestionIds: c.enabledCommonQuestionIds.filter(id => id !== q.id),
+      }))
+      updateRuleSet({ ...currentRuleSet, version: nextVersion(currentRuleSet.version), questionPool: updatedPool, segmentQuestionConfigs: updatedConfigs })
+    }
+  }
+
+  function deletePoolOwnQuestion(q: QuestionRule) {
+    if (!window.confirm(`"${q.label}" 질문을 삭제합니다. 하위 질문도 함께 삭제됩니다.\n계속하시겠습니까?`)) return
+    const fullRs = getRuleSet()
+    const updatedPool = fullRs.questionPool.filter(pq => pq.id !== q.id)
+    const updatedConfigs = fullRs.segmentQuestionConfigs.map(c => ({
+      ...c,
+      disabledOwnQuestionIds: (c.disabledOwnQuestionIds ?? []).filter(id => id !== q.id),
+    }))
+    updateRuleSet({ ...currentRuleSet, version: nextVersion(currentRuleSet.version), questionPool: updatedPool, segmentQuestionConfigs: updatedConfigs })
   }
 
   function addCommonQuestion(q: QuestionRule, segmentKeys: string[]) {
@@ -808,6 +856,7 @@ function QuestionsEditor({ selected }: { selected: Selection }) {
                   else next[q.id] = values
                   saveConfig({ commonOptionFilters: Object.keys(next).length ? next : undefined })
                 }}
+                onDelete={() => deleteCommonQuestion(q)}
               />
             ))}
             {showAddCommonForm ? (
@@ -872,6 +921,7 @@ function QuestionsEditor({ selected }: { selected: Selection }) {
                 currentSegKey={configKey}
                 enabled={isOwnEnabled(q.id)}
                 onToggle={() => toggleOwn(q.id)}
+                onDelete={() => deletePoolOwnQuestion(q)}
               />
               {q.id === screen1LastOwn && (
                 <ScreenDivider key={`div-own-${idx}`} n={2} />
