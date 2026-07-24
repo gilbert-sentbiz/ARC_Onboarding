@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import JSZip from 'jszip'
 import {
   ArrowLeft, CheckCircle, WarningCircle, Clock, ChatCircle,
   Note, PaperPlaneTilt, FileText, FileDashed, Check, X, CaretDown, CaretUp, Eye, Plus, DownloadSimple,
@@ -27,6 +28,35 @@ function downloadFile(file: UploadedFile) {
   a.href = file.dataUrl
   a.download = file.fileName
   a.click()
+}
+
+async function downloadAllDocuments(docs: Document[], companyName: string, caseId: string): Promise<void> {
+  const zip = new JSZip()
+  const usedNames = new Set<string>()
+
+  for (const doc of docs) {
+    const latest = doc.uploadedFiles.find(f => f.isLatest) ?? doc.uploadedFiles[doc.uploadedFiles.length - 1]
+    if (!latest?.dataUrl) continue
+    const b64Match = latest.dataUrl.match(/^data:[^;]+;base64,(.+)$/)
+    if (!b64Match) continue
+
+    const ext = latest.fileName.includes('.') ? latest.fileName.split('.').pop()! : 'bin'
+    const base = doc.displayName.replace(/[/\\:*?"<>|]/g, '_')
+    let entryName = `${base}.${ext}`
+    let counter = 1
+    while (usedNames.has(entryName)) { entryName = `${base}_${counter++}.${ext}` }
+    usedNames.add(entryName)
+    zip.file(entryName, b64Match[1], { base64: true })
+  }
+
+  if (usedNames.size === 0) return
+  const blob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `${companyName}_${caseId}_documents.zip`
+  a.click()
+  URL.revokeObjectURL(url)
 }
 
 const DOC_STATUS_BADGE: Record<DocumentStatus, { label: string; cls: string }> = {
@@ -495,15 +525,32 @@ export default function InternalCaseDetail() {
                       일괄 승인 ({(c.documents ?? []).filter((d) => d.status === 'SUBMITTED').length}건)
                     </button>
                   ) : <div />}
-                  {(role === 'SALES' || role === 'COMPLIANCE' || role === 'OPS') && (
-                    <button
-                      onClick={() => setShowAdHocForm((v) => !v)}
-                      className="flex items-center gap-1.5 px-3 py-2 rounded-[8px] text-[13px] font-medium border border-sb-n200 text-sb-n700 hover:border-sb-brand hover:text-sb-brand transition-colors"
-                    >
-                      <Plus size={14} weight="bold" />
-                      서류 추가 요청
-                    </button>
-                  )}
+                  {(role === 'SALES' || role === 'COMPLIANCE' || role === 'OPS') && (() => {
+                    const hasUploads = (c.documents ?? []).some(doc => {
+                      const latest = doc.uploadedFiles.find(f => f.isLatest) ?? doc.uploadedFiles[doc.uploadedFiles.length - 1]
+                      return !!latest?.dataUrl
+                    })
+                    return (
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => downloadAllDocuments(c.documents ?? [], c.customerName, c.id)}
+                          disabled={!hasUploads}
+                          title={!hasUploads ? '업로드된 서류가 없습니다' : undefined}
+                          className="flex items-center gap-1.5 px-3 py-2 rounded-[8px] text-[13px] font-medium border border-sb-n200 text-sb-n700 hover:border-sb-brand hover:text-sb-brand transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:border-sb-n200 disabled:hover:text-sb-n700"
+                        >
+                          <DownloadSimple size={14} weight="bold" />
+                          일괄 다운로드
+                        </button>
+                        <button
+                          onClick={() => setShowAdHocForm((v) => !v)}
+                          className="flex items-center gap-1.5 px-3 py-2 rounded-[8px] text-[13px] font-medium border border-sb-n200 text-sb-n700 hover:border-sb-brand hover:text-sb-brand transition-colors"
+                        >
+                          <Plus size={14} weight="bold" />
+                          서류 추가 요청
+                        </button>
+                      </div>
+                    )
+                  })()}
                 </div>
 
                 {showAdHocForm && (
