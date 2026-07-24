@@ -77,7 +77,7 @@ export interface ServiceClassificationRule {
 }
 
 // PI-41: Question rule types
-export type QuestionInputType = 'text' | 'select' | 'radio' | 'textarea' | 'number'
+export type QuestionInputType = 'text' | 'select' | 'radio' | 'textarea' | 'number' | 'multi'
 export type QuestionClassification = 'common' | 'entity-own' | 'service-own'
 
 export interface QuestionOption {
