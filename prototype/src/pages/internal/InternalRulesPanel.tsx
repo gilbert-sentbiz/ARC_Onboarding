@@ -126,7 +126,7 @@ const INPUT_TYPE_OPTIONS: { value: QuestionInputType; label: string }[] = [
   { value: 'number',   label: 'number' },
 ]
 
-function CommonQuestionRow({ q, enabled, optionFilter, onToggle, onFilterChange, isEditing, onStartEdit, onSaveEdit, onCancelEdit }: {
+function CommonQuestionRow({ q, enabled, optionFilter, onToggle, onFilterChange, isEditing, onStartEdit, onSaveEdit, onCancelEdit, onSaveChildEdit }: {
   q: QuestionRule
   enabled: boolean
   optionFilter: string[] | undefined
@@ -137,8 +137,10 @@ function CommonQuestionRow({ q, enabled, optionFilter, onToggle, onFilterChange,
   onStartEdit: () => void
   onSaveEdit: (label: string, options: { value: string; label: string }[] | null) => void
   onCancelEdit: () => void
+  onSaveChildEdit?: (childId: string, label: string, options: { value: string; label: string }[] | null) => void
 }) {
   const [expanded, setExpanded] = useState(false)
+  const [editingChildId, setEditingChildId] = useState<string | null>(null)
   const hasChildren = !!(q.children?.length)
   const hasOptions = (q.inputType === 'select' || q.inputType === 'radio') && !!q.options?.length
   const enabledCount = optionFilter ? optionFilter.length : (q.options?.length ?? 0)
@@ -220,13 +222,21 @@ function CommonQuestionRow({ q, enabled, optionFilter, onToggle, onFilterChange,
         </div>
       </div>
       {expanded && q.children?.map(child => (
-        <QuestionRowFixed key={child.id} q={child} depth={1} />
+        <QuestionRowFixed
+          key={child.id}
+          q={child}
+          depth={1}
+          isEditing={editingChildId === child.id}
+          onStartEdit={() => setEditingChildId(child.id)}
+          onSaveEdit={(label, opts) => { onSaveChildEdit?.(child.id, label, opts); setEditingChildId(null) }}
+          onCancelEdit={() => setEditingChildId(null)}
+        />
       ))}
     </>
   )
 }
 
-function QuestionRowFixed({ q, depth = 0, allConfigs = [], currentSegKey = '', isEditing = false, onStartEdit, onSaveEdit, onCancelEdit, enabled, onToggle }: {
+function QuestionRowFixed({ q, depth = 0, allConfigs = [], currentSegKey = '', isEditing = false, onStartEdit, onSaveEdit, onCancelEdit, onSaveChildEdit, enabled, onToggle }: {
   q: QuestionRule
   depth?: number
   allConfigs?: SegmentQuestionConfig[]
@@ -235,10 +245,12 @@ function QuestionRowFixed({ q, depth = 0, allConfigs = [], currentSegKey = '', i
   onStartEdit?: () => void
   onSaveEdit?: (label: string, options: { value: string; label: string }[] | null) => void
   onCancelEdit?: () => void
+  onSaveChildEdit?: (childId: string, label: string, options: { value: string; label: string }[] | null) => void
   enabled?: boolean
   onToggle?: () => void
 }) {
   const [expanded, setExpanded] = useState(false)
+  const [editingChildId, setEditingChildId] = useState<string | null>(null)
   const hasChildren = !!(q.children?.length)
   const hasOptions = (q.inputType === 'select' || q.inputType === 'radio') && !!q.options?.length
 
@@ -266,7 +278,13 @@ function QuestionRowFixed({ q, depth = 0, allConfigs = [], currentSegKey = '', i
           />
         </div>
         {expanded && q.children?.map(child => (
-          <QuestionRowFixed key={child.id} q={child} depth={depth + 1} currentSegKey={currentSegKey} />
+          <QuestionRowFixed
+            key={child.id} q={child} depth={depth + 1} currentSegKey={currentSegKey}
+            isEditing={editingChildId === child.id}
+            onStartEdit={() => setEditingChildId(child.id)}
+            onSaveEdit={(label, opts) => { onSaveChildEdit?.(child.id, label, opts); setEditingChildId(null) }}
+            onCancelEdit={() => setEditingChildId(null)}
+          />
         ))}
       </>
     )
@@ -349,7 +367,13 @@ function QuestionRowFixed({ q, depth = 0, allConfigs = [], currentSegKey = '', i
         )}
       </div>
       {expanded && q.children?.map(child => (
-        <QuestionRowFixed key={child.id} q={child} depth={depth + 1} currentSegKey={currentSegKey} />
+        <QuestionRowFixed
+          key={child.id} q={child} depth={depth + 1} currentSegKey={currentSegKey}
+          isEditing={editingChildId === child.id}
+          onStartEdit={() => setEditingChildId(child.id)}
+          onSaveEdit={(label, opts) => { onSaveChildEdit?.(child.id, label, opts); setEditingChildId(null) }}
+          onCancelEdit={() => setEditingChildId(null)}
+        />
       ))}
     </>
   )
@@ -736,9 +760,12 @@ function QuestionsEditor({ selected }: { selected: Selection }) {
 
   function savePoolQuestion(id: string, label: string, options: { value: string; label: string }[] | null) {
     const fullRs = getRuleSet()
-    const updatedPool = fullRs.questionPool.map(q =>
-      q.id === id ? { ...q, label, ...(options !== null ? { options } : {}) } : q
-    )
+    function updateQ(q: QuestionRule): QuestionRule {
+      if (q.id === id) return { ...q, label, ...(options !== null ? { options } : {}) }
+      if (q.children?.length) return { ...q, children: q.children.map(updateQ) }
+      return q
+    }
+    const updatedPool = fullRs.questionPool.map(updateQ)
     updateRuleSet({ ...currentRuleSet, version: nextVersion(currentRuleSet.version), questionPool: updatedPool, segmentQuestionConfigs: fullRs.segmentQuestionConfigs })
     setEditingQId(null)
   }
@@ -833,6 +860,7 @@ function QuestionsEditor({ selected }: { selected: Selection }) {
                 onStartEdit={() => startEditQ(q)}
                 onSaveEdit={(label, opts) => savePoolQuestion(q.id, label, opts)}
                 onCancelEdit={() => setEditingQId(null)}
+                onSaveChildEdit={(childId, label, opts) => savePoolQuestion(childId, label, opts)}
                 onToggle={() => {
                   const ids = config.enabledCommonQuestionIds.includes(q.id)
                     ? config.enabledCommonQuestionIds.filter(id => id !== q.id)
@@ -896,6 +924,7 @@ function QuestionsEditor({ selected }: { selected: Selection }) {
                 onStartEdit={() => startEditQ(q)}
                 onSaveEdit={(label, opts) => savePoolQuestion(q.id, label, opts)}
                 onCancelEdit={() => setEditingQId(null)}
+                onSaveChildEdit={(childId, label, opts) => savePoolQuestion(childId, label, opts)}
                 enabled={isOwnEnabled(q.id)}
                 onToggle={() => toggleOwn(q.id)}
               />
