@@ -138,6 +138,8 @@ function CommonQuestionRow({ q, enabled, optionFilter, onToggle, onFilterChange,
   onSaveEdit: (label: string, options: { value: string; label: string }[] | null) => void
   onCancelEdit: () => void
 }) {
+  const [expanded, setExpanded] = useState(false)
+  const hasChildren = !!(q.children?.length)
   const hasOptions = (q.inputType === 'select' || q.inputType === 'radio') && !!q.options?.length
   const enabledCount = optionFilter ? optionFilter.length : (q.options?.length ?? 0)
   const totalCount = q.options?.length ?? 0
@@ -165,52 +167,62 @@ function CommonQuestionRow({ q, enabled, optionFilter, onToggle, onFilterChange,
   }
 
   return (
-    <div className={`border-b border-sb-n100 last:border-0 ${!enabled ? 'opacity-40' : ''}`}>
-      <div className="flex items-start gap-3 px-4 py-3">
-        <span className="flex-shrink-0 mt-0.5">
-          <ToggleSwitch checked={enabled} onChange={onToggle} />
-        </span>
-        <div className="flex-1 min-w-0">
-          <p className="text-[13px] text-sb-n800 leading-snug">{q.label}</p>
-          <p className="text-[11px] font-mono text-sb-n400 mt-0.5">{q.id}</p>
-          {hasOptions && (
-            <div className="flex flex-wrap gap-1 mt-1.5">
-              {q.options!.map(opt => {
-                const included = !optionFilter || optionFilter.includes(opt.value)
-                return (
-                  <button
-                    key={opt.value}
-                    onClick={enabled ? () => toggleOption(opt.value) : undefined}
-                    disabled={!enabled}
-                    className={`text-[11px] px-2 py-0.5 rounded-full border transition-colors ${
-                      included
-                        ? 'bg-sb-blue-50 border-sb-blue-200 text-sb-brand'
-                        : 'bg-sb-n50 border-sb-n200 text-sb-n300 line-through decoration-sb-n300'
-                    }`}
-                  >
-                    {opt.label}
-                  </button>
-                )
-              })}
-            </div>
-          )}
-        </div>
-        <div className="flex items-center gap-1 flex-shrink-0 mt-0.5">
-          {hasOptions && optionFilter && (
-            <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-sb-blue-100 text-sb-brand">
-              옵션 {enabledCount}/{totalCount}
-            </span>
-          )}
-          <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${q.isRequired ? 'bg-red-50 text-sb-negative' : 'bg-sb-n50 text-sb-n400'}`}>
-            {q.isRequired ? '필수' : '선택'}
+    <>
+      <div className={`border-b border-sb-n100 last:border-0 ${!enabled ? 'opacity-40' : ''}`}>
+        <div className="flex items-start gap-3 px-4 py-3">
+          <span className="flex items-center gap-1 flex-shrink-0 mt-0.5">
+            <ToggleSwitch checked={enabled} onChange={onToggle} />
+            {hasChildren && (
+              <button onClick={() => setExpanded(v => !v)} className="text-sb-n400 hover:text-sb-brand">
+                {expanded ? <CaretDown size={12} /> : <CaretRight size={12} />}
+              </button>
+            )}
           </span>
-          <span className="text-[10px] font-mono text-sb-n400 px-1.5 py-0.5 border border-sb-n100 rounded">{q.inputType}</span>
-          <button onClick={onStartEdit} className="flex items-center justify-center w-7 h-7 rounded-[6px] text-sb-n400 hover:text-sb-brand hover:bg-sb-blue-100 transition-colors">
-            <PencilSimple size={13} />
-          </button>
+          <div className="flex-1 min-w-0">
+            <p className="text-[13px] text-sb-n800 leading-snug">{q.label}</p>
+            <p className="text-[11px] font-mono text-sb-n400 mt-0.5">{q.id}</p>
+            {hasOptions && (
+              <div className="flex flex-wrap gap-1 mt-1.5">
+                {q.options!.map(opt => {
+                  const included = !optionFilter || optionFilter.includes(opt.value)
+                  return (
+                    <button
+                      key={opt.value}
+                      onClick={enabled ? () => toggleOption(opt.value) : undefined}
+                      disabled={!enabled}
+                      className={`text-[11px] px-2 py-0.5 rounded-full border transition-colors ${
+                        included
+                          ? 'bg-sb-blue-50 border-sb-blue-200 text-sb-brand'
+                          : 'bg-sb-n50 border-sb-n200 text-sb-n300 line-through decoration-sb-n300'
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+          <div className="flex items-center gap-1 flex-shrink-0 mt-0.5">
+            {hasOptions && optionFilter && (
+              <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-sb-blue-100 text-sb-brand">
+                옵션 {enabledCount}/{totalCount}
+              </span>
+            )}
+            <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${q.isRequired ? 'bg-red-50 text-sb-negative' : 'bg-sb-n50 text-sb-n400'}`}>
+              {q.isRequired ? '필수' : '선택'}
+            </span>
+            <span className="text-[10px] font-mono text-sb-n400 px-1.5 py-0.5 border border-sb-n100 rounded">{q.inputType}</span>
+            <button onClick={onStartEdit} className="flex items-center justify-center w-7 h-7 rounded-[6px] text-sb-n400 hover:text-sb-brand hover:bg-sb-blue-100 transition-colors">
+              <PencilSimple size={13} />
+            </button>
+          </div>
         </div>
       </div>
-    </div>
+      {expanded && q.children?.map(child => (
+        <QuestionRowFixed key={child.id} q={child} depth={1} />
+      ))}
+    </>
   )
 }
 
@@ -270,7 +282,16 @@ function QuestionRowFixed({ q, depth = 0, allConfigs = [], currentSegKey = '', i
           {depth > 0
             ? <span className="text-sb-n300 font-mono text-[11px] select-none">└</span>
             : onToggle
-              ? <ToggleSwitch checked={isOn} onChange={onToggle} />
+              ? (
+                <span className="flex items-center gap-1">
+                  <ToggleSwitch checked={isOn} onChange={onToggle} />
+                  {hasChildren && (
+                    <button onClick={() => setExpanded(v => !v)} className="text-sb-n400 hover:text-sb-brand">
+                      {expanded ? <CaretDown size={12} /> : <CaretRight size={12} />}
+                    </button>
+                  )}
+                </span>
+              )
               : <span className="w-4 inline-block flex-shrink-0">
                   {hasChildren && (
                     <button onClick={() => setExpanded(v => !v)} className="text-sb-n400 hover:text-sb-brand">
