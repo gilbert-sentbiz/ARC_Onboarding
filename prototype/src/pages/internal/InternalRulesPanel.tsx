@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { SignOut, Plus, Trash, CaretDown, CaretRight } from '@phosphor-icons/react'
+import { SignOut, Plus, Trash, CaretDown, CaretRight, DotsSixVertical } from '@phosphor-icons/react'
 import { useSessionStore } from '../../store/sessionStore'
 import { useRuleStore, getRuleSet } from '../../store/ruleStore'
 import type { EntityCode, ServiceCode, SectorCode, ServiceClassificationRule, DocTemplateRule, QuestionRule, SegmentQuestionConfig, QuestionInputType, EntityClassificationRule, EntityClassificationCondition, FirstIntakeQuestion, DocLibraryItem, DocSegmentConfig } from '../../types'
@@ -193,13 +193,22 @@ function hasOptions(inputType: QuestionInputType): boolean {
   return inputType === 'select' || inputType === 'radio' || inputType === 'multi'
 }
 
-function CommonQuestionRow({ q, enabled, optionFilter, onToggle, onFilterChange, onDelete }: {
+interface DragProps {
+  onDragStart: () => void
+  onDragEnd: () => void
+  onDragOver: (e: React.DragEvent) => void
+  onDrop: () => void
+  isDragOver: boolean
+}
+
+function CommonQuestionRow({ q, enabled, optionFilter, onToggle, onFilterChange, onDelete, dragProps }: {
   q: QuestionRule
   enabled: boolean
   optionFilter: string[] | undefined
   onToggle: () => void
   onFilterChange: (values: string[] | undefined) => void
   onDelete?: () => void
+  dragProps?: DragProps
 }) {
   const [expanded, setExpanded] = useState(false)
   const qHasChildren = !!(q.children?.length)
@@ -217,8 +226,20 @@ function CommonQuestionRow({ q, enabled, optionFilter, onToggle, onFilterChange,
 
   return (
     <>
-      <div className={`border-b border-sb-n100 last:border-0 ${!enabled ? 'opacity-40' : ''}`}>
+      <div
+        draggable={!!dragProps}
+        onDragStart={dragProps?.onDragStart}
+        onDragEnd={dragProps?.onDragEnd}
+        onDragOver={dragProps?.onDragOver}
+        onDrop={dragProps?.onDrop}
+        className={`border-b border-sb-n100 last:border-0 ${!enabled ? 'opacity-40' : ''} ${dragProps?.isDragOver ? 'border-t-2 border-sb-brand' : ''}`}
+      >
         <div className="flex items-start gap-3 px-4 py-3">
+          {dragProps && (
+            <span className="flex-shrink-0 mt-1 cursor-grab text-sb-n300 hover:text-sb-n500">
+              <DotsSixVertical size={14} />
+            </span>
+          )}
           <span className="flex items-center gap-1 flex-shrink-0 mt-0.5">
             <ToggleSwitch checked={enabled} onChange={onToggle} />
             {qHasChildren && (
@@ -277,7 +298,7 @@ function CommonQuestionRow({ q, enabled, optionFilter, onToggle, onFilterChange,
   )
 }
 
-function QuestionRowFixed({ q, depth = 0, allConfigs = [], currentSegKey = '', enabled, onToggle, onDelete }: {
+function QuestionRowFixed({ q, depth = 0, allConfigs = [], currentSegKey = '', enabled, onToggle, onDelete, dragProps }: {
   q: QuestionRule
   depth?: number
   allConfigs?: SegmentQuestionConfig[]
@@ -285,6 +306,7 @@ function QuestionRowFixed({ q, depth = 0, allConfigs = [], currentSegKey = '', e
   enabled?: boolean
   onToggle?: () => void
   onDelete?: () => void
+  dragProps?: DragProps
 }) {
   const [expanded, setExpanded] = useState(false)
   const qHasChildren = !!(q.children?.length)
@@ -304,30 +326,43 @@ function QuestionRowFixed({ q, depth = 0, allConfigs = [], currentSegKey = '', e
   return (
     <>
       <div
-        className={`flex items-start gap-3 border-b border-sb-n100 last:border-0 ${depth > 0 ? 'bg-sb-n50' : 'bg-white'} ${!isOn && depth === 0 ? 'opacity-40' : ''}`}
+        draggable={!!(dragProps && depth === 0)}
+        onDragStart={depth === 0 ? dragProps?.onDragStart : undefined}
+        onDragEnd={depth === 0 ? dragProps?.onDragEnd : undefined}
+        onDragOver={depth === 0 ? dragProps?.onDragOver : undefined}
+        onDrop={depth === 0 ? dragProps?.onDrop : undefined}
+        className={`flex items-start gap-3 border-b border-sb-n100 last:border-0 ${depth > 0 ? 'bg-sb-n50' : 'bg-white'} ${!isOn && depth === 0 ? 'opacity-40' : ''} ${dragProps?.isDragOver && depth === 0 ? 'border-t-2 border-sb-brand' : ''}`}
         style={{ paddingLeft: `${16 + depth * 20}px`, paddingRight: '16px', paddingTop: '10px', paddingBottom: '10px' }}
       >
         <span className="flex-shrink-0 mt-0.5">
           {depth > 0
             ? <span className="text-sb-n300 font-mono text-[11px] select-none">└</span>
-            : onToggle
-              ? (
-                <span className="flex items-center gap-1">
-                  <ToggleSwitch checked={isOn} onChange={onToggle} />
-                  {qHasChildren && (
-                    <button onClick={() => setExpanded(v => !v)} className="text-sb-n400 hover:text-sb-brand">
-                      {expanded ? <CaretDown size={12} /> : <CaretRight size={12} />}
-                    </button>
-                  )}
-                </span>
-              )
-              : <span className="w-4 inline-block flex-shrink-0">
-                  {qHasChildren && (
-                    <button onClick={() => setExpanded(v => !v)} className="text-sb-n400 hover:text-sb-brand">
-                      {expanded ? <CaretDown size={12} /> : <CaretRight size={12} />}
-                    </button>
-                  )}
-                </span>
+            : <span className="flex items-center gap-1">
+                {dragProps && (
+                  <span className="cursor-grab text-sb-n300 hover:text-sb-n500">
+                    <DotsSixVertical size={14} />
+                  </span>
+                )}
+                {onToggle
+                  ? (
+                    <span className="flex items-center gap-1">
+                      <ToggleSwitch checked={isOn} onChange={onToggle} />
+                      {qHasChildren && (
+                        <button onClick={() => setExpanded(v => !v)} className="text-sb-n400 hover:text-sb-brand">
+                          {expanded ? <CaretDown size={12} /> : <CaretRight size={12} />}
+                        </button>
+                      )}
+                    </span>
+                  )
+                  : <span className="w-4 inline-block flex-shrink-0">
+                      {qHasChildren && (
+                        <button onClick={() => setExpanded(v => !v)} className="text-sb-n400 hover:text-sb-brand">
+                          {expanded ? <CaretDown size={12} /> : <CaretRight size={12} />}
+                        </button>
+                      )}
+                    </span>
+                }
+              </span>
           }
         </span>
         <div className="flex-1 min-w-0">
@@ -573,6 +608,8 @@ function FirstQuestionsEditor() {
   const [addLabel, setAddLabel] = useState('')
   const [addType, setAddType] = useState<QuestionInputType>('text')
   const [addRequired, setAddRequired] = useState(false)
+  const [dragSrc, setDragSrc] = useState<number | null>(null)
+  const [dragOver, setDragOver] = useState<number | null>(null)
 
   function save(next: FirstIntakeQuestion[]) {
     updateRuleSet({ ...currentRuleSet, version: nextVersion(currentRuleSet.version), firstIntakeQuestions: next })
@@ -585,6 +622,13 @@ function FirstQuestionsEditor() {
   function removeQuestion(id: string) {
     if (!window.confirm('이 질문을 삭제하시겠습니까?')) return
     save(questions.filter(q => q.id !== id))
+  }
+
+  function reorderFirst(from: number, to: number) {
+    const next = [...questions]
+    const [moved] = next.splice(from, 1)
+    next.splice(to, 0, moved)
+    save(next)
   }
 
   function addQuestion() {
@@ -608,11 +652,23 @@ function FirstQuestionsEditor() {
       <div>
         <p className="text-[12px] text-sb-n500 mb-3">모든 고객이 세그먼트 분류 전에 작성하는 인테이크 폼입니다. 여기서 받은 값으로 세그먼트가 결정됩니다.</p>
         <div className="bg-white rounded-[12px] border border-sb-n100 overflow-hidden">
-          {questions.map((q) => {
+          {questions.map((q, idx) => {
             const qHasOpts = hasOptions(q.inputType) && !!q.options?.length
+            const isOver = dragOver === idx && dragSrc !== idx
 
             return (
-              <div key={q.id} className={`border-b border-sb-n100 last:border-0 flex items-start gap-3 px-4 py-3 ${!q.enabled ? 'opacity-40' : ''}`}>
+              <div
+                key={q.id}
+                draggable
+                onDragStart={() => setDragSrc(idx)}
+                onDragEnd={() => { setDragSrc(null); setDragOver(null) }}
+                onDragOver={e => { e.preventDefault(); setDragOver(idx) }}
+                onDrop={() => { if (dragSrc !== null && dragSrc !== idx) reorderFirst(dragSrc, idx); setDragSrc(null); setDragOver(null) }}
+                className={`flex items-start gap-3 px-4 py-3 ${!q.enabled ? 'opacity-40' : ''} ${isOver ? 'border-t-2 border-sb-brand' : 'border-b border-sb-n100 last:border-0'}`}
+              >
+                <span className="flex-shrink-0 mt-1 cursor-grab text-sb-n300 hover:text-sb-n500">
+                  <DotsSixVertical size={14} />
+                </span>
                 <span className="flex-shrink-0 mt-0.5">
                   <ToggleSwitch checked={q.enabled} onChange={() => toggleEnabled(q.id)} />
                 </span>
@@ -687,6 +743,12 @@ function QuestionsEditor({ selected }: { selected: Selection }) {
   const [commonOpen, setCommonOpen] = useState(true)
   const [showAddForm, setShowAddForm] = useState(false)
   const [showAddCommonForm, setShowAddCommonForm] = useState(false)
+  const [dragCommonSrc, setDragCommonSrc] = useState<number | null>(null)
+  const [dragCommonOver, setDragCommonOver] = useState<number | null>(null)
+  const [dragFixedSrc, setDragFixedSrc] = useState<number | null>(null)
+  const [dragFixedOver, setDragFixedOver] = useState<number | null>(null)
+  const [dragConfigSrc, setDragConfigSrc] = useState<number | null>(null)
+  const [dragConfigOver, setDragConfigOver] = useState<number | null>(null)
 
   const isFI = selected.type === 'entity' && selected.code === 'ENTITY_FI'
   const isCollection = selected.type === 'service' && COLLECTION_CODES.has(selected.code)
@@ -759,6 +821,38 @@ function QuestionsEditor({ selected }: { selected: Selection }) {
       disabledOwnQuestionIds: (c.disabledOwnQuestionIds ?? []).filter(id => id !== q.id),
     }))
     updateRuleSet({ ...currentRuleSet, version: nextVersion(currentRuleSet.version), questionPool: updatedPool, segmentQuestionConfigs: updatedConfigs })
+  }
+
+  function reorderCommon(from: number, to: number) {
+    const fullRs = getRuleSet()
+    const pool = [...fullRs.questionPool]
+    const allCommon = pool.filter(q => q.classification === 'common')
+    const fromPoolIdx = pool.findIndex(q => q.id === allCommon[from].id)
+    const toPoolIdx = pool.findIndex(q => q.id === allCommon[to].id)
+    const [item] = pool.splice(fromPoolIdx, 1)
+    pool.splice(toPoolIdx, 0, item)
+    updateRuleSet({ ...currentRuleSet, version: nextVersion(currentRuleSet.version), questionPool: pool, segmentQuestionConfigs: fullRs.segmentQuestionConfigs })
+  }
+
+  function reorderFixed(from: number, to: number) {
+    const fullRs = getRuleSet()
+    const pool = [...fullRs.questionPool]
+    const visible = ownFixedQuestions.filter(matchesSvcView)
+    const fromPoolIdx = pool.findIndex(q => q.id === visible[from].id)
+    const toPoolIdx = pool.findIndex(q => q.id === visible[to].id)
+    const [item] = pool.splice(fromPoolIdx, 1)
+    pool.splice(toPoolIdx, 0, item)
+    updateRuleSet({ ...currentRuleSet, version: nextVersion(currentRuleSet.version), questionPool: pool, segmentQuestionConfigs: fullRs.segmentQuestionConfigs })
+  }
+
+  function reorderConfigOwn(from: number, to: number) {
+    const visible = config.ownQuestions.filter(matchesSvcView)
+    const own = [...config.ownQuestions]
+    const fromIdx = own.findIndex(q => q.id === visible[from].id)
+    const toIdx = own.findIndex(q => q.id === visible[to].id)
+    const [item] = own.splice(fromIdx, 1)
+    own.splice(toIdx, 0, item)
+    saveConfig({ ownQuestions: own })
   }
 
   function addCommonQuestion(q: QuestionRule, segmentKeys: string[]) {
@@ -837,12 +931,19 @@ function QuestionsEditor({ selected }: { selected: Selection }) {
             {commonQuestions.length === 0 && !showAddCommonForm && (
               <p className="text-[12px] text-sb-n400 px-4 py-3">공통 질문 없음</p>
             )}
-            {commonQuestions.map((q) => (
+            {commonQuestions.map((q, cidx) => (
               <CommonQuestionRow
                 key={q.id}
                 q={q}
                 enabled={config.enabledCommonQuestionIds.includes(q.id)}
                 optionFilter={config.commonOptionFilters?.[q.id]}
+                dragProps={{
+                  onDragStart: () => setDragCommonSrc(cidx),
+                  onDragEnd: () => { setDragCommonSrc(null); setDragCommonOver(null) },
+                  onDragOver: e => { e.preventDefault(); setDragCommonOver(cidx) },
+                  onDrop: () => { if (dragCommonSrc !== null && dragCommonSrc !== cidx) reorderCommon(dragCommonSrc, cidx); setDragCommonSrc(null); setDragCommonOver(null) },
+                  isDragOver: dragCommonOver === cidx && dragCommonSrc !== cidx,
+                }}
                 onToggle={() => {
                   const ids = config.enabledCommonQuestionIds.includes(q.id)
                     ? config.enabledCommonQuestionIds.filter(id => id !== q.id)
@@ -922,58 +1023,81 @@ function QuestionsEditor({ selected }: { selected: Selection }) {
                 enabled={isOwnEnabled(q.id)}
                 onToggle={() => toggleOwn(q.id)}
                 onDelete={() => deletePoolOwnQuestion(q)}
+                dragProps={{
+                  onDragStart: () => setDragFixedSrc(idx),
+                  onDragEnd: () => { setDragFixedSrc(null); setDragFixedOver(null) },
+                  onDragOver: e => { e.preventDefault(); setDragFixedOver(idx) },
+                  onDrop: () => { if (dragFixedSrc !== null && dragFixedSrc !== idx) reorderFixed(dragFixedSrc, idx); setDragFixedSrc(null); setDragFixedOver(null) },
+                  isDragOver: dragFixedOver === idx && dragFixedSrc !== idx,
+                }}
               />
               {q.id === screen1LastOwn && (
                 <ScreenDivider key={`div-own-${idx}`} n={2} />
               )}
             </>
           ))}
-          {config.ownQuestions.map((q, i) => {
-            if (!matchesSvcView(q)) return null
-            const qHasOpts = hasOptions(q.inputType) && !!q.options?.length
+          {(() => {
+            const visibleConfigOwn = config.ownQuestions.filter(matchesSvcView)
+            return config.ownQuestions.map((q, i) => {
+              if (!matchesSvcView(q)) return null
+              const qHasOpts = hasOptions(q.inputType) && !!q.options?.length
+              const visIdx = visibleConfigOwn.findIndex(vq => vq.id === q.id)
+              const isOver = dragConfigOver === visIdx && dragConfigSrc !== visIdx
 
-            return (
-              <div key={q.id} className={`flex items-start gap-3 px-4 py-3 border-t border-sb-n100 ${!isOwnEnabled(q.id) ? 'opacity-40' : ''}`}>
-                <span className="flex-shrink-0 mt-0.5">
-                  <ToggleSwitch checked={isOwnEnabled(q.id)} onChange={() => toggleOwn(q.id)} />
-                </span>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    <p className="text-[13px] text-sb-n800">{q.label}</p>
-                    {q.showWhen?.parentId === '_svc' && (
-                      <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-sb-blue-100 text-sb-brand">
-                        {q.showWhen.value === 'payout' ? '송금' : '수금'}
-                      </span>
-                    )}
-                    {q.showWhen && q.showWhen.parentId !== '_svc' && (
-                      <span className="text-[10px] font-mono text-sb-n400 bg-sb-n50 border border-sb-n100 rounded px-1.5 py-0.5">
-                        if {q.showWhen.parentId} = {q.showWhen.value}
-                      </span>
+              return (
+                <div
+                  key={q.id}
+                  draggable
+                  onDragStart={() => setDragConfigSrc(visIdx)}
+                  onDragEnd={() => { setDragConfigSrc(null); setDragConfigOver(null) }}
+                  onDragOver={e => { e.preventDefault(); setDragConfigOver(visIdx) }}
+                  onDrop={() => { if (dragConfigSrc !== null && dragConfigSrc !== visIdx) reorderConfigOwn(dragConfigSrc, visIdx); setDragConfigSrc(null); setDragConfigOver(null) }}
+                  className={`flex items-start gap-3 px-4 py-3 ${!isOwnEnabled(q.id) ? 'opacity-40' : ''} ${isOver ? 'border-t-2 border-sb-brand' : 'border-t border-sb-n100'}`}
+                >
+                  <span className="flex-shrink-0 mt-1 cursor-grab text-sb-n300 hover:text-sb-n500">
+                    <DotsSixVertical size={14} />
+                  </span>
+                  <span className="flex-shrink-0 mt-0.5">
+                    <ToggleSwitch checked={isOwnEnabled(q.id)} onChange={() => toggleOwn(q.id)} />
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <p className="text-[13px] text-sb-n800">{q.label}</p>
+                      {q.showWhen?.parentId === '_svc' && (
+                        <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-sb-blue-100 text-sb-brand">
+                          {q.showWhen.value === 'payout' ? '송금' : '수금'}
+                        </span>
+                      )}
+                      {q.showWhen && q.showWhen.parentId !== '_svc' && (
+                        <span className="text-[10px] font-mono text-sb-n400 bg-sb-n50 border border-sb-n100 rounded px-1.5 py-0.5">
+                          if {q.showWhen.parentId} = {q.showWhen.value}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[11px] font-mono text-sb-n400 mt-0.5">{q.id}</p>
+                    {qHasOpts && (
+                      <div className="flex flex-wrap gap-1 mt-1.5">
+                        {q.options!.map(opt => (
+                          <span key={opt.value} className="text-[11px] px-2 py-0.5 rounded-full border bg-sb-n50 border-sb-n200 text-sb-n600">
+                            {opt.label}
+                          </span>
+                        ))}
+                      </div>
                     )}
                   </div>
-                  <p className="text-[11px] font-mono text-sb-n400 mt-0.5">{q.id}</p>
-                  {qHasOpts && (
-                    <div className="flex flex-wrap gap-1 mt-1.5">
-                      {q.options!.map(opt => (
-                        <span key={opt.value} className="text-[11px] px-2 py-0.5 rounded-full border bg-sb-n50 border-sb-n200 text-sb-n600">
-                          {opt.label}
-                        </span>
-                      ))}
-                    </div>
-                  )}
+                  <div className="flex items-center gap-1 flex-shrink-0">
+                    <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${q.isRequired ? 'bg-red-50 text-sb-negative' : 'bg-sb-n50 text-sb-n400'}`}>
+                      {q.isRequired ? '필수' : '선택'}
+                    </span>
+                    <span className="text-[10px] font-mono text-sb-n400 px-1.5 py-0.5 border border-sb-n100 rounded">{q.inputType}</span>
+                    <button onClick={() => removeOwn(i)} className="flex items-center justify-center w-7 h-7 rounded-[6px] text-sb-n400 hover:text-sb-negative hover:bg-red-50 transition-colors">
+                      <Trash size={13} />
+                    </button>
+                  </div>
                 </div>
-                <div className="flex items-center gap-1 flex-shrink-0">
-                  <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${q.isRequired ? 'bg-red-50 text-sb-negative' : 'bg-sb-n50 text-sb-n400'}`}>
-                    {q.isRequired ? '필수' : '선택'}
-                  </span>
-                  <span className="text-[10px] font-mono text-sb-n400 px-1.5 py-0.5 border border-sb-n100 rounded">{q.inputType}</span>
-                  <button onClick={() => removeOwn(i)} className="flex items-center justify-center w-7 h-7 rounded-[6px] text-sb-n400 hover:text-sb-negative hover:bg-red-50 transition-colors">
-                    <Trash size={13} />
-                  </button>
-                </div>
-              </div>
-            )
-          })}
+              )
+            })
+          })()}
           {/* Add form — shown only when button clicked */}
           {showAddForm ? (
             <div className="border-t border-sb-n100 px-4 py-3 bg-sb-n50">
