@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, Fragment } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { SignOut, Plus, Trash, CaretDown, CaretRight, DotsSixVertical } from '@phosphor-icons/react'
 import { useSessionStore } from '../../store/sessionStore'
@@ -55,11 +55,13 @@ function ToggleSwitch({ checked, onChange }: { checked: boolean; onChange: () =>
 
 function ScreenDivider({ n }: { n: number }) {
   return (
-    <div className="flex items-center gap-2 px-4 py-2 bg-white">
+    <div className="flex items-center gap-2 px-4 py-2 bg-blue-50 border-y border-blue-100">
       <span className="w-[3px] h-4 rounded-full bg-sb-brand flex-shrink-0" />
-      <span className="text-[11px] font-semibold text-sb-n700 whitespace-nowrap">고객 화면 {n}</span>
-      <span className="text-[11px] text-sb-n400 whitespace-nowrap">— 여기서부터 새 입력 화면</span>
-      <div className="flex-1 border-t border-dashed border-sb-n200" />
+      <span className="text-[11px] font-bold text-sb-brand whitespace-nowrap tracking-wide">고객 화면 {n}</span>
+      <span className="text-[11px] text-sb-n400 whitespace-nowrap">
+        {n === 1 ? '— 기본정보 / 대표자 정보' : '— 여기서부터 새 입력 화면'}
+      </span>
+      <div className="flex-1 border-t border-dashed border-blue-200" />
     </div>
   )
 }
@@ -1013,10 +1015,12 @@ function QuestionsEditor({ selected }: { selected: Selection }) {
           {ownFixedQuestions.filter(matchesSvcView).length === 0 && config.ownQuestions.filter(matchesSvcView).length === 0 && (
             <p className="text-[12px] text-sb-n400 px-4 py-3">고유 질문 없음</p>
           )}
+          {screen1LastOwn && ownFixedQuestions.filter(matchesSvcView).length > 0 && (
+            <ScreenDivider n={1} />
+          )}
           {ownFixedQuestions.filter(matchesSvcView).map((q, idx) => (
-            <>
+            <Fragment key={q.id}>
               <QuestionRowFixed
-                key={q.id}
                 q={q}
                 allConfigs={allConfigs}
                 currentSegKey={configKey}
@@ -1031,10 +1035,8 @@ function QuestionsEditor({ selected }: { selected: Selection }) {
                   isDragOver: dragFixedOver === idx && dragFixedSrc !== idx,
                 }}
               />
-              {q.id === screen1LastOwn && (
-                <ScreenDivider key={`div-own-${idx}`} n={2} />
-              )}
-            </>
+              {q.id === screen1LastOwn && <ScreenDivider n={2} />}
+            </Fragment>
           ))}
           {(() => {
             const visibleConfigOwn = config.ownQuestions.filter(matchesSvcView)
