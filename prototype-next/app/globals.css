@@ -1,0 +1,82 @@
+@import "tailwindcss";
+@import "./design-tokens.css";
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-sans);
+  color: var(--fg-default);
+  background: var(--bg-page);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Remove default button styles */
+button {
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  font-family: inherit;
+}
+
+input, textarea, select {
+  font-family: inherit;
+}
+
+/* Custom sb-* token utilities for Tailwind v4 compatibility */
+@layer utilities {
+  /* Text colors */
+  .text-sb-brand        { color: var(--sb-brand) }
+  .text-sb-brand-hover  { color: var(--sb-brand-hover) }
+  .text-sb-brand-heavy  { color: var(--sb-brand-heavy) }
+  .text-sb-n300  { color: var(--sb-n300) }
+  .text-sb-n400  { color: var(--sb-n400) }
+  .text-sb-n500  { color: var(--sb-n500) }
+  .text-sb-n600  { color: var(--sb-n600) }
+  .text-sb-n700  { color: var(--sb-n700) }
+  .text-sb-n800  { color: var(--sb-n800) }
+  .text-sb-n900  { color: var(--sb-n900) }
+  .text-sb-positive { color: var(--sb-positive) }
+  .text-sb-negative { color: var(--sb-negative) }
+  .text-sb-warning  { color: var(--sb-warning) }
+
+  /* Background colors */
+  .bg-sb-brand        { background-color: var(--sb-brand) }
+  .bg-sb-brand-hover  { background-color: var(--sb-brand-hover) }
+  .bg-sb-n50   { background-color: var(--sb-n50) }
+  .bg-sb-n100  { background-color: var(--sb-n100) }
+  .bg-sb-n150  { background-color: var(--sb-n150) }
+  .bg-sb-n200  { background-color: var(--sb-n200) }
+  .bg-sb-n300  { background-color: var(--sb-n300) }
+  .bg-sb-blue-50  { background-color: var(--sb-blue-50) }
+  .bg-sb-blue-100 { background-color: var(--sb-blue-100) }
+  .bg-sb-blue-150 { background-color: var(--sb-blue-150) }
+  .bg-sb-positive-light { background-color: var(--sb-positive-light) }
+  .bg-sb-warning-light  { background-color: var(--sb-warning-light) }
+  .bg-sb-negative-light { background-color: var(--sb-negative-light) }
+
+  /* Border colors */
+  .border-sb-brand  { border-color: var(--sb-brand) }
+  .border-sb-n100   { border-color: var(--sb-n100) }
+  .border-sb-n150   { border-color: var(--sb-n150) }
+  .border-sb-n200   { border-color: var(--sb-n200) }
+  .border-sb-n300   { border-color: var(--sb-n300) }
+  .border-sb-blue-100 { border-color: var(--sb-blue-100) }
+  .border-sb-blue-200 { border-color: var(--sb-blue-200) }
+  .border-sb-negative { border-color: var(--sb-negative) }
+
+  /* Hover variants */
+  .hover\:bg-sb-n50:hover  { background-color: var(--sb-n50) }
+  .hover\:bg-sb-n100:hover { background-color: var(--sb-n100) }
+  .hover\:bg-sb-brand:hover { background-color: var(--sb-brand) }
+  .hover\:text-sb-brand:hover { color: var(--sb-brand) }
+
+  /* Box shadows */
+  .shadow-100 { box-shadow: var(--shadow-100) }
+  .shadow-200 { box-shadow: var(--shadow-200) }
+  .shadow-300 { box-shadow: var(--shadow-300) }
+  .shadow-400 { box-shadow: var(--shadow-400) }
+}
