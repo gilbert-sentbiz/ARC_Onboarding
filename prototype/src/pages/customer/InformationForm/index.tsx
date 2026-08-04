@@ -23,7 +23,10 @@ const CORP_S2_IDS = [
   'qe_corp_bo_exempt', 'qe_corp_bo_has_25', 'qe_corp_bo_no25_holder', 'qe_corp_bo_no25_is_rep', 'qe_corp_bo_group',
   'qc_trade_purpose', 'qc_virtual_asset', 'qc_fund_source',
   'qc_tax_type', 'qc_website', 'qc_rep_phone', 'qc_main_goods',
-  'qs_krw_sector',
+  'qs_krw_a_email', 'qs_krw_a_prev_fi', 'qs_krw_a_sub_merchants',
+  'qs_krw_b_main_activity', 'qs_krw_b_biz_desc', 'qs_krw_b_fund_source',
+  'qs_krw_c_purpose', 'qs_krw_c_va_count', 'qs_krw_c_static_reason', 'qs_krw_c_monthly_vol', 'qs_krw_c_depositor_rel', 'qs_krw_c_depositor_type',
+  'qs_krw_d_contact_name', 'qs_krw_d_contact_title', 'qs_krw_d_contact_phone',
 ]
 
 const INDIV_S1_IDS = [
@@ -36,7 +39,10 @@ const INDIV_S2_IDS = [
   'qe_indiv_bo_same',
   'qc_trade_purpose', 'qc_virtual_asset', 'qc_fund_source',
   'qc_tax_type', 'qc_website', 'qc_rep_phone', 'qc_main_goods',
-  'qs_krw_sector',
+  'qs_krw_a_email', 'qs_krw_a_prev_fi', 'qs_krw_a_sub_merchants',
+  'qs_krw_b_main_activity', 'qs_krw_b_biz_desc', 'qs_krw_b_fund_source',
+  'qs_krw_c_purpose', 'qs_krw_c_va_count', 'qs_krw_c_static_reason', 'qs_krw_c_monthly_vol', 'qs_krw_c_depositor_rel', 'qs_krw_c_depositor_type',
+  'qs_krw_d_contact_name', 'qs_krw_d_contact_title', 'qs_krw_d_contact_phone',
 ]
 
 const FI_S1_IDS = [
@@ -48,7 +54,13 @@ const FI_S1_IDS = [
 const FI_S2_BASE_IDS: string[] = []
 const FI_S2_PAYOUT_IDS: string[] = []
 const FI_S3_IDS = ['qe_fi_ubo_group', 'qc_fund_source']
-const FI_S4_IDS = ['qe_fi_aml_sanction', 'qc_trade_purpose', 'qc_tax_type', 'qc_website', 'qc_rep_phone', 'qc_main_goods']
+const FI_S4_IDS = [
+  'qe_fi_aml_sanction', 'qc_trade_purpose', 'qc_tax_type', 'qc_website', 'qc_rep_phone', 'qc_main_goods',
+  'qs_krw_a_email', 'qs_krw_a_prev_fi', 'qs_krw_a_sub_merchants',
+  'qs_krw_b_main_activity', 'qs_krw_b_biz_desc', 'qs_krw_b_fund_source',
+  'qs_krw_c_purpose', 'qs_krw_c_va_count', 'qs_krw_c_static_reason', 'qs_krw_c_monthly_vol', 'qs_krw_c_depositor_rel', 'qs_krw_c_depositor_type',
+  'qs_krw_d_contact_name', 'qs_krw_d_contact_title', 'qs_krw_d_contact_phone',
+]
 
 // Corporate fund source: exclude 근로·연금소득, 상속·증여, 일시 재산양도
 const CORP_FUND_SOURCE_ALLOWED = [

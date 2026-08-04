@@ -624,23 +624,6 @@ export const INITIAL_RULESET: RuleSet = {
     // Section D — AML
     { id: 'qe_fi_aml_sanction', label: 'AML 위반으로 행정/금전적 제재를 받은 적이 있나요?', inputType: 'radio', isRequired: true, classification: 'entity-own', scope: 'ENTITY_FI', isFixed: true, options: [{ value: 'yes', label: '예(상세 입력)' }, { value: 'no', label: '아니오' }] },
 
-    // ── KRW service-own (PRD 9.9) ───────────────────────────────────────────
-    {
-      id: 'qs_krw_sector',
-      label: '업종을 선택해주세요',
-      inputType: 'select', isRequired: true, classification: 'service-own', scope: 'SVC_COL_KRW', isFixed: true,
-      options: [
-        { value: 'trading_b2b', label: 'Trading(B2B)' },
-        { value: 'trading_b2c', label: 'Trading(B2C)' },
-        { value: 'consulting',  label: 'Consulting' },
-        { value: 'dev_design',  label: 'Development-Design' },
-        { value: 'advertising', label: 'Advertising-Marketing' },
-        { value: 'research',    label: 'Research' },
-        { value: 'it_computer', label: 'IT & Computer' },
-        { value: 'coupang',     label: '쿠팡셀러(Sunrate or Payful)' },
-      ],
-    },
-
     // ── VND service-own (PRD 9.10) ──────────────────────────────────────────
     { id: 'qs_vnd_entity_name',    label: '회사 명칭을 입력해주세요',                        inputType: 'text',   isRequired: true,  classification: 'service-own', scope: 'SVC_COL_VND', isFixed: true },
     { id: 'qs_vnd_biz_reg_no',     label: '사업자등록번호를 입력해주세요 (UEN/NIB/ERC)',     inputType: 'text',   isRequired: true,  classification: 'service-own', scope: 'SVC_COL_VND', isFixed: true },
@@ -669,19 +652,48 @@ export const INITIAL_RULESET: RuleSet = {
     { key: 'entity:ENTITY_CORP',  enabledCommonQuestionIds: ['qc_biz_reg_no','qc_biz_type','qc_biz_category','qc_virtual_asset','qc_trade_purpose','qc_fund_source','qc_tax_type','qc_website','qc_rep_phone','qc_main_goods','qc_company_size','qc_listed','qc_founded_date'], ownQuestions: [], commonOptionFilters: { qc_fund_source: ['business_income','real_estate_rent','real_estate_sale','financial_income','other'] } },
     { key: 'entity:ENTITY_INDIV', enabledCommonQuestionIds: ['qc_biz_reg_no','qc_biz_type','qc_biz_category','qc_virtual_asset','qc_trade_purpose','qc_fund_source','qc_tax_type','qc_website','qc_rep_phone','qc_main_goods','qc_company_size','qc_listed','qc_founded_date'], ownQuestions: [] },
     { key: 'entity:ENTITY_FI',    enabledCommonQuestionIds: ['qc_virtual_asset','qc_fund_source','qc_trade_purpose','qc_tax_type','qc_website','qc_rep_phone','qc_main_goods'], ownQuestions: [], commonOptionFilters: { qc_fund_source: ['business_income','real_estate_rent','real_estate_sale','financial_income','other'] } },
-    { key: 'service:SVC_COL_KRW',     enabledCommonQuestionIds: [], ownQuestions: [
-      { id: 'qs_krw_sector', label: '업종을 선택해주세요', inputType: 'select', isRequired: true, classification: 'service-own', scope: 'SVC_COL_KRW', isFixed: true,
+    { key: 'service:SVC_COL_KRW', enabledCommonQuestionIds: [], ownQuestions: [
+      // A. Basic Information
+      { id: 'qs_krw_a_email',         label: 'E-mail',                                    inputType: 'text',    isRequired: true,  classification: 'service-own', scope: 'SVC_COL_KRW', isFixed: true },
+      { id: 'qs_krw_a_prev_fi',       label: 'Prior Transaction History with FI',          inputType: 'radio',   isRequired: true,  classification: 'service-own', scope: 'SVC_COL_KRW', isFixed: true,
+        options: [{ value: 'yes', label: '예' }, { value: 'no', label: '아니오' }] },
+      { id: 'qs_krw_a_sub_merchants', label: 'Presence of Sub-merchants',                  inputType: 'radio',   isRequired: true,  classification: 'service-own', scope: 'SVC_COL_KRW', isFixed: true,
+        options: [{ value: 'yes', label: '예' }, { value: 'no', label: '아니오' }] },
+      // B. Nature of Business
+      { id: 'qs_krw_b_main_activity', label: 'Main Business Activity',                     inputType: 'select',  isRequired: true,  classification: 'service-own', scope: 'SVC_COL_KRW', isFixed: true,
         options: [
-          { value: 'trading_b2b', label: 'Trading(B2B)' },
-          { value: 'trading_b2c', label: 'Trading(B2C)' },
-          { value: 'consulting',  label: 'Consulting' },
-          { value: 'dev_design',  label: 'Development-Design' },
-          { value: 'advertising', label: 'Advertising-Marketing' },
-          { value: 'research',    label: 'Research' },
-          { value: 'it_computer', label: 'IT & Computer' },
-          { value: 'coupang',     label: '쿠팡셀러(Sunrate or Payful)' },
+          { value: 'trading_b2b',  label: 'Trading(B2B)' },
+          { value: 'trading_b2c',  label: 'Trading(B2C)' },
+          { value: 'consulting',   label: 'Consulting' },
+          { value: 'dev_design',   label: 'Development-Design' },
+          { value: 'advertising',  label: 'Advertising-Marketing' },
+          { value: 'research',     label: 'Research' },
+          { value: 'it_computer',  label: 'IT & Computer' },
+          { value: 'coupang',      label: '쿠팡셀러(Sunrate or Payful)' },
         ],
       },
+      { id: 'qs_krw_b_biz_desc',     label: 'Description of Business Activity',            inputType: 'textarea',isRequired: true,  classification: 'service-own', scope: 'SVC_COL_KRW', isFixed: true },
+      { id: 'qs_krw_b_fund_source',  label: 'Source of Funds / Wealth',                    inputType: 'select',  isRequired: true,  classification: 'service-own', scope: 'SVC_COL_KRW', isFixed: true,
+        options: [
+          { value: 'capital_injection',  label: 'Capital Injection' },
+          { value: 'liquid_investments', label: 'Liquid Investments' },
+          { value: 'profits',            label: 'Profits' },
+          { value: 'other',              label: 'Other' },
+        ],
+      },
+      // C. Product and Service
+      { id: 'qs_krw_c_purpose',       label: 'Purpose of Service Usage',                   inputType: 'text',    isRequired: true,  classification: 'service-own', scope: 'SVC_COL_KRW', isFixed: true },
+      { id: 'qs_krw_c_va_count',      label: 'Requested Number of Virtual Accounts',       inputType: 'number',  isRequired: true,  classification: 'service-own', scope: 'SVC_COL_KRW', isFixed: true },
+      { id: 'qs_krw_c_static_reason', label: 'Reason for Fixed(Static) Account Issuance',  inputType: 'textarea',isRequired: false, classification: 'service-own', scope: 'SVC_COL_KRW', isFixed: true },
+      { id: 'qs_krw_c_monthly_vol',   label: 'Anticipated Monthly Volume',                 inputType: 'text',    isRequired: true,  classification: 'service-own', scope: 'SVC_COL_KRW', isFixed: true },
+      { id: 'qs_krw_c_depositor_rel', label: 'Relationship with the Depositor',            inputType: 'text',    isRequired: true,  classification: 'service-own', scope: 'SVC_COL_KRW', isFixed: true },
+      { id: 'qs_krw_c_depositor_type',label: 'Type of Depositors',                         inputType: 'radio',   isRequired: true,  classification: 'service-own', scope: 'SVC_COL_KRW', isFixed: true,
+        options: [{ value: 'corporate', label: 'Corporate' }, { value: 'individual', label: 'Individual' }, { value: 'both', label: 'Both' }],
+      },
+      // D. Point of Contact
+      { id: 'qs_krw_d_contact_name',  label: 'Contact Name',                               inputType: 'text',    isRequired: true,  classification: 'service-own', scope: 'SVC_COL_KRW', isFixed: true },
+      { id: 'qs_krw_d_contact_title', label: 'Title',                                      inputType: 'text',    isRequired: false, classification: 'service-own', scope: 'SVC_COL_KRW', isFixed: true },
+      { id: 'qs_krw_d_contact_phone', label: 'Contact Number',                             inputType: 'text',    isRequired: true,  classification: 'service-own', scope: 'SVC_COL_KRW', isFixed: true },
     ]},
     { key: 'service:SVC_COL_VND', enabledCommonQuestionIds: [], ownQuestions: [
       { id: 'qs_vnd_entity_name',    label: '회사 명칭',        inputType: 'text',    isRequired: true,  classification: 'service-own', scope: 'SVC_COL_VND', isFixed: true },
