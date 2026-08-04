@@ -34,7 +34,7 @@ const SERVICE_LABELS: Record<string, string> = {
 const BUSINESS_TYPE_LABELS: Record<string, string> = {
   corporation: '법인 사업자',
   individual: '개인 사업자',
-  financial: '금융업',
+  financial: '금융기관(PG사·PSP·MSB 등)',
 }
 
 function getLabel(key: string, labelMap: Record<string, string>): string {
@@ -211,10 +211,6 @@ function PageContent() {
                       ? `${str1('monthlyVolume')} ${str1('monthlyVolumeCurrency') === 'OTHER' ? str1('monthlyVolumeCurrencyOther') : str1('monthlyVolumeCurrency')}`
                       : '—'
                   }
-                />
-                <Field
-                  label="예상 월간 거래 건수"
-                  value={str1('monthlyCount') ? `${str1('monthlyCount')}건` : '—'}
                 />
               </div>
             </div>

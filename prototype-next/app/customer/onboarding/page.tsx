@@ -20,7 +20,7 @@ import { useSessionStore } from '@/store/sessionStore'
 import { saveFirstIntakeDraft } from '@/services/caseService'
 import { useCaseStore } from '@/store/caseStore'
 import { getRuleSet } from '@/store/ruleStore'
-import { validatePhone, validateEmail, validateAmount, validateCount } from '@/services/validators'
+import { validatePhone, validateEmail, validateAmount } from '@/services/validators'
 
 type FormData = {
   companyName: string
@@ -40,7 +40,6 @@ type FormData = {
   monthlyVolume: string
   monthlyVolumeCurrency: string
   monthlyVolumeCurrencyOther: string
-  monthlyCount: string
   referralSource: string
   additionalNote: string
   agreed: boolean
@@ -79,7 +78,6 @@ const INITIAL: FormData = {
   monthlyVolume: '',
   monthlyVolumeCurrency: 'USD',
   monthlyVolumeCurrencyOther: '',
-  monthlyCount: '',
   referralSource: '',
   additionalNote: '',
   agreed: false,
@@ -292,8 +290,6 @@ export default function OnboardingForm() {
       else { const e = validateAmount(data.monthlyVolume); if (e) next.monthlyVolume = e }
       if (data.monthlyVolumeCurrency === 'OTHER' && !data.monthlyVolumeCurrencyOther.trim())
         next.monthlyVolumeCurrencyOther = '통화를 직접 입력해주세요.'
-      if (!data.monthlyCount.trim()) next.monthlyCount = '필수 항목입니다.'
-      else { const e = validateCount(data.monthlyCount, 1); if (e) next.monthlyCount = e }
       if (!data.referralSource) next.referralSource = '선택해주세요.'
       if (!data.agreed) next.agreed = '동의가 필요합니다.'
     }
@@ -610,7 +606,7 @@ export default function OnboardingForm() {
                   className="text-[12px] rounded-[8px] px-3 py-2 border"
                   style={{ color: 'var(--sb-n500)', background: 'var(--sb-n50)', borderColor: 'var(--sb-n100)' }}
                 >
-                  수금 서비스 이용 시 사업자 유형이 <span className="font-medium" style={{ color: 'var(--sb-n800)' }}>금융업</span>으로 자동 설정됩니다.
+                  수금 서비스 이용 시 사업자 유형이 <span className="font-medium" style={{ color: 'var(--sb-n800)' }}>금융기관(PG사·PSP·MSB 등)</span>으로 자동 설정됩니다.
                 </p>
               )}
               <div className="flex flex-col gap-3">
@@ -632,7 +628,7 @@ export default function OnboardingForm() {
                 />
                 <OptionCard
                   icon={<Bank size={20} weight="fill" />}
-                  label="금융업"
+                  label="금융기관(PG사·PSP·MSB 등)"
                   desc="은행, 보험, 증권 등 금융 관련 업종"
                   selected={data.businessType === 'financial'}
                   onClick={() => set('businessType', 'financial')}
@@ -723,16 +719,6 @@ export default function OnboardingForm() {
                   />
                 )}
               </div>
-              <Input
-                label="예상 월간 거래 건수"
-                required
-                inputMode="numeric"
-                placeholder="0"
-                value={data.monthlyCount}
-                onChange={(e) => set('monthlyCount', formatAmount(e.target.value))}
-                error={errors.monthlyCount}
-                iconRight={<span className="text-[13px] whitespace-nowrap" style={{ color: 'var(--sb-n500)' }}>건 / 월</span>}
-              />
             </div>
 
             <div className="h-px" style={{ background: 'var(--sb-n100)' }} />

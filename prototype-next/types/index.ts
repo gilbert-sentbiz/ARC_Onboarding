@@ -177,7 +177,7 @@ export type SegmentInfo = {
   foundingCountry: string
   monthlyVolumeCurrency: string
   monthlyVolume: string
-  monthlyCount: string
+  monthlyCount?: string // legacy — 1차 질문에서 삭제됨 (구 케이스 데이터 호환용)
   // Legacy fields (old localStorage cases may have these)
   entitySegment?: string
   serviceSegments?: string[]
@@ -198,7 +198,6 @@ export type OnboardingFormData = {
   foundingCountry: string
   monthlyVolume: string
   monthlyVolumeCurrency: string
-  monthlyCount: string
   referralSource: string
   additionalNote: string
 }

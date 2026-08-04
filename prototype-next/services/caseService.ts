@@ -37,7 +37,6 @@ export function saveFirstIntakeDraft(
       foundingCountry: formData.foundingCountry ?? '',
       monthlyVolume: formData.monthlyVolume ?? '',
       monthlyVolumeCurrency: formData.monthlyVolumeCurrency ?? 'USD',
-      monthlyCount: formData.monthlyCount ?? '',
       referralSource: formData.referralSource ?? '',
       additionalNote: formData.additionalNote ?? '',
     })
@@ -55,7 +54,7 @@ export function saveFirstIntakeDraft(
     email: session.email, services: [], collectionCountries: [],
     collectionOtherCountry: '', remittanceFrom: '', remittanceTo: '',
     businessType: '', foundingCountry: '', monthlyVolume: '',
-    monthlyVolumeCurrency: 'USD', monthlyCount: '', referralSource: '',
+    monthlyVolumeCurrency: 'USD', referralSource: '',
     additionalNote: '',
     ...formData,
   })

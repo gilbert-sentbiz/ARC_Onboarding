@@ -15,7 +15,7 @@ const FEATURES = [
   {
     icon: <Buildings size={20} weight="fill" />,
     title: '기업 유형별 맞춤 안내',
-    desc: '법인·개인사업자·금융업 유형에 따라 필요한 서류를 자동으로 안내합니다.',
+    desc: '법인·개인사업자·금융기관 유형에 따라 필요한 서류를 자동으로 안내합니다.',
   },
   {
     icon: <FileText size={20} weight="fill" />,

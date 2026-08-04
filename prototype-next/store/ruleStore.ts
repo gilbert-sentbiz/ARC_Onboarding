@@ -308,7 +308,7 @@ export const INITIAL_RULESET: RuleSet = {
   entityClassificationRules: [
     {
       id: 'ecr_fi_financial',
-      conditionLabel: '사업자 유형 = 금융업 (국가 무관)',
+      conditionLabel: '사업자 유형 = 금융기관 (국가 무관)',
       priority: 1,
       conditions: [
         { field: 'businessType', op: 'eq', value: 'financial' },
@@ -725,13 +725,10 @@ export const INITIAL_RULESET: RuleSet = {
     { id: 'fi_remittance_to',         label: '송금 도착 국가',           inputType: 'select',   isRequired: true,  classification: 'common', enabled: true,
       showWhen: { parentId: 'fi_services', value: 'remittance' }, hint: 'if 서비스=송금' },
     { id: 'fi_business_type',         label: '사업자 유형',              inputType: 'radio',    isRequired: true,  classification: 'common', enabled: true,
-      options: [{ value: 'financial', label: '금융업' }, { value: 'corporation', label: '법인 사업자' }, { value: 'individual', label: '개인 사업자' }] },
+      options: [{ value: 'financial', label: '금융기관(PG사·PSP·MSB 등)' }, { value: 'corporation', label: '법인 사업자' }, { value: 'individual', label: '개인 사업자' }] },
     { id: 'fi_founding_country',      label: '설립 국가',               inputType: 'select',   isRequired: true,  classification: 'common', enabled: true },
-    { id: 'fi_monthly_volume',        label: '예상 월간 거래 규모',       inputType: 'number',   isRequired: false, classification: 'common', enabled: true },
+    { id: 'fi_monthly_volume',        label: '예상 월간 거래 규모',       inputType: 'number',   isRequired: true,  classification: 'common', enabled: true },
     { id: 'fi_monthly_currency',      label: '거래 규모 통화',           inputType: 'select',   isRequired: false, classification: 'common', enabled: true },
-    { id: 'fi_monthly_currency_other',label: '기타 통화 직접 입력',      inputType: 'text',     isRequired: false, classification: 'common', enabled: true,
-      showWhen: { parentId: 'fi_monthly_currency', value: 'OTHER' }, hint: 'if 통화=기타' },
-    { id: 'fi_monthly_count',         label: '예상 월간 거래 건수',       inputType: 'number',   isRequired: false, classification: 'common', enabled: true },
     { id: 'fi_additional_note',       label: '추가 문의사항',            inputType: 'textarea', isRequired: false, classification: 'common', enabled: true },
   ] as FirstIntakeQuestion[],
 }

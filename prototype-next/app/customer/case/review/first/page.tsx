@@ -14,7 +14,7 @@ const SERVICE_LABELS: Record<string, string> = {
 const BUSINESS_TYPE_LABELS: Record<string, string> = {
   corporation: '법인 사업자',
   individual: '개인 사업자',
-  financial: '금융업',
+  financial: '금융기관(PG사·PSP·MSB 등)',
 }
 
 const REFERRAL_LABELS: Record<string, string> = {
@@ -185,10 +185,6 @@ function PageContent() {
                     }`
                   : '—'
               }
-            />
-            <Field
-              label="예상 월간 거래 건수"
-              value={str('monthlyCount') ? `${str('monthlyCount')}건` : '—'}
             />
           </div>
         </div>

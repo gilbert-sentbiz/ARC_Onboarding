@@ -85,6 +85,5 @@ export function classify(formData: OnboardingFormData): SegmentInfo {
     foundingCountry: formData.foundingCountry,
     monthlyVolumeCurrency: formData.monthlyVolumeCurrency,
     monthlyVolume: formData.monthlyVolume,
-    monthlyCount: formData.monthlyCount,
   }
 }

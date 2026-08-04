@@ -1561,7 +1561,7 @@ type EntityRow = {
 }
 
 const BT_OPTIONS: { value: RowBusinessType; label: string }[] = [
-  { value: 'financial',   label: '금융업' },
+  { value: 'financial',   label: '금융기관(PG사·PSP·MSB 등)' },
   { value: 'corporation', label: '법인' },
   { value: 'individual',  label: '개인' },
   { value: 'any',         label: '(전체)' },
