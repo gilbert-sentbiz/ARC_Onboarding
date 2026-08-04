@@ -41,14 +41,14 @@ const INDIV_S2_IDS = [
 
 const FI_S1_IDS = [
   'qc_virtual_asset',
-  'qe_fi_legal_name', 'qe_fi_legal_form', 'qe_fi_founded_date', 'qe_fi_incorp_country',
-  'qe_fi_biz_reg_no', 'qe_fi_website', 'qe_fi_reg_address', 'qe_fi_biz_category',
-  'qe_fi_rep_name', 'qe_fi_rep_dob',
+  'qe_fi_legal_name', 'qe_fi_legal_name_en', 'qe_fi_legal_form', 'qe_fi_founded_date', 'qe_fi_incorp_country',
+  'qe_fi_phone', 'qe_fi_biz_reg_no', 'qe_fi_reg_address',
+  'qe_fi_rep_name', 'qe_fi_rep_dob', 'qe_fi_rep_gender', 'qe_fi_rep_nation',
 ]
-const FI_S2_BASE_IDS = ['qe_fi_license_info', 'qe_fi_license_detail', 'qe_fi_auditor']
-const FI_S2_PAYOUT_IDS = ['qe_fi_intermediary']
-const FI_S3_IDS = ['qe_fi_parent_name', 'qe_fi_parent_address', 'qe_fi_ubo_group', 'qc_fund_source']
-const FI_S4_IDS = ['qe_fi_aml_policy', 'qe_fi_aml_sanction', 'qc_trade_purpose', 'qc_tax_type', 'qc_website', 'qc_rep_phone', 'qc_main_goods']
+const FI_S2_BASE_IDS: string[] = []
+const FI_S2_PAYOUT_IDS: string[] = []
+const FI_S3_IDS = ['qe_fi_ubo_group', 'qc_fund_source']
+const FI_S4_IDS = ['qe_fi_aml_sanction', 'qc_trade_purpose', 'qc_tax_type', 'qc_website', 'qc_rep_phone', 'qc_main_goods']
 
 // Corporate fund source: exclude 근로·연금소득, 상속·증여, 일시 재산양도
 const CORP_FUND_SOURCE_ALLOWED = [

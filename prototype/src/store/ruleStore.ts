@@ -577,19 +577,28 @@ export const INITIAL_RULESET: RuleSet = {
     },
 
     // ── FI entity-own (PRD 9.8) — Section A ────────────────────────────────
+    { id: 'qe_fi_phone',          label: '회사 연락처를 입력해주세요', inputType: 'text', isRequired: true, classification: 'entity-own', scope: 'ENTITY_FI', isFixed: true },
     { id: 'qe_fi_legal_name',     label: '회사의 정식 법적 명칭을 입력해주세요', inputType: 'text', isRequired: true, classification: 'entity-own', scope: 'ENTITY_FI', isFixed: true },
-    { id: 'qe_fi_legal_form',     label: '법적 형태를 입력해주세요 (예: 주식회사, 합자회사 등)', inputType: 'text', isRequired: true, classification: 'entity-own', scope: 'ENTITY_FI', isFixed: true },
+    { id: 'qe_fi_legal_name_en',  label: '회사 정식 명칭 (영문)', inputType: 'text', isRequired: true, classification: 'entity-own', scope: 'ENTITY_FI', isFixed: true },
+    {
+      id: 'qe_fi_legal_form',
+      label: '법인 유형을 선택해주세요',
+      inputType: 'radio', isRequired: true, classification: 'entity-own', scope: 'ENTITY_FI', isFixed: true,
+      options: [{ value: 'profit', label: '영리법인' }, { value: 'nonprofit', label: '비영리법인' }],
+    },
     { id: 'qe_fi_founded_date',   label: '설립일자를 입력해주세요', inputType: 'text', isRequired: true, classification: 'entity-own', scope: 'ENTITY_FI', isFixed: true },
     { id: 'qe_fi_incorp_country', label: '설립 국가를 입력해주세요', inputType: 'text', isRequired: true, classification: 'entity-own', scope: 'ENTITY_FI', isFixed: true },
-    { id: 'qe_fi_biz_reg_no',     label: '사업자등록번호를 입력해주세요', inputType: 'text', isRequired: true, classification: 'entity-own', scope: 'ENTITY_FI', isFixed: true },
-    { id: 'qe_fi_website',        label: '회사 웹사이트를 입력해주세요', inputType: 'text', isRequired: true, classification: 'entity-own', scope: 'ENTITY_FI', isFixed: true },
-    { id: 'qe_fi_reg_address',    label: '등록 주소를 입력해주세요', inputType: 'text', isRequired: true, classification: 'entity-own', scope: 'ENTITY_FI', isFixed: true },
-    { id: 'qe_fi_license_info',   label: '인허가 기관 및 관할 국가를 입력해주세요', inputType: 'text', isRequired: true, classification: 'entity-own', scope: 'ENTITY_FI', isFixed: true },
-    { id: 'qe_fi_license_detail', label: '인허가 유형, 발급일, 만료일을 입력해주세요', inputType: 'text', isRequired: true, classification: 'entity-own', scope: 'ENTITY_FI', isFixed: true },
-    { id: 'qe_fi_auditor',        label: '외부 감사인 명칭을 입력해주세요', inputType: 'text', isRequired: true, classification: 'entity-own', scope: 'ENTITY_FI', isFixed: true },
+    { id: 'qe_fi_biz_reg_no',     label: '법인 등록번호를 입력해주세요', inputType: 'text', isRequired: true, classification: 'entity-own', scope: 'ENTITY_FI', isFixed: true },
+    { id: 'qe_fi_reg_address',    label: '사업장 주소를 입력해주세요', inputType: 'text', isRequired: true, classification: 'entity-own', scope: 'ENTITY_FI', isFixed: true },
     { id: 'qe_fi_rep_name',       label: '대표자 성명을 입력해주세요', inputType: 'text', isRequired: true, classification: 'entity-own', scope: 'ENTITY_FI', isFixed: true },
     { id: 'qe_fi_rep_dob',        label: '대표자 생년월일을 입력해주세요', inputType: 'text', isRequired: true, classification: 'entity-own', scope: 'ENTITY_FI', isFixed: true },
-    { id: 'qe_fi_biz_category',   label: '업종을 입력해주세요', inputType: 'text', isRequired: true, classification: 'entity-own', scope: 'ENTITY_FI', isFixed: true },
+    {
+      id: 'qe_fi_rep_gender',
+      label: '대표자 성별',
+      inputType: 'radio', isRequired: true, classification: 'entity-own', scope: 'ENTITY_FI', isFixed: true,
+      options: [{ value: 'male', label: '남' }, { value: 'female', label: '여' }],
+    },
+    { id: 'qe_fi_rep_nation',     label: '대표자 국적', inputType: 'text', isRequired: true, classification: 'entity-own', scope: 'ENTITY_FI', isFixed: true },
     // Section B — 센트비 이용 서비스
     {
       id: 'qe_fi_svc_select',
@@ -597,45 +606,22 @@ export const INITIAL_RULESET: RuleSet = {
       inputType: 'select', isRequired: true, classification: 'entity-own', scope: 'ENTITY_FI', isFixed: true,
       options: [{ value: 'collection', label: '수금(Collection)' }, { value: 'payout', label: '송금(Payout)' }],
     },
-    {
-      id: 'qe_fi_intermediary',
-      label: '다른 FI/MSB/PSP로부터 전달받은 자금을 송금하나요?',
-      inputType: 'radio', isRequired: true, classification: 'entity-own', scope: 'ENTITY_FI', isFixed: true,
-      options: [{ value: 'yes', label: '예' }, { value: 'no', label: '아니오' }],
-      children: [
-        { id: 'qe_fi_intermediary_levels', label: '몇 단계의 중개 구조인가요?', inputType: 'text', isRequired: true, classification: 'entity-own', scope: 'ENTITY_FI', showWhen: { parentId: 'qe_fi_intermediary', value: 'yes' } },
-        { id: 'qe_fi_unlic_psp', label: '미인가 FI/PSP/MSB와 거래하나요?', inputType: 'radio', isRequired: true, classification: 'entity-own', scope: 'ENTITY_FI', showWhen: { parentId: 'qe_fi_intermediary', value: 'yes' }, options: [{ value: 'yes', label: '예' }, { value: 'no', label: '아니오' }] },
-      ],
-    },
-    // Section C — 자금 원천
-    {
-      id: 'qe_fi_fund_source',
-      label: '자금 원천에 해당하는 항목을 모두 선택해주세요',
-      inputType: 'select', isRequired: true, classification: 'entity-own', scope: 'ENTITY_FI', isFixed: true,
-      options: [
-        { value: 'capital',    label: '자본금 투입' },
-        { value: 'liquidity',  label: '유동성 투자' },
-        { value: 'operating',  label: '영업 이익' },
-        { value: 'other',      label: '기타(직접 입력)' },
-      ],
-    },
-    // Section D — 소유 구조
-    { id: 'qe_fi_parent_name',    label: '모회사 또는 최종 모회사 명칭을 입력해주세요', inputType: 'text', isRequired: true, classification: 'entity-own', scope: 'ENTITY_FI', isFixed: true },
-    { id: 'qe_fi_parent_address', label: '모회사 주소를 입력해주세요', inputType: 'text', isRequired: true, classification: 'entity-own', scope: 'ENTITY_FI', isFixed: true },
+    // Section C — 소유 구조
     {
       id: 'qe_fi_ubo_group',
       label: '지분 25% 이상 소유자 정보를 입력해주세요',
       inputType: 'text', isRequired: true, classification: 'entity-own', scope: 'ENTITY_FI', isFixed: true,
       repeat: true,
       children: [
-        { id: 'qe_fi_ubo_name',      label: '이름',    inputType: 'text', isRequired: true, classification: 'entity-own', scope: 'ENTITY_FI' },
-        { id: 'qe_fi_ubo_nation',    label: '국적',    inputType: 'text', isRequired: true, classification: 'entity-own', scope: 'ENTITY_FI' },
-        { id: 'qe_fi_ubo_dob',       label: '생년월일', inputType: 'text', isRequired: true, classification: 'entity-own', scope: 'ENTITY_FI' },
-        { id: 'qe_fi_ubo_share',     label: '지분율 (%)', inputType: 'number', isRequired: true, classification: 'entity-own', scope: 'ENTITY_FI' },
+        { id: 'qe_fi_ubo_name',    label: '성명',       inputType: 'text',   isRequired: true, classification: 'entity-own', scope: 'ENTITY_FI' },
+        { id: 'qe_fi_ubo_nation',  label: '국적',       inputType: 'text',   isRequired: true, classification: 'entity-own', scope: 'ENTITY_FI' },
+        { id: 'qe_fi_ubo_dob',     label: '생년월일',   inputType: 'text',   isRequired: true, classification: 'entity-own', scope: 'ENTITY_FI' },
+        { id: 'qe_fi_ubo_gender',  label: '성별',       inputType: 'radio',  isRequired: true, classification: 'entity-own', scope: 'ENTITY_FI', options: [{ value: 'male', label: '남' }, { value: 'female', label: '여' }] },
+        { id: 'qe_fi_ubo_country', label: '거주 국가',  inputType: 'text',   isRequired: true, classification: 'entity-own', scope: 'ENTITY_FI' },
+        { id: 'qe_fi_ubo_share',   label: '지분율 (%)', inputType: 'number', isRequired: true, classification: 'entity-own', scope: 'ENTITY_FI' },
       ],
     },
-    // Section E — AML
-    { id: 'qe_fi_aml_policy', label: 'AML 정책이 있나요?', inputType: 'radio', isRequired: true, classification: 'entity-own', scope: 'ENTITY_FI', isFixed: true, options: [{ value: 'yes', label: '예' }, { value: 'no', label: '아니오' }] },
+    // Section D — AML
     { id: 'qe_fi_aml_sanction', label: 'AML 위반으로 행정/금전적 제재를 받은 적이 있나요?', inputType: 'radio', isRequired: true, classification: 'entity-own', scope: 'ENTITY_FI', isFixed: true, options: [{ value: 'yes', label: '예(상세 입력)' }, { value: 'no', label: '아니오' }] },
 
     // ── KRW service-own (PRD 9.9) ───────────────────────────────────────────
