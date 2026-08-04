@@ -10,7 +10,6 @@ import InternalLoginPage from './pages/internal/InternalLoginPage'
 import InternalDashboard from './pages/internal/InternalDashboard'
 import InternalCaseDetail from './pages/internal/InternalCaseDetail'
 import InternalCRM from './pages/internal/InternalCRM'
-import InternalRulesPanel from './pages/internal/InternalRulesPanel'
 
 export default function App() {
   return (
@@ -27,7 +26,7 @@ export default function App() {
         <Route path="/internal/dashboard" element={<InternalDashboard />} />
         <Route path="/internal/case/:id" element={<InternalCaseDetail />} />
         <Route path="/internal/crm" element={<InternalCRM />} />
-        <Route path="/internal/rules" element={<InternalRulesPanel />} />
+        <Route path="/internal/rules" element={<Navigate to="/internal/dashboard" replace />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </HashRouter>

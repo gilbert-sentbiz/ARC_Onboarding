@@ -1,5 +1,5 @@
 'use client'
-import { useState, Fragment } from 'react'
+import { useState, Fragment, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { SignOut, Plus, Trash, CaretDown, CaretRight, DotsSixVertical } from '@phosphor-icons/react'
 import { useSessionStore } from '@/store/sessionStore'
@@ -2128,6 +2128,8 @@ function TabBar<T extends string>({
 
 export default function InternalRulesPanel() {
   const router = useRouter()
+  // MVP: rule management hidden — redirect to dashboard
+  useEffect(() => { router.replace('/internal/dashboard') }, [router])
   const session = useSessionStore((s) => s.session)
   const clearSession = useSessionStore((s) => s.clearSession)
   const { currentRuleSet, updateRuleSet } = useRuleStore()
