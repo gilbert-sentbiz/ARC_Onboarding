@@ -3,7 +3,7 @@ name: Deploy Prototype to GitHub Pages
 on:
   push:
     branches:
-      - main
+      - mvp
   workflow_dispatch:
 
 permissions:
