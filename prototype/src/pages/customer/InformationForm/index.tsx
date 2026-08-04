@@ -20,7 +20,7 @@ const CORP_S1_IDS = [
   'qc_company_size', 'qc_listed', 'qc_founded_date',
 ]
 const CORP_S2_IDS = [
-  'qe_corp_bo_exempt', 'qe_corp_bo_has_25', 'qe_corp_bo_count', 'qe_corp_bo_group',
+  'qe_corp_bo_exempt', 'qe_corp_bo_has_25', 'qe_corp_bo_no25_holder', 'qe_corp_bo_no25_is_rep', 'qe_corp_bo_group',
   'qc_trade_purpose', 'qc_virtual_asset', 'qc_fund_source',
   'qc_tax_type', 'qc_website', 'qc_rep_phone', 'qc_main_goods',
   'qs_krw_sector',
@@ -28,7 +28,7 @@ const CORP_S2_IDS = [
 
 const INDIV_S1_IDS = [
   'qc_biz_reg_no', 'qc_biz_type', 'qc_biz_category',
-  'qe_indiv_biz_name', 'qe_indiv_phone', 'qe_indiv_address', 'qe_indiv_residence',
+  'qe_indiv_biz_name', 'qe_indiv_biz_name_en', 'qe_indiv_phone', 'qe_indiv_address', 'qe_indiv_residence',
   'qe_indiv_rep_name_kr', 'qe_indiv_rep_name_en', 'qe_indiv_rep_dob', 'qe_indiv_rep_gender', 'qe_indiv_rep_nation',
   'qc_company_size', 'qc_listed', 'qc_founded_date',
 ]
@@ -198,6 +198,26 @@ export default function InformationForm() {
         onBack={() => goBack(null)}
         onDraftSave={(d) => saveDraft('corp_s1', d)}
       />
+    )
+  }
+
+  // ── 비영리법인 차단 ───────────────────────────────────────────────────────
+  const isNonprofit = (accumulated.corp_s1 as Record<string, unknown> | undefined)?.qe_corp_type === 'nonprofit'
+  if (stage === 'corp_s2' && isNonprofit) {
+    return (
+      <div className="min-h-screen bg-sb-n50 flex items-center justify-center p-6">
+        <div className="bg-white rounded-xl border border-sb-n200 p-8 max-w-lg w-full text-center">
+          <p className="text-sb-n700 font-medium mb-4">
+            비영리법인(단체)은 현재 온보딩 신청을 받고 있지 않습니다. 자세한 문의는 고객센터로 연락해주세요.
+          </p>
+          <button
+            onClick={() => goBack('corp_s1')}
+            className="mt-2 px-5 py-2 rounded-lg border border-sb-n300 text-sb-n600 text-sm hover:bg-sb-n50 transition-colors"
+          >
+            이전으로
+          </button>
+        </div>
+      </div>
     )
   }
 

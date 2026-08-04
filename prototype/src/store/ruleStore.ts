@@ -443,7 +443,7 @@ export const INITIAL_RULESET: RuleSet = {
       inputType: 'select', isRequired: true, classification: 'common',
       options: [{ value: 'unlisted', label: '비상장' }, { value: 'kospi', label: '코스피' }, { value: 'kosdaq', label: '코스닥' }, { value: 'other', label: '기타' }],
     },
-    { id: 'qc_founded_date', label: '회사 설립일자를 입력해주세요', inputType: 'text', isRequired: true, classification: 'common' },
+    { id: 'qc_founded_date', label: '회사 설립일자를 입력해주세요', inputType: 'date', isRequired: true, classification: 'common' },
 
     // ── CORP entity-own (PRD 9.6) ───────────────────────────────────────────
     { id: 'qe_corp_name_kr',   label: '회사명을 한글로 입력해주세요',   inputType: 'text', isRequired: true,  classification: 'entity-own', scope: 'ENTITY_CORP', isFixed: true },
@@ -463,12 +463,21 @@ export const INITIAL_RULESET: RuleSet = {
       id: 'qe_corp_rep_type',
       label: '대표자 유형을 선택해주세요',
       inputType: 'radio', isRequired: true, classification: 'entity-own', scope: 'ENTITY_CORP', isFixed: true,
-      options: [{ value: 'single', label: '단독대표' }, { value: 'joint', label: '공동대표' }],
+      options: [
+        { value: 'single', label: '단독대표' },
+        { value: 'joint', label: '공동대표' },
+        { value: 'joint_separate', label: '각자대표' },
+      ],
       children: [
         {
-          id: 'qe_corp_rep_count', label: '공동대표 인원 수를 입력해주세요',
+          id: 'qe_corp_rep_count', label: '대표자 인원 수를 입력해주세요',
           inputType: 'number', isRequired: true, classification: 'entity-own', scope: 'ENTITY_CORP',
           showWhen: { parentId: 'qe_corp_rep_type', value: 'joint' },
+        },
+        {
+          id: 'qe_corp_rep_count_sep', label: '각자대표 인원 수를 입력해주세요',
+          inputType: 'number', isRequired: true, classification: 'entity-own', scope: 'ENTITY_CORP',
+          showWhen: { parentId: 'qe_corp_rep_type', value: 'joint_separate' },
         },
       ],
     },
@@ -505,7 +514,19 @@ export const INITIAL_RULESET: RuleSet = {
       options: [{ value: 'yes', label: '예' }, { value: 'no', label: '아니오' }],
       showWhen: { parentId: 'qe_corp_bo_exempt', value: 'none' },
     },
-    { id: 'qe_corp_bo_count', label: '실제 소유자가 몇 명인가요?', inputType: 'number', isRequired: true, classification: 'entity-own', scope: 'ENTITY_CORP', isFixed: true, showWhen: { parentId: 'qe_corp_bo_exempt', value: 'none' } },
+    {
+      id: 'qe_corp_bo_no25_holder',
+      label: '회사 지분을 가장 많이 보유한 법인(단체)의 명칭을 입력해주세요',
+      inputType: 'text', isRequired: true, classification: 'entity-own', scope: 'ENTITY_CORP', isFixed: true,
+      showWhen: { parentId: 'qe_corp_bo_has_25', value: 'no' },
+    },
+    {
+      id: 'qe_corp_bo_no25_is_rep',
+      label: '대표자가 실제 소유자(BO)에 해당하나요?',
+      inputType: 'radio', isRequired: true, classification: 'entity-own', scope: 'ENTITY_CORP', isFixed: true,
+      options: [{ value: 'yes', label: '예 (대표자가 BO)' }, { value: 'no', label: '아니오' }],
+      showWhen: { parentId: 'qe_corp_bo_has_25', value: 'no' },
+    },
     {
       id: 'qe_corp_bo_group',
       label: '실제 소유자(BO) 정보를 입력해주세요',
@@ -521,7 +542,8 @@ export const INITIAL_RULESET: RuleSet = {
     },
 
     // ── INDIV entity-own (PRD 9.7) ──────────────────────────────────────────
-    { id: 'qe_indiv_biz_name',  label: '상호명을 입력해주세요',           inputType: 'text', isRequired: true, classification: 'entity-own', scope: 'ENTITY_INDIV', isFixed: true },
+    { id: 'qe_indiv_biz_name',    label: '상호명을 입력해주세요',           inputType: 'text', isRequired: true,  classification: 'entity-own', scope: 'ENTITY_INDIV', isFixed: true },
+    { id: 'qe_indiv_biz_name_en', label: '상호 영문명을 입력해주세요',     inputType: 'text', isRequired: false, classification: 'entity-own', scope: 'ENTITY_INDIV', isFixed: true },
     { id: 'qe_indiv_phone',     label: '연락처를 입력해주세요',           inputType: 'text', isRequired: true, classification: 'entity-own', scope: 'ENTITY_INDIV', isFixed: true },
     { id: 'qe_indiv_address',   label: '사업장 주소를 입력해주세요',     inputType: 'text', isRequired: true, classification: 'entity-own', scope: 'ENTITY_INDIV', isFixed: true },
     {
