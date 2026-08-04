@@ -431,9 +431,10 @@ export default function OnboardingForm() {
                 <OptionCard
                   icon={<HandCoins size={20} weight="fill" />}
                   label="수금"
-                  desc="원화 또는 외화로 대금을 수금합니다"
-                  selected={data.services.includes('collection')}
-                  onClick={() => toggleService('collection')}
+                  desc="현재 준비 중입니다. 이용 가능 시 별도 안내드리겠습니다."
+                  selected={false}
+                  onClick={() => {}}
+                  disabled
                 />
               </div>
               {errors.services && <p className="text-[11px] text-sb-negative">{errors.services}</p>}
@@ -643,6 +644,13 @@ export default function OnboardingForm() {
               </div>
             </div>
 
+            {(data.businessType === 'financial' || fcType === 'foreign') && (
+              <div className="p-4 bg-amber-50 border border-amber-200 rounded-[10px] flex flex-col gap-1">
+                <p className="text-[13px] font-semibold text-amber-700">현재 서비스 준비 중입니다</p>
+                <p className="text-[12px] text-amber-600">금융기관 및 해외 법인 고객은 현재 지원되지 않습니다. 빠른 시일 내 서비스할 예정이니 별도 문의 부탁드립니다.</p>
+              </div>
+            )}
+
             <div className="h-px bg-sb-n100" />
 
             <div className="flex flex-col gap-4">
@@ -751,7 +759,12 @@ export default function OnboardingForm() {
               이전
             </Button>
           )}
-          <Button onClick={handleNext} fullWidth={step === 0} className="flex-1">
+          <Button
+            onClick={handleNext}
+            fullWidth={step === 0}
+            className="flex-1"
+            disabled={step === 1 && (data.businessType === 'financial' || fcType === 'foreign')}
+          >
             {step === 1 ? '제출하기' : '다음'}
             {step === 0 && <ArrowRight size={16} />}
           </Button>
