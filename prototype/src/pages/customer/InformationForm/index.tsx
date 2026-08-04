@@ -16,32 +16,51 @@ const CORP_S1_IDS = [
   'qc_biz_reg_no', 'qc_biz_type', 'qc_biz_category',
   'qe_corp_name_kr', 'qe_corp_name_en', 'qe_corp_phone', 'qe_corp_address',
   'qe_corp_type', 'qe_corp_reg_no', 'qe_corp_nation', 'qe_corp_hq_addr',
-  'qe_corp_rep_type', 'qe_corp_rep_group', 'qe_corp_size', 'qe_corp_listed', 'qe_corp_founded_date',
+  'qe_corp_rep_type', 'qe_corp_rep_group',
+  'qc_company_size', 'qc_listed', 'qc_founded_date',
 ]
 const CORP_S2_IDS = [
-  'qe_corp_bo_exempt', 'qe_corp_bo_has_25', 'qe_corp_bo_count', 'qe_corp_bo_group',
-  'qe_corp_purpose', 'qc_virtual_asset', 'qc_fund_source', 'qs_krw_sector',
+  'qe_corp_bo_exempt', 'qe_corp_bo_has_25', 'qe_corp_bo_no25_holder', 'qe_corp_bo_no25_is_rep', 'qe_corp_bo_group',
+  'qc_trade_purpose', 'qc_virtual_asset', 'qc_fund_source',
+  'qc_tax_type', 'qc_website', 'qc_rep_phone', 'qc_main_goods',
+  'qs_krw_a_email', 'qs_krw_a_prev_fi', 'qs_krw_a_sub_merchants',
+  'qs_krw_b_main_activity', 'qs_krw_b_biz_desc', 'qs_krw_b_fund_source',
+  'qs_krw_c_purpose', 'qs_krw_c_va_count', 'qs_krw_c_static_reason', 'qs_krw_c_monthly_vol', 'qs_krw_c_depositor_rel', 'qs_krw_c_depositor_type',
+  'qs_krw_d_contact_name', 'qs_krw_d_contact_title', 'qs_krw_d_contact_phone',
 ]
 
 const INDIV_S1_IDS = [
   'qc_biz_reg_no', 'qc_biz_type', 'qc_biz_category',
-  'qe_indiv_biz_name', 'qe_indiv_phone', 'qe_indiv_address', 'qe_indiv_residence',
+  'qe_indiv_biz_name', 'qe_indiv_biz_name_en', 'qe_indiv_phone', 'qe_indiv_address', 'qe_indiv_residence',
   'qe_indiv_rep_name_kr', 'qe_indiv_rep_name_en', 'qe_indiv_rep_dob', 'qe_indiv_rep_gender', 'qe_indiv_rep_nation',
+  'qc_company_size', 'qc_listed', 'qc_founded_date',
 ]
 const INDIV_S2_IDS = [
-  'qe_indiv_bo_same', 'qe_indiv_purpose', 'qc_virtual_asset', 'qc_fund_source', 'qs_krw_sector',
+  'qe_indiv_bo_same',
+  'qc_trade_purpose', 'qc_virtual_asset', 'qc_fund_source',
+  'qc_tax_type', 'qc_website', 'qc_rep_phone', 'qc_main_goods',
+  'qs_krw_a_email', 'qs_krw_a_prev_fi', 'qs_krw_a_sub_merchants',
+  'qs_krw_b_main_activity', 'qs_krw_b_biz_desc', 'qs_krw_b_fund_source',
+  'qs_krw_c_purpose', 'qs_krw_c_va_count', 'qs_krw_c_static_reason', 'qs_krw_c_monthly_vol', 'qs_krw_c_depositor_rel', 'qs_krw_c_depositor_type',
+  'qs_krw_d_contact_name', 'qs_krw_d_contact_title', 'qs_krw_d_contact_phone',
 ]
 
 const FI_S1_IDS = [
   'qc_virtual_asset',
-  'qe_fi_legal_name', 'qe_fi_legal_form', 'qe_fi_founded_date', 'qe_fi_incorp_country',
-  'qe_fi_biz_reg_no', 'qe_fi_website', 'qe_fi_reg_address', 'qe_fi_biz_category',
-  'qe_fi_rep_name', 'qe_fi_rep_dob',
+  'qe_fi_legal_name', 'qe_fi_legal_name_en', 'qe_fi_legal_form', 'qe_fi_founded_date', 'qe_fi_incorp_country',
+  'qe_fi_phone', 'qe_fi_biz_reg_no', 'qe_fi_reg_address',
+  'qe_fi_rep_name', 'qe_fi_rep_dob', 'qe_fi_rep_gender', 'qe_fi_rep_nation',
 ]
-const FI_S2_BASE_IDS = ['qe_fi_license_info', 'qe_fi_license_detail', 'qe_fi_auditor']
-const FI_S2_PAYOUT_IDS = ['qe_fi_intermediary']
-const FI_S3_IDS = ['qe_fi_parent_name', 'qe_fi_parent_address', 'qe_fi_ubo_group', 'qe_fi_fund_source']
-const FI_S4_IDS = ['qe_fi_aml_policy', 'qe_fi_aml_sanction']
+const FI_S2_BASE_IDS: string[] = []
+const FI_S2_PAYOUT_IDS: string[] = []
+const FI_S3_IDS = ['qe_fi_ubo_group', 'qc_fund_source']
+const FI_S4_IDS = [
+  'qe_fi_aml_sanction', 'qc_trade_purpose', 'qc_tax_type', 'qc_website', 'qc_rep_phone', 'qc_main_goods',
+  'qs_krw_a_email', 'qs_krw_a_prev_fi', 'qs_krw_a_sub_merchants',
+  'qs_krw_b_main_activity', 'qs_krw_b_biz_desc', 'qs_krw_b_fund_source',
+  'qs_krw_c_purpose', 'qs_krw_c_va_count', 'qs_krw_c_static_reason', 'qs_krw_c_monthly_vol', 'qs_krw_c_depositor_rel', 'qs_krw_c_depositor_type',
+  'qs_krw_d_contact_name', 'qs_krw_d_contact_title', 'qs_krw_d_contact_phone',
+]
 
 // Corporate fund source: exclude 근로·연금소득, 상속·증여, 일시 재산양도
 const CORP_FUND_SOURCE_ALLOWED = [
@@ -191,6 +210,26 @@ export default function InformationForm() {
         onBack={() => goBack(null)}
         onDraftSave={(d) => saveDraft('corp_s1', d)}
       />
+    )
+  }
+
+  // ── 비영리법인 차단 ───────────────────────────────────────────────────────
+  const isNonprofit = (accumulated.corp_s1 as Record<string, unknown> | undefined)?.qe_corp_type === 'nonprofit'
+  if (stage === 'corp_s2' && isNonprofit) {
+    return (
+      <div className="min-h-screen bg-sb-n50 flex items-center justify-center p-6">
+        <div className="bg-white rounded-xl border border-sb-n200 p-8 max-w-lg w-full text-center">
+          <p className="text-sb-n700 font-medium mb-4">
+            비영리법인(단체)은 현재 온보딩 신청을 받고 있지 않습니다. 자세한 문의는 고객센터로 연락해주세요.
+          </p>
+          <button
+            onClick={() => goBack('corp_s1')}
+            className="mt-2 px-5 py-2 rounded-lg border border-sb-n300 text-sb-n600 text-sm hover:bg-sb-n50 transition-colors"
+          >
+            이전으로
+          </button>
+        </div>
+      </div>
     )
   }
 

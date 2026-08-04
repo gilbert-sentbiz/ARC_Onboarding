@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { CheckCircle, CloudArrowUp, Warning, ArrowRight, Clock, Link } from '@phosphor-icons/react'
+import { CheckCircle, CloudArrowUp, Warning, ArrowRight, Clock, Link, X } from '@phosphor-icons/react'
 import { useCaseStore } from '../../store/caseStore'
 import { useSessionStore } from '../../store/sessionStore'
 import { transitionStatus, resubmitRevision } from '../../services/caseService'
@@ -61,20 +61,22 @@ function UrlRow({ doc, onSave }: { doc: Document; onSave: (docId: string, url: s
 function DocRow({
   doc,
   onUpload,
+  onRemoveFile,
 }: {
   doc: Document
-  onUpload: (docId: string, file: File) => void
+  onUpload: (docId: string, files: File[]) => void
+  onRemoveFile: (docId: string, fileId: string) => void
 }) {
   const inputRef = useRef<HTMLInputElement>(null)
   const isUploaded = doc.status === 'SUBMITTED' || doc.status === 'APPROVED'
   const needsRevision = doc.status === 'REVISION_REQUIRED'
   const isAdHocPending = doc.isAdHoc && doc.status === 'REQUESTED'
-  const latestFile = doc.uploadedFiles[doc.uploadedFiles.length - 1]
+  const latestFiles = doc.uploadedFiles.filter(f => f.isLatest)
   const latestRevision = doc.revisionHistory[doc.revisionHistory.length - 1]
 
   return (
     <div
-      className={`flex items-center justify-between gap-4 p-4 rounded-[10px] border transition-colors ${
+      className={`flex flex-col gap-3 p-4 rounded-[10px] border transition-colors ${
         needsRevision || isAdHocPending
           ? 'border-amber-300 bg-amber-50'
           : isUploaded
@@ -82,60 +84,78 @@ function DocRow({
           : 'border-sb-n200 bg-white'
       }`}
     >
-      <div className="flex items-start gap-3 min-w-0">
-        <div className="flex-shrink-0 mt-0.5">
-          {isUploaded ? (
-            <CheckCircle size={18} weight="fill" className="text-sb-positive" />
-          ) : needsRevision || isAdHocPending ? (
-            <Warning size={18} weight="fill" className="text-amber-500" />
-          ) : (
-            <div className="w-[18px] h-[18px] rounded-full border-2 border-sb-n300" />
-          )}
-        </div>
-        <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            <p className="text-[14px] font-medium text-sb-n800 leading-[20px]">{doc.displayName}</p>
-            {isAdHocPending && (
-              <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700">제출 필요</span>
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex items-start gap-3 min-w-0">
+          <div className="flex-shrink-0 mt-0.5">
+            {isUploaded ? (
+              <CheckCircle size={18} weight="fill" className="text-sb-positive" />
+            ) : needsRevision || isAdHocPending ? (
+              <Warning size={18} weight="fill" className="text-amber-500" />
+            ) : (
+              <div className="w-[18px] h-[18px] rounded-full border-2 border-sb-n300" />
             )}
           </div>
-          {doc.isConditional && !doc.isRequired && (
-            <p className="text-[11px] text-sb-n400 mt-0.5">조건부 제출</p>
-          )}
-          {isUploaded && latestFile && (
-            <p className="text-[11px] text-sb-positive mt-0.5 truncate">{latestFile.fileName} 업로드됨</p>
-          )}
-          {(needsRevision || isAdHocPending) && latestRevision && (
-            <p className="text-[11px] text-amber-600 mt-0.5">{latestRevision.reason}</p>
-          )}
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <p className="text-[14px] font-medium text-sb-n800 leading-[20px]">{doc.displayName}</p>
+              {isAdHocPending && (
+                <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700">제출 필요</span>
+              )}
+            </div>
+            {doc.isConditional && !doc.isRequired && (
+              <p className="text-[11px] text-sb-n400 mt-0.5">조건부 제출</p>
+            )}
+            {(needsRevision || isAdHocPending) && latestRevision && (
+              <p className="text-[11px] text-amber-600 mt-0.5">{latestRevision.reason}</p>
+            )}
+          </div>
+        </div>
+
+        <div className="flex-shrink-0">
+          <input
+            ref={inputRef}
+            type="file"
+            accept=".pdf,.jpg,.jpeg,.png"
+            multiple
+            className="hidden"
+            onChange={(e) => {
+              const files = Array.from(e.target.files || [])
+              if (files.length > 0) onUpload(doc.id, files)
+              e.target.value = ''
+            }}
+          />
+          <button
+            type="button"
+            onClick={() => inputRef.current?.click()}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-[6px] border text-[13px] font-medium transition-colors ${
+              isUploaded
+                ? 'border-sb-n200 text-sb-n500 hover:border-sb-n400'
+                : 'border-sb-brand text-sb-brand hover:bg-sb-blue-100'
+            }`}
+          >
+            <CloudArrowUp size={14} />
+            {latestFiles.length > 0 ? '파일 추가' : '업로드'}
+          </button>
         </div>
       </div>
 
-      <div className="flex-shrink-0">
-        <input
-          ref={inputRef}
-          type="file"
-          accept=".pdf,.jpg,.jpeg,.png"
-          className="hidden"
-          onChange={(e) => {
-            const file = e.target.files?.[0]
-            if (file) onUpload(doc.id, file)
-            e.target.value = ''
-          }}
-        />
-        <button
-          type="button"
-          onClick={() => inputRef.current?.click()}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-[6px] border text-[13px] font-medium transition-colors ${
-            isUploaded
-              ? 'border-sb-n200 text-sb-n500 hover:border-sb-n400'
-              : 'border-sb-brand text-sb-brand hover:bg-sb-blue-100'
-          }`}
-        >
-          <CloudArrowUp size={14} />
-          {isUploaded ? '재업로드' : '업로드'}
-        </button>
-      </div>
+      {latestFiles.length > 0 && (
+        <div className="flex flex-col gap-1.5 pl-7">
+          {latestFiles.map((f) => (
+            <div key={f.id} className="flex items-center gap-2 group">
+              <span className="text-[12px] text-sb-positive truncate flex-1">{f.fileName}</span>
+              <button
+                type="button"
+                onClick={() => onRemoveFile(doc.id, f.id)}
+                className="flex-shrink-0 text-sb-n300 hover:text-sb-negative transition-colors opacity-0 group-hover:opacity-100"
+                title="삭제"
+              >
+                <X size={13} />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
@@ -185,35 +205,65 @@ export default function DocumentUpload() {
     ? c.documents
     : [...c.documents.filter((d) => d.isRequired), ...c.documents.filter((d) => !d.isRequired)]
 
-  function handleUpload(docId: string, file: File) {
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      const dataUrl = e.target?.result as string
-      const now = Date.now()
-      const newFile: UploadedFile = {
-        id: `file_${now}`,
-        documentId: docId,
-        fileName: file.name,
-        fileSize: file.size,
-        uploadedAt: now,
-        uploadedBy: session?.name || session?.email || '고객',
-        isLatest: true,
-        dataUrl,
-      }
-      const latestCase = useCaseStore.getState().cases[id!]
-      if (!latestCase) return
-      const updatedDocs = latestCase.documents.map((d) => {
-        if (d.id !== docId) return d
-        const prevFiles = d.uploadedFiles.map(f => ({ ...f, isLatest: false }))
-        return {
-          ...d,
-          status: 'SUBMITTED' as const,
-          uploadedFiles: [...prevFiles, newFile],
-        }
-      })
-      updateCase(id!, { documents: updatedDocs })
+  function handleUpload(docId: string, files: File[]) {
+    const MAX_SIZE = 10 * 1024 * 1024
+    const validFiles = files.filter(f => f.size <= MAX_SIZE)
+    if (validFiles.length < files.length) {
+      alert('일부 파일이 10MB를 초과하여 제외되었습니다.')
     }
-    reader.readAsDataURL(file)
+    if (validFiles.length === 0) return
+
+    let processed = 0
+    const newFiles: UploadedFile[] = []
+
+    validFiles.forEach((file, idx) => {
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        const dataUrl = e.target?.result as string
+        const now = Date.now() + idx
+        newFiles.push({
+          id: `file_${now}`,
+          documentId: docId,
+          fileName: file.name,
+          fileSize: file.size,
+          uploadedAt: now,
+          uploadedBy: session?.name || session?.email || '고객',
+          isLatest: true,
+          dataUrl,
+        })
+        processed++
+        if (processed === validFiles.length) {
+          const latestCase = useCaseStore.getState().cases[id!]
+          if (!latestCase) return
+          const updatedDocs = latestCase.documents.map((d) => {
+            if (d.id !== docId) return d
+            return {
+              ...d,
+              status: 'SUBMITTED' as const,
+              uploadedFiles: [...d.uploadedFiles, ...newFiles],
+            }
+          })
+          updateCase(id!, { documents: updatedDocs })
+        }
+      }
+      reader.readAsDataURL(file)
+    })
+  }
+
+  function handleRemoveFile(docId: string, fileId: string) {
+    const latestCase = useCaseStore.getState().cases[id!]
+    if (!latestCase) return
+    const updatedDocs = latestCase.documents.map((d) => {
+      if (d.id !== docId) return d
+      const remaining = d.uploadedFiles.filter(f => f.id !== fileId)
+      const hasLatest = remaining.some(f => f.isLatest)
+      return {
+        ...d,
+        uploadedFiles: remaining,
+        status: hasLatest ? d.status : ('REQUESTED' as const),
+      }
+    })
+    updateCase(id!, { documents: updatedDocs })
   }
 
   function handleUrlSave(docId: string, url: string) {
@@ -286,7 +336,7 @@ export default function DocumentUpload() {
               doc.type === 'website_url' ? (
                 <UrlRow key={doc.id} doc={doc} onSave={handleUrlSave} />
               ) : (
-                <DocRow key={doc.id} doc={doc} onUpload={handleUpload} />
+                <DocRow key={doc.id} doc={doc} onUpload={handleUpload} onRemoveFile={handleRemoveFile} />
               )
             )}
           </div>
