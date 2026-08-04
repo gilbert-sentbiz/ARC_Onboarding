@@ -1,9 +1,8 @@
 name: Deploy Prototype to GitHub Pages
 
+# 자동 배포는 mvp 브랜치에서만 (main = Full Spec 개발 라인, 배포 안 함)
+# 수동 배포가 필요하면 workflow_dispatch 사용
 on:
-  push:
-    branches:
-      - main
   workflow_dispatch:
 
 permissions:
