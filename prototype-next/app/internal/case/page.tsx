@@ -4,7 +4,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import JSZip from 'jszip'
 import {
   ArrowLeft, CheckCircle, WarningCircle, Clock, ChatCircle,
-  Note, PaperPlaneTilt, FileText, FileDashed, Check, X, CaretDown, CaretUp, Eye, Plus, DownloadSimple,
+  Note, PaperPlaneTilt, FileText, FileDashed, Check, X, CaretDown, CaretUp, Eye, DownloadSimple,
 } from '@phosphor-icons/react'
 import { useSessionStore } from '@/store/sessionStore'
 import { useCaseStore } from '@/store/caseStore'
@@ -174,8 +174,6 @@ function CaseDetailContent() {
   const [expandedDocFiles, setExpandedDocFiles] = useState<Set<string>>(new Set())
   const [ownerChangeMode, setOwnerChangeMode] = useState(false)
   const [selectedNewOwner, setSelectedNewOwner] = useState('')
-  const [showAdHocForm, setShowAdHocForm] = useState(false)
-  const [adHocForm, setAdHocForm] = useState({ displayName: '', format: '모든 형식', isRequired: true, reason: '' })
 
   if (!c || !id || !session) {
     return (
@@ -199,14 +197,6 @@ function CaseDetailContent() {
     updateCase(caseId, {
       documents: caseObj.documents.map((d) =>
         d.id === docId ? { ...d, status: 'APPROVED' as DocumentStatus } : d
-      ),
-    })
-  }
-
-  function approveAllDocs() {
-    updateCase(caseId, {
-      documents: caseObj.documents.map((d) =>
-        d.status === 'SUBMITTED' ? { ...d, status: 'APPROVED' as DocumentStatus } : d
       ),
     })
   }
@@ -248,46 +238,6 @@ function CaseDetailContent() {
     }
     setDocRevisionId(null)
     setDocRevisionNote('')
-  }
-
-  function submitAdHocRequest() {
-    if (!adHocForm.displayName.trim() || !adHocForm.reason.trim()) return
-    const now = Date.now()
-    const docId = `adhoc_${now}`
-    const reason = adHocForm.format !== '모든 형식'
-      ? `${adHocForm.reason} (형식: ${adHocForm.format})`
-      : adHocForm.reason
-    const newDoc: Document = {
-      id: docId,
-      caseId,
-      type: 'adhoc',
-      displayName: adHocForm.displayName.trim(),
-      status: 'REQUESTED',
-      isRequired: adHocForm.isRequired,
-      isConditional: false,
-      isAdHoc: true,
-      requestedBy: sess.name,
-      uploadedFiles: [],
-      revisionHistory: [{ documentId: docId, timestamp: now, requiredBy: sess.name, reason }],
-    }
-    const fromStatus = caseObj.status
-    updateCase(caseId, {
-      documents: [...caseObj.documents, newDoc],
-      ...(fromStatus !== 'REVISION_REQUESTED' && { revisionRequestedFrom: fromStatus }),
-    })
-    if (fromStatus !== 'REVISION_REQUESTED') {
-      transitionStatus(caseId, 'REVISION_REQUESTED', { role, name: sess.name })
-    } else {
-      emitNotification({
-        type: 'REVISION_REQUESTED',
-        caseId,
-        caseLabel: caseObj.customerName || caseObj.customerEmail,
-        message: `'${caseObj.customerName || caseObj.customerEmail}' 케이스에 추가 서류가 요청되었습니다.`,
-        recipient: { role: 'CUSTOMER', userId: caseObj.customerId },
-      })
-    }
-    setShowAdHocForm(false)
-    setAdHocForm({ displayName: '', format: '모든 형식', isRequired: true, reason: '' })
   }
 
   function toggleDocFilesExpand(docId: string) {
@@ -549,16 +499,7 @@ function CaseDetailContent() {
             ) : (
               <>
                 <div className="flex items-center justify-between">
-                  {role === 'COMPLIANCE' && (c.documents ?? []).some((d) => d.status === 'SUBMITTED') ? (
-                    <button
-                      onClick={approveAllDocs}
-                      className="flex items-center gap-1.5 px-3 py-2 rounded-[8px] text-[13px] font-medium hover:opacity-80 transition-opacity"
-                      style={{ background: 'var(--sb-positive-light)', color: 'var(--sb-positive)' }}
-                    >
-                      <Check size={14} weight="bold" />
-                      일괄 승인 ({(c.documents ?? []).filter((d) => d.status === 'SUBMITTED').length}건)
-                    </button>
-                  ) : <div />}
+                  <div />
                   {(role === 'SALES' || role === 'COMPLIANCE' || role === 'OPS') && (() => {
                     const hasUploads = (c.documents ?? []).some(doc => {
                       const latest = doc.uploadedFiles.find(f => f.isLatest) ?? doc.uploadedFiles[doc.uploadedFiles.length - 1]
@@ -576,78 +517,11 @@ function CaseDetailContent() {
                           <DownloadSimple size={14} weight="bold" />
                           일괄 다운로드
                         </button>
-                        <button
-                          onClick={() => setShowAdHocForm((v) => !v)}
-                          className="flex items-center gap-1.5 px-3 py-2 rounded-[8px] text-[13px] font-medium transition-colors"
-                          style={{ border: '1px solid var(--sb-n200)', color: 'var(--sb-n700)' }}
-                        >
-                          <Plus size={14} weight="bold" />
-                          서류 추가 요청
-                        </button>
                       </div>
                     )
                   })()}
                 </div>
 
-                {showAdHocForm && (
-                  <div className="bg-blue-50 rounded-[12px] border border-blue-200 p-5 flex flex-col gap-3">
-                    <p className="text-[13px] font-semibold" style={{ color: 'var(--sb-n900)' }}>서류 추가 요청</p>
-                    <div className="flex flex-col gap-2">
-                      <input
-                        className="rounded-[8px] px-3 py-2 text-[13px] focus:outline-none bg-white"
-                        style={{ border: '1px solid var(--sb-n200)', color: 'var(--sb-n800)' }}
-                        placeholder="서류명 (필수)"
-                        value={adHocForm.displayName}
-                        onChange={(e) => setAdHocForm((f) => ({ ...f, displayName: e.target.value }))}
-                      />
-                      <div className="flex items-center gap-4">
-                        <select
-                          value={adHocForm.format}
-                          onChange={(e) => setAdHocForm((f) => ({ ...f, format: e.target.value }))}
-                          className="rounded-[8px] px-3 py-2 text-[13px] focus:outline-none bg-white"
-                          style={{ border: '1px solid var(--sb-n200)', color: 'var(--sb-n800)' }}
-                        >
-                          <option>모든 형식</option>
-                          <option>PDF</option>
-                          <option>이미지 (JPG/PNG)</option>
-                        </select>
-                        <label className="flex items-center gap-2 text-[13px] cursor-pointer" style={{ color: 'var(--sb-n700)' }}>
-                          <input
-                            type="checkbox"
-                            checked={adHocForm.isRequired}
-                            onChange={(e) => setAdHocForm((f) => ({ ...f, isRequired: e.target.checked }))}
-                            className="w-4 h-4 accent-sb-brand"
-                          />
-                          필수
-                        </label>
-                      </div>
-                      <input
-                        className="rounded-[8px] px-3 py-2 text-[13px] focus:outline-none bg-white"
-                        style={{ border: '1px solid var(--sb-n200)', color: 'var(--sb-n800)' }}
-                        placeholder="요청 사유 (필수)"
-                        value={adHocForm.reason}
-                        onChange={(e) => setAdHocForm((f) => ({ ...f, reason: e.target.value }))}
-                      />
-                    </div>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={submitAdHocRequest}
-                        disabled={!adHocForm.displayName.trim() || !adHocForm.reason.trim()}
-                        className="px-4 py-2 rounded-[8px] text-[13px] font-medium text-white hover:opacity-90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                        style={{ background: 'var(--sb-brand)' }}
-                      >
-                        요청 전송
-                      </button>
-                      <button
-                        onClick={() => { setShowAdHocForm(false); setAdHocForm({ displayName: '', format: '모든 형식', isRequired: true, reason: '' }) }}
-                        className="px-4 py-2 rounded-[8px] text-[13px] transition-colors"
-                        style={{ color: 'var(--sb-n500)' }}
-                      >
-                        취소
-                      </button>
-                    </div>
-                  </div>
-                )}
                 {(c.documents ?? []).map((doc) => {
                 const badge = DOC_STATUS_BADGE[doc.status]
                 const isRevisionOpen = docRevisionId === doc.id
