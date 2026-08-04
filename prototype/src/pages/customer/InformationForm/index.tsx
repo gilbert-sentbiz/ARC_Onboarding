@@ -16,20 +16,27 @@ const CORP_S1_IDS = [
   'qc_biz_reg_no', 'qc_biz_type', 'qc_biz_category',
   'qe_corp_name_kr', 'qe_corp_name_en', 'qe_corp_phone', 'qe_corp_address',
   'qe_corp_type', 'qe_corp_reg_no', 'qe_corp_nation', 'qe_corp_hq_addr',
-  'qe_corp_rep_type', 'qe_corp_rep_group', 'qe_corp_size', 'qe_corp_listed', 'qe_corp_founded_date',
+  'qe_corp_rep_type', 'qe_corp_rep_group',
+  'qc_company_size', 'qc_listed', 'qc_founded_date',
 ]
 const CORP_S2_IDS = [
   'qe_corp_bo_exempt', 'qe_corp_bo_has_25', 'qe_corp_bo_count', 'qe_corp_bo_group',
-  'qe_corp_purpose', 'qc_virtual_asset', 'qc_fund_source', 'qs_krw_sector',
+  'qc_trade_purpose', 'qc_virtual_asset', 'qc_fund_source',
+  'qc_tax_type', 'qc_website', 'qc_rep_phone', 'qc_main_goods',
+  'qs_krw_sector',
 ]
 
 const INDIV_S1_IDS = [
   'qc_biz_reg_no', 'qc_biz_type', 'qc_biz_category',
   'qe_indiv_biz_name', 'qe_indiv_phone', 'qe_indiv_address', 'qe_indiv_residence',
   'qe_indiv_rep_name_kr', 'qe_indiv_rep_name_en', 'qe_indiv_rep_dob', 'qe_indiv_rep_gender', 'qe_indiv_rep_nation',
+  'qc_company_size', 'qc_listed', 'qc_founded_date',
 ]
 const INDIV_S2_IDS = [
-  'qe_indiv_bo_same', 'qe_indiv_purpose', 'qc_virtual_asset', 'qc_fund_source', 'qs_krw_sector',
+  'qe_indiv_bo_same',
+  'qc_trade_purpose', 'qc_virtual_asset', 'qc_fund_source',
+  'qc_tax_type', 'qc_website', 'qc_rep_phone', 'qc_main_goods',
+  'qs_krw_sector',
 ]
 
 const FI_S1_IDS = [
@@ -40,8 +47,8 @@ const FI_S1_IDS = [
 ]
 const FI_S2_BASE_IDS = ['qe_fi_license_info', 'qe_fi_license_detail', 'qe_fi_auditor']
 const FI_S2_PAYOUT_IDS = ['qe_fi_intermediary']
-const FI_S3_IDS = ['qe_fi_parent_name', 'qe_fi_parent_address', 'qe_fi_ubo_group', 'qe_fi_fund_source']
-const FI_S4_IDS = ['qe_fi_aml_policy', 'qe_fi_aml_sanction']
+const FI_S3_IDS = ['qe_fi_parent_name', 'qe_fi_parent_address', 'qe_fi_ubo_group', 'qc_fund_source']
+const FI_S4_IDS = ['qe_fi_aml_policy', 'qe_fi_aml_sanction', 'qc_trade_purpose', 'qc_tax_type', 'qc_website', 'qc_rep_phone', 'qc_main_goods']
 
 // Corporate fund source: exclude 근로·연금소득, 상속·증여, 일시 재산양도
 const CORP_FUND_SOURCE_ALLOWED = [

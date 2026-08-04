@@ -379,12 +379,12 @@ export const INITIAL_RULESET: RuleSet = {
     },
     {
       id: 'qc_biz_type',
-      label: '사업자등록증에 기재된 업종을 입력해주세요',
+      label: '사업자등록증에 기재된 업태를 입력해주세요',
       inputType: 'text', isRequired: true, classification: 'common',
     },
     {
       id: 'qc_biz_category',
-      label: '사업자등록증에 기재된 업태를 입력해주세요',
+      label: '사업자등록증에 기재된 종목을 입력해주세요',
       inputType: 'text', isRequired: true, classification: 'common',
     },
     {
@@ -401,6 +401,13 @@ export const INITIAL_RULESET: RuleSet = {
       ],
     },
     {
+      id: 'qc_trade_purpose',
+      label: '센트비를 이용한 거래 목적을 선택해주세요',
+      inputType: 'select', isRequired: true, classification: 'common',
+      options: [{ value: 'settlement', label: '판매대금 정산대행' }, { value: 'other', label: '기타(직접 입력)' }],
+      children: [{ id: 'qc_trade_purpose_other', label: '거래 목적을 직접 입력해주세요', inputType: 'text', isRequired: true, classification: 'common', showWhen: { parentId: 'qc_trade_purpose', value: 'other' } }],
+    },
+    {
       id: 'qc_fund_source',
       label: '자금 및 재산의 원천을 선택해주세요 (복수 선택 가능)',
       inputType: 'select', isRequired: true, classification: 'common',
@@ -415,6 +422,28 @@ export const INITIAL_RULESET: RuleSet = {
         { value: 'other',              label: '기타(직접 입력)' },
       ],
     },
+    {
+      id: 'qc_tax_type',
+      label: '과세 구분을 선택해주세요',
+      inputType: 'radio', isRequired: true, classification: 'common',
+      options: [{ value: 'taxable', label: '과세' }, { value: 'exempt', label: '면세' }],
+    },
+    { id: 'qc_website', label: '홈페이지 주소를 입력해주세요', inputType: 'text', isRequired: false, classification: 'common' },
+    { id: 'qc_rep_phone', label: '대표자 연락처를 입력해주세요', inputType: 'text', isRequired: true, classification: 'common' },
+    { id: 'qc_main_goods', label: '주요 정산대행 요청 품목을 입력해주세요', inputType: 'text', isRequired: true, classification: 'common' },
+    {
+      id: 'qc_company_size',
+      label: '회사 규모를 선택해주세요',
+      inputType: 'radio', isRequired: true, classification: 'common',
+      options: [{ value: 'large', label: '대기업' }, { value: 'sme', label: '중소기업' }],
+    },
+    {
+      id: 'qc_listed',
+      label: '상장 여부를 선택해주세요',
+      inputType: 'select', isRequired: true, classification: 'common',
+      options: [{ value: 'unlisted', label: '비상장' }, { value: 'kospi', label: '코스피' }, { value: 'kosdaq', label: '코스닥' }, { value: 'other', label: '기타' }],
+    },
+    { id: 'qc_founded_date', label: '회사 설립일자를 입력해주세요', inputType: 'text', isRequired: true, classification: 'common' },
 
     // ── CORP entity-own (PRD 9.6) ───────────────────────────────────────────
     { id: 'qe_corp_name_kr',   label: '회사명을 한글로 입력해주세요',   inputType: 'text', isRequired: true,  classification: 'entity-own', scope: 'ENTITY_CORP', isFixed: true },
@@ -490,33 +519,6 @@ export const INITIAL_RULESET: RuleSet = {
         { id: 'qe_corp_bo_country', label: '거주 국가',   inputType: 'text', isRequired: true, classification: 'entity-own', scope: 'ENTITY_CORP' },
       ],
     },
-    {
-      id: 'qe_corp_purpose',
-      label: '센트비를 이용한 거래 목적을 선택해주세요',
-      inputType: 'select', isRequired: true, classification: 'entity-own', scope: 'ENTITY_CORP', isFixed: true,
-      options: [{ value: 'settlement', label: '판매대금 정산대행' }, { value: 'other', label: '기타(직접 입력)' }],
-      children: [
-        {
-          id: 'qe_corp_purpose_other',
-          label: '거래 목적을 직접 입력해주세요',
-          inputType: 'text', isRequired: true, classification: 'entity-own', scope: 'ENTITY_CORP',
-          showWhen: { parentId: 'qe_corp_purpose', value: 'other' },
-        },
-      ],
-    },
-    {
-      id: 'qe_corp_size',
-      label: '회사 규모를 선택해주세요',
-      inputType: 'radio', isRequired: true, classification: 'entity-own', scope: 'ENTITY_CORP', isFixed: true,
-      options: [{ value: 'large', label: '대기업' }, { value: 'sme', label: '중소기업' }],
-    },
-    {
-      id: 'qe_corp_listed',
-      label: '상장 여부를 선택해주세요',
-      inputType: 'select', isRequired: true, classification: 'entity-own', scope: 'ENTITY_CORP', isFixed: true,
-      options: [{ value: 'unlisted', label: '비상장' }, { value: 'kospi', label: '코스피' }, { value: 'kosdaq', label: '코스닥' }, { value: 'other', label: '기타' }],
-    },
-    { id: 'qe_corp_founded_date', label: '회사 설립일자를 입력해주세요', inputType: 'text', isRequired: true, classification: 'entity-own', scope: 'ENTITY_CORP', isFixed: true },
 
     // ── INDIV entity-own (PRD 9.7) ──────────────────────────────────────────
     { id: 'qe_indiv_biz_name',  label: '상호명을 입력해주세요',           inputType: 'text', isRequired: true, classification: 'entity-own', scope: 'ENTITY_INDIV', isFixed: true },
@@ -549,20 +551,6 @@ export const INITIAL_RULESET: RuleSet = {
         { id: 'qe_indiv_bo_dob',     label: '실제 소유자 생년월일',   inputType: 'text', isRequired: true, classification: 'entity-own', scope: 'ENTITY_INDIV', showWhen: { parentId: 'qe_indiv_bo_same', value: 'no' } },
         { id: 'qe_indiv_bo_nation',  label: '실제 소유자 국적',       inputType: 'text', isRequired: true, classification: 'entity-own', scope: 'ENTITY_INDIV', showWhen: { parentId: 'qe_indiv_bo_same', value: 'no' } },
         { id: 'qe_indiv_bo_country', label: '실제 소유자 거주 국가',  inputType: 'text', isRequired: true, classification: 'entity-own', scope: 'ENTITY_INDIV', showWhen: { parentId: 'qe_indiv_bo_same', value: 'no' } },
-      ],
-    },
-    {
-      id: 'qe_indiv_purpose',
-      label: '센트비를 이용한 거래 목적을 선택해주세요',
-      inputType: 'select', isRequired: true, classification: 'entity-own', scope: 'ENTITY_INDIV', isFixed: true,
-      options: [{ value: 'settlement', label: '판매대금 정산대행' }, { value: 'other', label: '기타(직접 입력)' }],
-      children: [
-        {
-          id: 'qe_indiv_purpose_other',
-          label: '거래 목적을 직접 입력해주세요',
-          inputType: 'text', isRequired: true, classification: 'entity-own', scope: 'ENTITY_INDIV',
-          showWhen: { parentId: 'qe_indiv_purpose', value: 'other' },
-        },
       ],
     },
 
@@ -670,9 +658,9 @@ export const INITIAL_RULESET: RuleSet = {
 
   // ── Segment question configs ────────────────────────────────────────────
   segmentQuestionConfigs: [
-    { key: 'entity:ENTITY_CORP',  enabledCommonQuestionIds: ['qc_biz_reg_no','qc_biz_type','qc_biz_category','qc_virtual_asset','qc_fund_source'], ownQuestions: [], commonOptionFilters: { qc_fund_source: ['business_income','real_estate_rent','real_estate_sale','financial_income','other'] } },
-    { key: 'entity:ENTITY_INDIV', enabledCommonQuestionIds: ['qc_biz_reg_no','qc_biz_type','qc_biz_category','qc_virtual_asset','qc_fund_source'], ownQuestions: [] },
-    { key: 'entity:ENTITY_FI',    enabledCommonQuestionIds: ['qc_virtual_asset'], ownQuestions: [] },
+    { key: 'entity:ENTITY_CORP',  enabledCommonQuestionIds: ['qc_biz_reg_no','qc_biz_type','qc_biz_category','qc_virtual_asset','qc_trade_purpose','qc_fund_source','qc_tax_type','qc_website','qc_rep_phone','qc_main_goods','qc_company_size','qc_listed','qc_founded_date'], ownQuestions: [], commonOptionFilters: { qc_fund_source: ['business_income','real_estate_rent','real_estate_sale','financial_income','other'] } },
+    { key: 'entity:ENTITY_INDIV', enabledCommonQuestionIds: ['qc_biz_reg_no','qc_biz_type','qc_biz_category','qc_virtual_asset','qc_trade_purpose','qc_fund_source','qc_tax_type','qc_website','qc_rep_phone','qc_main_goods','qc_company_size','qc_listed','qc_founded_date'], ownQuestions: [] },
+    { key: 'entity:ENTITY_FI',    enabledCommonQuestionIds: ['qc_virtual_asset','qc_fund_source','qc_trade_purpose','qc_tax_type','qc_website','qc_rep_phone','qc_main_goods'], ownQuestions: [], commonOptionFilters: { qc_fund_source: ['business_income','real_estate_rent','real_estate_sale','financial_income','other'] } },
     { key: 'service:SVC_COL_KRW',     enabledCommonQuestionIds: [], ownQuestions: [
       { id: 'qs_krw_sector', label: '업종을 선택해주세요', inputType: 'select', isRequired: true, classification: 'service-own', scope: 'SVC_COL_KRW', isFixed: true,
         options: [
