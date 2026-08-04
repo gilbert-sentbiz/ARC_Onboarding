@@ -35,18 +35,22 @@ async function downloadAllDocuments(docs: Document[], companyName: string, caseI
   const usedNames = new Set<string>()
 
   for (const doc of docs) {
-    const latest = doc.uploadedFiles.find(f => f.isLatest) ?? doc.uploadedFiles[doc.uploadedFiles.length - 1]
-    if (!latest?.dataUrl) continue
-    const b64Match = latest.dataUrl.match(/^data:[^;]+;base64,(.+)$/)
-    if (!b64Match) continue
-
-    const ext = latest.fileName.includes('.') ? latest.fileName.split('.').pop()! : 'bin'
+    const latestFiles = doc.uploadedFiles.filter(f => f.isLatest)
+    if (latestFiles.length === 0) continue
     const base = doc.displayName.replace(/[/\\:*?"<>|]/g, '_')
-    let entryName = `${base}.${ext}`
-    let counter = 1
-    while (usedNames.has(entryName)) { entryName = `${base}_${counter++}.${ext}` }
-    usedNames.add(entryName)
-    zip.file(entryName, b64Match[1], { base64: true })
+    for (let i = 0; i < latestFiles.length; i++) {
+      const file = latestFiles[i]
+      if (!file.dataUrl) continue
+      const b64Match = file.dataUrl.match(/^data:[^;]+;base64,(.+)$/)
+      if (!b64Match) continue
+      const ext = file.fileName.includes('.') ? file.fileName.split('.').pop()! : 'bin'
+      const entryName = latestFiles.length === 1 ? `${base}.${ext}` : `${base}_${i + 1}.${ext}`
+      let finalName = entryName
+      let counter = 1
+      while (usedNames.has(finalName)) { finalName = `${base}_${counter++}.${ext}` }
+      usedNames.add(finalName)
+      zip.file(finalName, b64Match[1], { base64: true })
+    }
   }
 
   if (usedNames.size === 0) return
@@ -618,30 +622,39 @@ export default function InternalCaseDetail() {
                         <div className="flex flex-col gap-1 min-w-0">
                           <span className="text-[14px] font-medium text-sb-n900">{doc.displayName}</span>
                           {doc.uploadedFiles.length > 0 && (() => {
-                            const latestFile = doc.uploadedFiles.find(f => f.isLatest) ?? doc.uploadedFiles[doc.uploadedFiles.length - 1]
-                            const oldFiles = doc.uploadedFiles.filter(f => f.id !== latestFile.id)
+                            const currentFiles = doc.uploadedFiles.filter(f => f.isLatest)
+                            const oldFiles = doc.uploadedFiles.filter(f => !f.isLatest)
                             const isExpanded = expandedDocFiles.has(doc.id)
                             return (
                               <div className="flex flex-col gap-0.5">
-                                <div className="flex items-center gap-2">
-                                  <button
-                                    onClick={() => setPreviewFile(latestFile)}
-                                    className="flex items-center gap-1 text-[12px] text-sb-brand hover:underline text-left"
-                                  >
-                                    <Eye size={12} />
-                                    {latestFile.fileName}
-                                    <span className="text-sb-n400 font-normal ml-1">{formatDate(latestFile.uploadedAt)}</span>
-                                  </button>
-                                  {latestFile.dataUrl && (
-                                    <button
-                                      onClick={() => downloadFile(latestFile)}
-                                      className="flex items-center gap-0.5 text-[11px] text-sb-n400 hover:text-sb-n700 transition-colors flex-shrink-0"
-                                    >
-                                      <DownloadSimple size={12} />
-                                      다운로드
-                                    </button>
-                                  )}
-                                </div>
+                                {currentFiles.length > 0 && (
+                                  <div className="flex flex-col gap-0.5">
+                                    {currentFiles.length > 1 && (
+                                      <span className="text-[11px] text-sb-n500 font-medium">현재 파일 ({currentFiles.length}개)</span>
+                                    )}
+                                    {currentFiles.map(f => (
+                                      <div key={f.id} className="flex items-center gap-2">
+                                        <button
+                                          onClick={() => setPreviewFile(f)}
+                                          className="flex items-center gap-1 text-[12px] text-sb-brand hover:underline text-left"
+                                        >
+                                          <Eye size={12} />
+                                          <span className="truncate max-w-[200px]">{f.fileName}</span>
+                                          <span className="text-sb-n400 font-normal ml-1 flex-shrink-0">{formatDate(f.uploadedAt)}</span>
+                                        </button>
+                                        {f.dataUrl && (
+                                          <button
+                                            onClick={() => downloadFile(f)}
+                                            className="flex items-center gap-0.5 text-[11px] text-sb-n400 hover:text-sb-n700 transition-colors flex-shrink-0"
+                                          >
+                                            <DownloadSimple size={12} />
+                                            다운로드
+                                          </button>
+                                        )}
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
                                 {oldFiles.length > 0 && (
                                   <>
                                     <button
