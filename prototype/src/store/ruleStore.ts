@@ -670,7 +670,7 @@ export const INITIAL_RULESET: RuleSet = {
 
   // ── Segment question configs ────────────────────────────────────────────
   segmentQuestionConfigs: [
-    { key: 'entity:ENTITY_CORP',  enabledCommonQuestionIds: ['qc_biz_reg_no','qc_biz_type','qc_biz_category','qc_virtual_asset','qc_fund_source'], ownQuestions: [] },
+    { key: 'entity:ENTITY_CORP',  enabledCommonQuestionIds: ['qc_biz_reg_no','qc_biz_type','qc_biz_category','qc_virtual_asset','qc_fund_source'], ownQuestions: [], commonOptionFilters: { qc_fund_source: ['business_income','real_estate_rent','real_estate_sale','financial_income','other'] } },
     { key: 'entity:ENTITY_INDIV', enabledCommonQuestionIds: ['qc_biz_reg_no','qc_biz_type','qc_biz_category','qc_virtual_asset','qc_fund_source'], ownQuestions: [] },
     { key: 'entity:ENTITY_FI',    enabledCommonQuestionIds: ['qc_virtual_asset'], ownQuestions: [] },
     { key: 'service:SVC_COL_KRW',     enabledCommonQuestionIds: [], ownQuestions: [
@@ -761,6 +761,23 @@ export const useRuleStore = create<RuleStoreState>()(
   )
 )
 
+function mergeSegQuestionConfigs(
+  stored: import('../types').SegmentQuestionConfig[] | undefined,
+  initial: import('../types').SegmentQuestionConfig[]
+): import('../types').SegmentQuestionConfig[] {
+  if (!stored?.length) return initial
+  const initialByKey = new Map(initial.map(c => [c.key, c]))
+  const storedKeys = new Set(stored.map(c => c.key))
+  const merged: import('../types').SegmentQuestionConfig[] = stored.map(c => ({
+    ...c,
+    commonOptionFilters: c.commonOptionFilters ?? initialByKey.get(c.key)?.commonOptionFilters,
+  }))
+  for (const c of initial) {
+    if (!storedKeys.has(c.key)) merged.push(c)
+  }
+  return merged
+}
+
 // Merge stored segmentDocConfigs with INITIAL_RULESET:
 // - Missing segment keys → filled from initial
 // - Existing key but missing commonOverrides → filled from initial
@@ -799,7 +816,7 @@ export function getRuleSet(): RuleSet {
     entityClassificationRules: hasNewEntityRules ? rs.entityClassificationRules : INITIAL_RULESET.entityClassificationRules,
     serviceClassificationRules: hasNewServiceRules ? rs.serviceClassificationRules : INITIAL_RULESET.serviceClassificationRules,
     questionPool: (rs.questionPool?.length && hasUnifiedVasp) ? rs.questionPool : INITIAL_RULESET.questionPool,
-    segmentQuestionConfigs: rs.segmentQuestionConfigs?.length ? rs.segmentQuestionConfigs : INITIAL_RULESET.segmentQuestionConfigs,
+    segmentQuestionConfigs: mergeSegQuestionConfigs(rs.segmentQuestionConfigs, INITIAL_RULESET.segmentQuestionConfigs),
     documentRules: hasCanonicalDocTypes ? rs.documentRules : INITIAL_RULESET.documentRules,
     firstIntakeQuestions: rs.firstIntakeQuestions?.length ? rs.firstIntakeQuestions : INITIAL_RULESET.firstIntakeQuestions,
     docLibrary: rs.docLibrary?.length ? rs.docLibrary : INITIAL_RULESET.docLibrary,
