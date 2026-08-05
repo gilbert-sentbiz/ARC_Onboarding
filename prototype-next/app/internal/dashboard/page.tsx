@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { SignOut, Buildings } from '@phosphor-icons/react'
 import { useSessionStore } from '@/store/sessionStore'
 import { useCaseStore } from '@/store/caseStore'
+import { useCaseEventStore } from '@/store/caseEventStore'
 import { STATUS_LABELS, canView } from '@/services/stateMachine'
 import type { CaseStatus, UserRole } from '@/types'
 import type { Case } from '@/types'
@@ -48,9 +49,10 @@ function formatDate(ts: number) {
 }
 
 function getDaysInStatus(c: Case): number {
-  const entry = [...c.statusHistory].reverse().find(h => h.newStatus === c.status)
+  const events = useCaseEventStore.getState().getByCase(c.id)
+  const entry = [...events].reverse().find(e => e.payload.newStatus === c.status)
   if (!entry) return 0
-  return Math.floor((Date.now() - entry.changedAt) / 86_400_000)
+  return Math.floor((Date.now() - entry.createdAt) / 86_400_000)
 }
 
 const STATUS_BADGE: Record<CaseStatus, { bg: string; text: string }> = {

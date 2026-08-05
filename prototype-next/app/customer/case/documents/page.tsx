@@ -3,16 +3,28 @@ import { useRef, useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { CheckCircle, CloudArrowUp, Warning, ArrowRight, Clock, Link } from '@phosphor-icons/react'
 import { useCaseStore } from '@/store/caseStore'
+import { useDocumentStore } from '@/store/documentStore'
+import { useDocumentFileStore } from '@/store/documentFileStore'
+import { useRevisionRequestStore } from '@/store/revisionRequestStore'
 import { useSessionStore } from '@/store/sessionStore'
 import { transitionStatus, resubmitRevision } from '@/services/caseService'
-import type { Document, UploadedFile } from '@/types'
+import { uploadFile as uploadDocFile } from '@/services/documentService'
+import type { Document, DocumentFile, RevisionRequest } from '@/types'
 import Button from '@/components/ui/Button'
 import TabBar from '@/components/customer/TabBar'
 
-function UrlRow({ doc, onSave }: { doc: Document; onSave: (docId: string, url: string) => void }) {
+function UrlRow({
+  doc,
+  latestFile,
+  onSave,
+}: {
+  doc: Document
+  latestFile: DocumentFile | null
+  onSave: (docId: string, url: string) => void
+}) {
   const isSubmitted = doc.status === 'SUBMITTED' || doc.status === 'APPROVED'
   const needsRevision = doc.status === 'REVISION_REQUIRED'
-  const savedUrl = doc.uploadedFiles[doc.uploadedFiles.length - 1]?.fileName ?? ''
+  const savedUrl = latestFile?.fileName ?? ''
   const [url, setUrl] = useState(savedUrl)
 
   return (
@@ -64,17 +76,19 @@ function UrlRow({ doc, onSave }: { doc: Document; onSave: (docId: string, url: s
 
 function DocRow({
   doc,
+  latestFile,
+  latestRevision,
   onUpload,
 }: {
   doc: Document
+  latestFile: DocumentFile | null
+  latestRevision: RevisionRequest | null
   onUpload: (docId: string, file: File) => void
 }) {
   const inputRef = useRef<HTMLInputElement>(null)
   const isUploaded = doc.status === 'SUBMITTED' || doc.status === 'APPROVED'
   const needsRevision = doc.status === 'REVISION_REQUIRED'
   const isAdHocPending = doc.isAdHoc && doc.status === 'REQUESTED'
-  const latestFile = doc.uploadedFiles[doc.uploadedFiles.length - 1]
-  const latestRevision = doc.revisionHistory[doc.revisionHistory.length - 1]
 
   return (
     <div
@@ -150,7 +164,9 @@ function PageContent() {
   const router = useRouter()
   const session = useSessionStore((s) => s.session)
   const c = useCaseStore((s) => (id ? s.cases[id] : null))
-  const updateCase = useCaseStore((s) => s.updateCase)
+  const documents = useDocumentStore((s) => s.getByCase(id))
+  const allFiles = useDocumentFileStore((s) => s.files)
+  const allRevisions = useRevisionRequestStore((s) => s.requests)
   const [submitted, setSubmitted] = useState(false)
 
   if (!c || !id) {
@@ -177,68 +193,37 @@ function PageContent() {
     )
   }
 
+  const getLatestFile = (docId: string) =>
+    Object.values(allFiles).find((f) => f.documentId === docId && f.isLatest) ?? null
+  const getLatestRevision = (docId: string) =>
+    Object.values(allRevisions)
+      .filter((r) => r.documentId === docId && !r.resolvedAt)
+      .sort((a, b) => b.requestedAt - a.requestedAt)[0] ?? null
+
   const isRevision = c.status === 'REVISION_REQUESTED'
-  const requiredDocs = c.documents.filter((d) => d.isRequired)
+  const requiredDocs = documents.filter((d) => d.isRequired)
   const allRequiredUploaded = requiredDocs.every(
     (d) => d.status === 'SUBMITTED' || d.status === 'APPROVED'
   )
-  const noRevisionRemaining = !c.documents.some((d) => d.status === 'REVISION_REQUIRED')
-  const noAdHocPending = !c.documents.some((d) => d.isAdHoc && d.status === 'REQUESTED')
+  const noRevisionRemaining = !documents.some((d) => d.status === 'REVISION_REQUIRED')
+  const noAdHocPending = !documents.some((d) => d.isAdHoc && d.status === 'REQUESTED')
   const canSubmit = isRevision ? (noRevisionRemaining && noAdHocPending) : allRequiredUploaded
 
   const displayDocs = isRevision
-    ? c.documents
-    : [...c.documents.filter((d) => d.isRequired), ...c.documents.filter((d) => !d.isRequired)]
+    ? documents
+    : [...documents.filter((d) => d.isRequired), ...documents.filter((d) => !d.isRequired)]
 
   function handleUpload(docId: string, file: File) {
     const reader = new FileReader()
     reader.onload = (e) => {
       const dataUrl = e.target?.result as string
-      const now = Date.now()
-      const newFile: UploadedFile = {
-        id: `file_${now}`,
-        documentId: docId,
-        fileName: file.name,
-        fileSize: file.size,
-        uploadedAt: now,
-        uploadedBy: session?.name || session?.email || '고객',
-        isLatest: true,
-        dataUrl,
-      }
-      const latestCase = useCaseStore.getState().cases[id!]
-      if (!latestCase) return
-      const updatedDocs = latestCase.documents.map((d) => {
-        if (d.id !== docId) return d
-        const prevFiles = d.uploadedFiles.map(f => ({ ...f, isLatest: false }))
-        return {
-          ...d,
-          status: 'SUBMITTED' as const,
-          uploadedFiles: [...prevFiles, newFile],
-        }
-      })
-      updateCase(id!, { documents: updatedDocs })
+      uploadDocFile(docId, file.name, file.size, session?.name || session?.email || '고객', dataUrl)
     }
     reader.readAsDataURL(file)
   }
 
   function handleUrlSave(docId: string, url: string) {
-    const now = Date.now()
-    const newFile: UploadedFile = {
-      id: `file_${now}`,
-      documentId: docId,
-      fileName: url,
-      fileSize: 0,
-      uploadedAt: now,
-      uploadedBy: session?.name || session?.email || '고객',
-      isLatest: true,
-    }
-    const latestCase = useCaseStore.getState().cases[id!]
-    if (!latestCase) return
-    const updatedDocs = latestCase.documents.map((d) => {
-      if (d.id !== docId) return d
-      return { ...d, status: 'SUBMITTED' as const, uploadedFiles: [...d.uploadedFiles, newFile] }
-    })
-    updateCase(id!, { documents: updatedDocs })
+    uploadDocFile(docId, url, 0, session?.name || session?.email || '고객')
   }
 
   function handleSubmit() {
@@ -259,7 +244,6 @@ function PageContent() {
       <div className="flex flex-col items-center px-4 py-8">
 
       <div className="w-full max-w-[640px] flex flex-col gap-4">
-        {/* Revision banner */}
         {isRevision && (
           <div className="flex items-start gap-3 bg-amber-50 border border-amber-300 rounded-[12px] p-4">
             <Warning size={20} weight="fill" className="text-amber-500 flex-shrink-0 mt-0.5" />
@@ -273,7 +257,6 @@ function PageContent() {
           </div>
         )}
 
-        {/* Document list */}
         <div className="bg-white rounded-[16px] p-6 flex flex-col gap-5" style={{ boxShadow: 'var(--shadow-200)' }}>
           <div>
             <p className="text-[16px] font-bold mb-1" style={{ color: 'var(--sb-n900)' }}>
@@ -289,15 +272,20 @@ function PageContent() {
           <div className="flex flex-col gap-3">
             {displayDocs.map((doc) =>
               doc.type === 'website_url' ? (
-                <UrlRow key={doc.id} doc={doc} onSave={handleUrlSave} />
+                <UrlRow key={doc.id} doc={doc} latestFile={getLatestFile(doc.id)} onSave={handleUrlSave} />
               ) : (
-                <DocRow key={doc.id} doc={doc} onUpload={handleUpload} />
+                <DocRow
+                  key={doc.id}
+                  doc={doc}
+                  latestFile={getLatestFile(doc.id)}
+                  latestRevision={getLatestRevision(doc.id)}
+                  onUpload={handleUpload}
+                />
               )
             )}
           </div>
         </div>
 
-        {/* Progress indicator */}
         {!isRevision && (
           <div className="bg-white rounded-[16px] px-6 py-4" style={{ boxShadow: 'var(--shadow-200)' }}>
             <div className="flex items-center justify-between text-[13px] mb-2">
@@ -327,7 +315,6 @@ function PageContent() {
           </div>
         )}
 
-        {/* Submit */}
         <div className="bg-white rounded-[16px] p-6" style={{ boxShadow: 'var(--shadow-200)' }}>
           {!canSubmit && (
             <p className="flex items-center gap-2 text-[13px] mb-4" style={{ color: 'var(--sb-n500)' }}>

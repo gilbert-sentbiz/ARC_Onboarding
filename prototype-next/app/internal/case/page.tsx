@@ -3,17 +3,23 @@ import { Suspense, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import JSZip from 'jszip'
 import {
-  ArrowLeft, CheckCircle, WarningCircle, Clock, ChatCircle,
+  ArrowLeft, CheckCircle, WarningCircle, Clock,
   Note, PaperPlaneTilt, FileText, FileDashed, Check, X, CaretDown, CaretUp, Eye, DownloadSimple,
 } from '@phosphor-icons/react'
 import { useSessionStore } from '@/store/sessionStore'
 import { useCaseStore } from '@/store/caseStore'
+import { useDocumentStore } from '@/store/documentStore'
+import { useDocumentFileStore } from '@/store/documentFileStore'
+import { useRevisionRequestStore } from '@/store/revisionRequestStore'
+import { useIntakeResponseStore } from '@/store/intakeResponseStore'
+import { useCaseEventStore } from '@/store/caseEventStore'
 import { useInternalNoteStore } from '@/store/internalNoteStore'
 import { useInternalStaffStore } from '@/store/internalStaffStore'
 import { transitionStatus, changeOwner } from '@/services/caseService'
+import { approveDocument, requestRevision } from '@/services/documentService'
 import { STATUS_LABELS } from '@/services/stateMachine'
 import { emitNotification } from '@/store/notificationStore'
-import type { CaseStatus, CloseReason, Document, DocumentStatus, UserRole, Message, UploadedFile } from '@/types'
+import type { CaseStatus, CloseReason, DocumentStatus, UserRole, DocumentFile } from '@/types'
 import NotificationBell from '@/components/ui/NotificationBell'
 
 // ── helpers ──────────────────────────────────────────────────────────────────
@@ -23,7 +29,7 @@ function formatDate(ts: number) {
   return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
 }
 
-function downloadFile(file: UploadedFile) {
+function downloadFile(file: DocumentFile) {
   if (!file.dataUrl) return
   const a = document.createElement('a')
   a.href = file.dataUrl
@@ -31,18 +37,24 @@ function downloadFile(file: UploadedFile) {
   a.click()
 }
 
-async function downloadAllDocuments(docs: Document[], companyName: string, caseId: string): Promise<void> {
+async function downloadAllDocuments(
+  docIds: string[],
+  getLatest: (id: string) => DocumentFile | null,
+  getDisplayName: (id: string) => string,
+  companyName: string,
+  caseId: string
+): Promise<void> {
   const zip = new JSZip()
   const usedNames = new Set<string>()
 
-  for (const doc of docs) {
-    const latest = doc.uploadedFiles.find(f => f.isLatest) ?? doc.uploadedFiles[doc.uploadedFiles.length - 1]
+  for (const docId of docIds) {
+    const latest = getLatest(docId)
     if (!latest?.dataUrl) continue
     const b64Match = latest.dataUrl.match(/^data:[^;]+;base64,(.+)$/)
     if (!b64Match) continue
 
     const ext = latest.fileName.includes('.') ? latest.fileName.split('.').pop()! : 'bin'
-    const base = doc.displayName.replace(/[/\\:*?"<>|]/g, '_')
+    const base = getDisplayName(docId).replace(/[/\\:*?"<>|]/g, '_')
     let entryName = `${base}.${ext}`
     let counter = 1
     while (usedNames.has(entryName)) { entryName = `${base}_${counter++}.${ext}` }
@@ -160,17 +172,22 @@ function CaseDetailContent() {
   const c = useCaseStore((s) => (id ? s.cases[id] : null))
   const updateCase = useCaseStore((s) => s.updateCase)
   const { getNotes, addNote } = useInternalNoteStore()
-
   const staff = useInternalStaffStore((s) => s.staff)
+
+  const documents = useDocumentStore((s) => s.getByCase(id))
+  const allFiles = useDocumentFileStore((s) => s.files)
+  const allRevisions = useRevisionRequestStore((s) => s.requests)
+  const firstIntake = useIntakeResponseStore((s) => id ? s.getByCase(id, 'first') : null)
+  const secondIntake = useIntakeResponseStore((s) => id ? s.getByCase(id, 'second') : null)
+  const events = useCaseEventStore((s) => id ? s.getByCase(id) : [])
 
   const [tab, setTab] = useState<TabKey>('info')
   const [pendingAction, setPendingAction] = useState<ActionDef | null>(null)
   const [actionNote, setActionNote] = useState('')
-  const [chatInput, setChatInput] = useState('')
   const [noteInput, setNoteInput] = useState('')
   const [docRevisionId, setDocRevisionId] = useState<string | null>(null)
   const [docRevisionNote, setDocRevisionNote] = useState('')
-  const [previewFile, setPreviewFile] = useState<UploadedFile | null>(null)
+  const [previewFile, setPreviewFile] = useState<DocumentFile | null>(null)
   const [expandedDocFiles, setExpandedDocFiles] = useState<Set<string>>(new Set())
   const [ownerChangeMode, setOwnerChangeMode] = useState(false)
   const [selectedNewOwner, setSelectedNewOwner] = useState('')
@@ -192,40 +209,28 @@ function CaseDetailContent() {
   const actions = getActions(role, caseObj.status)
   const notes = getNotes(caseId)
 
+  // ── file/revision helpers ──
+  const getLatestFile = (docId: string): DocumentFile | null =>
+    Object.values(allFiles).find((f) => f.documentId === docId && f.isLatest) ?? null
+
+  const getDocFiles = (docId: string): DocumentFile[] =>
+    Object.values(allFiles).filter((f) => f.documentId === docId).sort((a, b) => a.uploadedAt - b.uploadedAt)
+
+  const getActiveRevisions = (docId: string) =>
+    Object.values(allRevisions).filter((r) => r.documentId === docId && !r.resolvedAt)
+
+  const getAllRevisions = (docId: string) =>
+    Object.values(allRevisions).filter((r) => r.documentId === docId)
+
   // ── document handlers ──
   function approveDoc(docId: string) {
-    updateCase(caseId, {
-      documents: caseObj.documents.map((d) =>
-        d.id === docId ? { ...d, status: 'APPROVED' as DocumentStatus } : d
-      ),
-    })
+    approveDocument(docId, '', sess.name)
   }
 
   function requestDocRevision(docId: string) {
     if (!docRevisionNote.trim()) return
-    const now = Date.now()
-    const fromStatus = caseObj.status
-    updateCase(caseId, {
-      documents: caseObj.documents.map((d) =>
-        d.id === docId
-          ? {
-              ...d,
-              status: 'REVISION_REQUIRED' as DocumentStatus,
-              revisionHistory: [
-                ...d.revisionHistory,
-                {
-                  documentId: docId,
-                  timestamp: now,
-                  requiredBy: sess.name,
-                  reason: docRevisionNote,
-                },
-              ],
-            }
-          : d
-      ),
-      ...(fromStatus !== 'REVISION_REQUESTED' && { revisionRequestedFrom: fromStatus }),
-    })
-    if (fromStatus !== 'REVISION_REQUESTED') {
+    requestRevision(docId, docRevisionNote, sess.name)
+    if (caseObj.status !== 'REVISION_REQUESTED') {
       transitionStatus(caseId, 'REVISION_REQUESTED', { role, name: sess.name })
     } else {
       emitNotification({
@@ -274,27 +279,6 @@ function CaseDetailContent() {
     }
   }
 
-  // ── chat handler ──
-  function sendMessage() {
-    if (!chatInput.trim()) return
-    const msg: Message = {
-      id: `msg_${Date.now()}`,
-      caseId,
-      sender: { role, name: sess.name },
-      text: chatInput.trim(),
-      sentAt: Date.now(),
-    }
-    updateCase(caseId, { messages: [...caseObj.messages, msg] })
-    setChatInput('')
-    emitNotification({
-      type: 'NEW_MESSAGE',
-      caseId,
-      caseLabel: caseObj.customerName || caseObj.customerEmail,
-      message: `'${caseObj.customerName || caseObj.customerEmail}' 케이스에 새 메시지가 도착했습니다.`,
-      recipient: { role: 'CUSTOMER', userId: caseObj.customerId },
-    })
-  }
-
   // ── note handler ──
   function sendNote() {
     if (!noteInput.trim()) return
@@ -304,11 +288,9 @@ function CaseDetailContent() {
 
   // ── render ──
   const SEGMENT_LABEL: Record<string, string> = {
-    // PI-38 codes
     'ENTITY_CORP': '법인',
     'ENTITY_INDIV': '개인사업자',
     'ENTITY_FI': 'FI',
-    // Legacy (backward compat)
     'SentBiz Corporate': '법인',
     'SentBiz Individual': '개인사업자',
     'FI': 'FI',
@@ -318,7 +300,6 @@ function CaseDetailContent() {
     'SVC_COL_VND': 'VND Collection',
     'SVC_COL_ETC': '기타 Collection',
     'SVC_PAYOUT': 'Payout',
-    // backward compat for pre-rename cases in localStorage
     'SVC_KRW': 'KRW Collection',
     'SVC_VND': 'VND Collection',
     'SVC_ETC': '기타 Collection',
@@ -439,21 +420,21 @@ function CaseDetailContent() {
               style={{ border: '1px solid var(--sb-n100)' }}
             >
               <h3 className="text-[14px] font-semibold" style={{ color: 'var(--sb-n900)' }}>1차 입력 정보</h3>
-              {Object.keys(c.firstIntake?.data ?? {}).length > 0 ? (
-                <IntakeDataDisplay data={c.firstIntake.data} />
+              {Object.keys(firstIntake?.answers ?? {}).length > 0 ? (
+                <IntakeDataDisplay data={firstIntake!.answers as Record<string, unknown>} />
               ) : (
                 <p className="text-[13px]" style={{ color: 'var(--sb-n400)' }}>입력 데이터가 없습니다.</p>
               )}
             </div>
 
-            {c.secondIntake?.status !== 'not_started' && c.secondIntake && (
+            {secondIntake?.status !== 'not_started' && secondIntake && (
               <div
                 className="bg-white rounded-[12px] p-6 flex flex-col gap-4"
                 style={{ border: '1px solid var(--sb-n100)' }}
               >
                 <h3 className="text-[14px] font-semibold" style={{ color: 'var(--sb-n900)' }}>2차 입력 정보</h3>
-                {Object.keys(c.secondIntake?.data ?? {}).length > 0 ? (
-                  <IntakeDataDisplay data={c.secondIntake.data} />
+                {Object.keys(secondIntake?.answers ?? {}).length > 0 ? (
+                  <IntakeDataDisplay data={secondIntake.answers as Record<string, unknown>} />
                 ) : (
                   <p className="text-[13px]" style={{ color: 'var(--sb-n400)' }}>입력 데이터가 없습니다.</p>
                 )}
@@ -488,7 +469,7 @@ function CaseDetailContent() {
         {/* ── 서류 탭 ── */}
         {tab === 'docs' && (
           <div className="flex flex-col gap-4 max-w-[800px]">
-            {(c.documents ?? []).length === 0 ? (
+            {documents.length === 0 ? (
               <div
                 className="bg-white rounded-[12px] p-12 flex flex-col items-center gap-3 text-center"
                 style={{ border: '1px solid var(--sb-n100)' }}
@@ -501,14 +482,17 @@ function CaseDetailContent() {
                 <div className="flex items-center justify-between">
                   <div />
                   {(role === 'SALES' || role === 'COMPLIANCE' || role === 'OPS') && (() => {
-                    const hasUploads = (c.documents ?? []).some(doc => {
-                      const latest = doc.uploadedFiles.find(f => f.isLatest) ?? doc.uploadedFiles[doc.uploadedFiles.length - 1]
-                      return !!latest?.dataUrl
-                    })
+                    const hasUploads = documents.some(doc => !!getLatestFile(doc.id)?.dataUrl)
                     return (
                       <div className="flex items-center gap-2">
                         <button
-                          onClick={() => downloadAllDocuments(c.documents ?? [], c.customerName, c.id)}
+                          onClick={() => downloadAllDocuments(
+                            documents.map(d => d.id),
+                            getLatestFile,
+                            (docId) => documents.find(d => d.id === docId)?.displayName ?? docId,
+                            c.customerName,
+                            c.id,
+                          )}
                           disabled={!hasUploads}
                           title={!hasUploads ? '업로드된 서류가 없습니다' : undefined}
                           className="flex items-center gap-1.5 px-3 py-2 rounded-[8px] text-[13px] font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
@@ -522,31 +506,32 @@ function CaseDetailContent() {
                   })()}
                 </div>
 
-                {(c.documents ?? []).map((doc) => {
-                const badge = DOC_STATUS_BADGE[doc.status]
-                const isRevisionOpen = docRevisionId === doc.id
-                // Compute badge style for sb-* token classes
-                const badgeStyle: React.CSSProperties = doc.status === 'NOT_REQUESTED'
-                  ? { background: 'var(--sb-n100)', color: 'var(--sb-n500)' }
-                  : doc.status === 'APPROVED'
-                  ? { background: 'var(--sb-positive-light)', color: 'var(--sb-positive)' }
-                  : {}
-                return (
-                  <div
-                    key={doc.id}
-                    className="bg-white rounded-[12px] p-5 flex flex-col gap-3"
-                    style={{ border: '1px solid var(--sb-n100)' }}
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex items-start gap-3 min-w-0">
-                        <FileText size={18} className="flex-shrink-0 mt-0.5" style={{ color: 'var(--sb-n400)' }} />
-                        <div className="flex flex-col gap-1 min-w-0">
-                          <span className="text-[14px] font-medium" style={{ color: 'var(--sb-n900)' }}>{doc.displayName}</span>
-                          {doc.uploadedFiles.length > 0 && (() => {
-                            const latestFile = doc.uploadedFiles.find(f => f.isLatest) ?? doc.uploadedFiles[doc.uploadedFiles.length - 1]
-                            const oldFiles = doc.uploadedFiles.filter(f => f.id !== latestFile.id)
-                            const isExpanded = expandedDocFiles.has(doc.id)
-                            return (
+                {documents.map((doc) => {
+                  const badge = DOC_STATUS_BADGE[doc.status]
+                  const isRevisionOpen = docRevisionId === doc.id
+                  const latestFile = getLatestFile(doc.id)
+                  const docFiles = getDocFiles(doc.id)
+                  const oldFiles = docFiles.filter(f => f.id !== latestFile?.id)
+                  const activeRevisions = getActiveRevisions(doc.id)
+                  const allDocRevisions = getAllRevisions(doc.id)
+                  const isExpanded = expandedDocFiles.has(doc.id)
+                  const badgeStyle: React.CSSProperties = doc.status === 'NOT_REQUESTED'
+                    ? { background: 'var(--sb-n100)', color: 'var(--sb-n500)' }
+                    : doc.status === 'APPROVED'
+                    ? { background: 'var(--sb-positive-light)', color: 'var(--sb-positive)' }
+                    : {}
+                  return (
+                    <div
+                      key={doc.id}
+                      className="bg-white rounded-[12px] p-5 flex flex-col gap-3"
+                      style={{ border: '1px solid var(--sb-n100)' }}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-start gap-3 min-w-0">
+                          <FileText size={18} className="flex-shrink-0 mt-0.5" style={{ color: 'var(--sb-n400)' }} />
+                          <div className="flex flex-col gap-1 min-w-0">
+                            <span className="text-[14px] font-medium" style={{ color: 'var(--sb-n900)' }}>{doc.displayName}</span>
+                            {latestFile && (
                               <div className="flex flex-col gap-0.5">
                                 <div className="flex items-center gap-2">
                                   <button
@@ -608,85 +593,84 @@ function CaseDetailContent() {
                                   </>
                                 )}
                               </div>
-                            )
-                          })()}
-                          {doc.isAdHoc && (
-                            <span className="text-[12px] text-blue-500">
-                              추가 요청 ({doc.requestedBy}) · {doc.revisionHistory[0]?.reason}
-                            </span>
-                          )}
-                          {!doc.isAdHoc && doc.revisionHistory.length > 0 && (
-                            <span className="text-[12px] text-orange-500">
-                              보완 사유: {doc.revisionHistory[doc.revisionHistory.length - 1].reason || '(사유 없음)'}
-                            </span>
+                            )}
+                            {doc.isAdHoc && (
+                              <span className="text-[12px] text-blue-500">
+                                추가 요청 ({doc.requestedBy}) · {activeRevisions[0]?.reason}
+                              </span>
+                            )}
+                            {!doc.isAdHoc && allDocRevisions.length > 0 && (
+                              <span className="text-[12px] text-orange-500">
+                                보완 사유: {activeRevisions[activeRevisions.length - 1]?.reason || allDocRevisions[allDocRevisions.length - 1]?.reason || '(사유 없음)'}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <span
+                            className={`px-2 py-0.5 rounded-full text-[11px] font-medium ${
+                              doc.status === 'NOT_REQUESTED' || doc.status === 'APPROVED' ? '' : badge.cls
+                            }`}
+                            style={badgeStyle}
+                          >
+                            {badge.label}
+                          </span>
+                          {doc.status === 'SUBMITTED' && (
+                            <>
+                              {role === 'COMPLIANCE' && (
+                                <button
+                                  onClick={() => approveDoc(doc.id)}
+                                  className="flex items-center gap-1 px-2.5 py-1 rounded-[6px] text-[12px] font-medium hover:opacity-80 transition-opacity"
+                                  style={{ background: 'var(--sb-positive-light)', color: 'var(--sb-positive)' }}
+                                >
+                                  <Check size={13} weight="bold" />
+                                  승인
+                                </button>
+                              )}
+                              {(role === 'COMPLIANCE' || role === 'SALES' || role === 'OPS') && (
+                                <button
+                                  onClick={() => {
+                                    setDocRevisionId(isRevisionOpen ? null : doc.id)
+                                    setDocRevisionNote('')
+                                  }}
+                                  className="flex items-center gap-1 px-2.5 py-1 rounded-[6px] text-[12px] font-medium bg-orange-50 text-orange-600 hover:opacity-80 transition-opacity"
+                                >
+                                  <X size={13} weight="bold" />
+                                  보완요청
+                                </button>
+                              )}
+                            </>
                           )}
                         </div>
                       </div>
-                      <div className="flex items-center gap-2 flex-shrink-0">
-                        <span
-                          className={`px-2 py-0.5 rounded-full text-[11px] font-medium ${
-                            doc.status === 'NOT_REQUESTED' || doc.status === 'APPROVED' ? '' : badge.cls
-                          }`}
-                          style={badgeStyle}
-                        >
-                          {badge.label}
-                        </span>
-                        {doc.status === 'SUBMITTED' && (
-                          <>
-                            {role === 'COMPLIANCE' && (
-                              <button
-                                onClick={() => approveDoc(doc.id)}
-                                className="flex items-center gap-1 px-2.5 py-1 rounded-[6px] text-[12px] font-medium hover:opacity-80 transition-opacity"
-                                style={{ background: 'var(--sb-positive-light)', color: 'var(--sb-positive)' }}
-                              >
-                                <Check size={13} weight="bold" />
-                                승인
-                              </button>
-                            )}
-                            {(role === 'COMPLIANCE' || role === 'SALES' || role === 'OPS') && (
-                              <button
-                                onClick={() => {
-                                  setDocRevisionId(isRevisionOpen ? null : doc.id)
-                                  setDocRevisionNote('')
-                                }}
-                                className="flex items-center gap-1 px-2.5 py-1 rounded-[6px] text-[12px] font-medium bg-orange-50 text-orange-600 hover:opacity-80 transition-opacity"
-                              >
-                                <X size={13} weight="bold" />
-                                보완요청
-                              </button>
-                            )}
-                          </>
-                        )}
-                      </div>
-                    </div>
 
-                    {isRevisionOpen && (
-                      <div className="flex gap-2 pt-1" style={{ borderTop: '1px solid var(--sb-n100)' }}>
-                        <input
-                          className="flex-1 rounded-[8px] px-3 py-2 text-[13px] focus:outline-none"
-                          style={{ border: '1px solid var(--sb-n200)', color: 'var(--sb-n800)' }}
-                          placeholder="보완 요청 사유를 입력하세요"
-                          value={docRevisionNote}
-                          onChange={(e) => setDocRevisionNote(e.target.value)}
-                        />
-                        <button
-                          onClick={() => requestDocRevision(doc.id)}
-                          disabled={!docRevisionNote.trim()}
-                          className="px-3 py-2 rounded-[8px] text-[12px] font-medium bg-orange-500 text-white hover:bg-orange-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                        >
-                          전송
-                        </button>
-                        <button
-                          onClick={() => { setDocRevisionId(null); setDocRevisionNote('') }}
-                          className="px-3 py-2 rounded-[8px] text-[12px] transition-colors"
-                          style={{ color: 'var(--sb-n500)' }}
-                        >
-                          취소
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                )
+                      {isRevisionOpen && (
+                        <div className="flex gap-2 pt-1" style={{ borderTop: '1px solid var(--sb-n100)' }}>
+                          <input
+                            className="flex-1 rounded-[8px] px-3 py-2 text-[13px] focus:outline-none"
+                            style={{ border: '1px solid var(--sb-n200)', color: 'var(--sb-n800)' }}
+                            placeholder="보완 요청 사유를 입력하세요"
+                            value={docRevisionNote}
+                            onChange={(e) => setDocRevisionNote(e.target.value)}
+                          />
+                          <button
+                            onClick={() => requestDocRevision(doc.id)}
+                            disabled={!docRevisionNote.trim()}
+                            className="px-3 py-2 rounded-[8px] text-[12px] font-medium bg-orange-500 text-white hover:bg-orange-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                          >
+                            전송
+                          </button>
+                          <button
+                            onClick={() => { setDocRevisionId(null); setDocRevisionNote('') }}
+                            className="px-3 py-2 rounded-[8px] text-[12px] transition-colors"
+                            style={{ color: 'var(--sb-n500)' }}
+                          >
+                            취소
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )
                 })}
               </>
             )}
@@ -704,10 +688,10 @@ function CaseDetailContent() {
               >
                 <h3 className="text-[14px] font-semibold mb-4" style={{ color: 'var(--sb-n900)' }}>상태 변경 이력</h3>
                 <div className="flex flex-col gap-0">
-                  {(c.statusHistory ?? []).map((h, i) => {
-                    const isOwnerChange = h.previousStatus !== null && h.previousStatus === h.newStatus
+                  {events.map((e, i) => {
+                    const isOwnerChange = e.eventType === 'ASSIGNEE_CHANGED'
                     return (
-                      <div key={h.id} className="flex gap-3">
+                      <div key={e.id} className="flex gap-3">
                         <div className="flex flex-col items-center">
                           <div
                             className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0"
@@ -726,7 +710,7 @@ function CaseDetailContent() {
                               : <Clock size={14} style={{ color: 'var(--sb-n400)' }} />
                             }
                           </div>
-                          {i < (c.statusHistory ?? []).length - 1 && (
+                          {i < events.length - 1 && (
                             <div className="w-px flex-1 min-h-[20px] my-1" style={{ background: 'var(--sb-n100)' }} />
                           )}
                         </div>
@@ -735,16 +719,18 @@ function CaseDetailContent() {
                             className="text-[13px] font-medium"
                             style={{ color: isOwnerChange ? 'var(--sb-n500)' : 'var(--sb-n800)' }}
                           >
-                            {isOwnerChange ? '담당자 변경' : (STATUS_LABELS[h.newStatus as CaseStatus] ?? h.newStatus)}
+                            {isOwnerChange
+                              ? '담당자 변경'
+                              : (STATUS_LABELS[e.payload.newStatus as CaseStatus] ?? e.payload.newStatus)}
                           </p>
                           <p className="text-[11px]" style={{ color: 'var(--sb-n400)' }}>
-                            {formatDate(h.changedAt)} · {h.changedBy.name}
+                            {formatDate(e.createdAt)} · {e.actorName}
                           </p>
-                          {h.notes && (
+                          {e.payload.notes && (
                             <p
                               className="text-[12px] mt-0.5 rounded-[6px] px-2 py-1"
                               style={{ color: 'var(--sb-n600)', background: 'var(--sb-n50)' }}
-                            >{h.notes}</p>
+                            >{e.payload.notes}</p>
                           )}
                         </div>
                       </div>
@@ -754,60 +740,8 @@ function CaseDetailContent() {
               </div>
             </div>
 
-            {/* Right: chat + notes */}
+            {/* Right: notes */}
             <div className="flex flex-col gap-4">
-              {/* Customer chat */}
-              <div
-                className="bg-white rounded-[12px] p-5 flex flex-col gap-3"
-                style={{ border: '1px solid var(--sb-n100)' }}
-              >
-                <h3 className="text-[13px] font-semibold flex items-center gap-1.5" style={{ color: 'var(--sb-n900)' }}>
-                  <ChatCircle size={15} />
-                  고객 채팅
-                </h3>
-                <div className="flex flex-col gap-2 max-h-[240px] overflow-y-auto">
-                  {(c.messages ?? []).length === 0 ? (
-                    <p className="text-[12px] text-center py-4" style={{ color: 'var(--sb-n400)' }}>메시지가 없습니다.</p>
-                  ) : (
-                    (c.messages ?? []).map((msg) => {
-                      const isMe = msg.sender.role !== 'CUSTOMER'
-                      return (
-                        <div key={msg.id} className={`flex flex-col gap-0.5 ${isMe ? 'items-end' : 'items-start'}`}>
-                          <span className="text-[10px]" style={{ color: 'var(--sb-n400)' }}>{msg.sender.name}</span>
-                          <div
-                            className="max-w-[240px] rounded-[10px] px-3 py-2 text-[13px]"
-                            style={isMe
-                              ? { background: 'var(--sb-brand)', color: 'white' }
-                              : { background: 'var(--sb-n100)', color: 'var(--sb-n800)' }
-                            }
-                          >
-                            {msg.text}
-                          </div>
-                          <span className="text-[10px]" style={{ color: 'var(--sb-n400)' }}>{formatDate(msg.sentAt)}</span>
-                        </div>
-                      )
-                    })
-                  )}
-                </div>
-                <div className="flex gap-2 pt-3" style={{ borderTop: '1px solid var(--sb-n100)' }}>
-                  <input
-                    className="flex-1 rounded-[8px] px-3 py-2 text-[13px] focus:outline-none text-[12px]"
-                    style={{ border: '1px solid var(--sb-n200)', color: 'var(--sb-n800)' }}
-                    placeholder="고객에게 메시지 전송"
-                    value={chatInput}
-                    onChange={(e) => setChatInput(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); sendMessage() } }}
-                  />
-                  <button
-                    onClick={sendMessage}
-                    className="px-3 py-2 rounded-[8px] text-white hover:opacity-90 transition-colors flex items-center"
-                    style={{ background: 'var(--sb-brand)' }}
-                  >
-                    <PaperPlaneTilt size={14} weight="fill" />
-                  </button>
-                </div>
-              </div>
-
               {/* Internal notes */}
               <div
                 className="bg-white rounded-[12px] p-5 flex flex-col gap-3"

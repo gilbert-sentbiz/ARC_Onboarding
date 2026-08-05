@@ -7,6 +7,7 @@ import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
 import { useSessionStore } from '@/store/sessionStore'
 import { useCaseStore } from '@/store/caseStore'
+import { useIntakeResponseStore } from '@/store/intakeResponseStore'
 import { useAccountStore } from '@/store/accountStore'
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -72,13 +73,17 @@ export default function LandingPage() {
 
     const existing = findByEmail(email)
 
-    if (!existing || existing.firstIntake?.status !== 'submitted') {
+    const intakeStore = useIntakeResponseStore.getState()
+    const firstIntake = existing ? intakeStore.getByCase(existing.id, 'first') : null
+    const secondIntake = existing ? intakeStore.getByCase(existing.id, 'second') : null
+
+    if (!existing || firstIntake?.status !== 'submitted') {
       // No case, or 1차 form not yet confirmed → 1차 입력 (pre-fills draft if any)
       router.push('/customer/onboarding')
-    } else if (!existing.secondIntake || existing.secondIntake.status === 'not_started') {
+    } else if (!secondIntake || secondIntake.status === 'not_started') {
       // 1차 confirmed, 2차 not started → 2차 입력
       router.push(`/customer/case/information?id=${existing.id}`)
-    } else if (existing.secondIntake.status === 'draft') {
+    } else if (secondIntake.status === 'draft') {
       // 2차 draft saved → continue 2차 입력 (not review)
       router.push(`/customer/case/information?id=${existing.id}`)
     } else {

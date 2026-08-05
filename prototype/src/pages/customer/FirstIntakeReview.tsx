@@ -1,6 +1,7 @@
 import { useParams, useNavigate } from 'react-router-dom'
 import { ArrowLeft, ArrowRight } from '@phosphor-icons/react'
 import { useCaseStore } from '../../store/caseStore'
+import { useIntakeResponseStore } from '../../store/intakeResponseStore'
 import Button from '../../components/ui/Button'
 import { getCountryName } from '../../utils/countryNames'
 
@@ -44,7 +45,7 @@ export default function FirstIntakeReview() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const c = useCaseStore((s) => (id ? s.cases[id] : null))
-  const updateCase = useCaseStore((s) => s.updateCase)
+  const firstIntake = useIntakeResponseStore((s) => id ? s.getByCase(id, 'first') : null)
 
   if (!c || !id) {
     return (
@@ -54,16 +55,13 @@ export default function FirstIntakeReview() {
     )
   }
 
-  const d = c.firstIntake.data as Record<string, unknown>
+  const d = (firstIntake?.answers ?? {}) as Record<string, unknown>
   const str = (key: string) => String(d[key] ?? '')
   const services = (d.services as string[]) ?? []
   const collectionCountries = (d.collectionCountries as string[]) ?? []
 
   function handleConfirm() {
     if (!id) return
-    updateCase(id, {
-      firstIntake: { status: 'submitted', data: c!.firstIntake.data, savedAt: Date.now() },
-    })
     navigate(`/customer/case/${id}/information`)
   }
 

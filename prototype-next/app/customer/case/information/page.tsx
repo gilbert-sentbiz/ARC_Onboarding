@@ -2,6 +2,8 @@
 import { useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useCaseStore } from '@/store/caseStore'
+import { useIntakeResponseStore } from '@/store/intakeResponseStore'
+import { saveSecondIntakeDraft } from '@/services/caseService'
 import { getRuleSet } from '@/store/ruleStore'
 import type { ServiceCode, EntityCode, QuestionRule } from '@/types'
 import DynamicQuestionsSection from './DynamicQuestionsSection'
@@ -85,8 +87,8 @@ function PageContent() {
   const searchParams = useSearchParams()
   const id = searchParams.get('id') ?? ''
   const router = useRouter()
-  const updateCase = useCaseStore((s) => s.updateCase)
   const c = useCaseStore((s) => (id ? s.cases[id] : null))
+  const secondIntake = useIntakeResponseStore((s) => id ? s.getByCase(id, 'second') : null)
 
   const raw = (c?.segmentInfo as unknown as Record<string, unknown>) ?? {}
   const entitySegmentRaw = (raw.entity ?? raw.entitySegment ?? raw.customerType) as string | undefined
@@ -98,14 +100,14 @@ function PageContent() {
   const isKR = raw.foundingCountry === 'KR'
 
   const [accumulated, setAccumulated] = useState<Record<string, unknown>>(() => {
-    if (c?.secondIntake?.status === 'draft') {
-      return c.secondIntake.data as Record<string, unknown>
+    if (secondIntake?.status === 'draft') {
+      return secondIntake.answers as Record<string, unknown>
     }
     return {}
   })
 
   const [stage, setStage] = useState<Stage>(() => {
-    const draftStage = (c?.secondIntake?.data as Record<string, unknown>)?._stage as Stage | undefined
+    const draftStage = (secondIntake?.answers as Record<string, unknown> | undefined)?._stage as Stage | undefined
     if (draftStage) return draftStage
     if (entityCode === 'ENTITY_CORP') return 'corp_s1'
     if (entityCode === 'ENTITY_INDIV') return 'indiv_s1'
@@ -130,7 +132,7 @@ function PageContent() {
   function saveDraft(stageKey: string, data: Record<string, unknown>) {
     if (!id) return
     const next = { ...accumulated, [stageKey]: data, _stage: stage }
-    updateCase(id, { secondIntake: { status: 'draft', data: next, savedAt: Date.now() } })
+    saveSecondIntakeDraft(id, next)
   }
 
   function mergeEntityScreens(next: Record<string, unknown>): Record<string, unknown> {
@@ -164,7 +166,7 @@ function PageContent() {
       window.scrollTo({ top: 0 })
     } else {
       if (!id) return
-      updateCase(id, { secondIntake: { status: 'draft', data: next, savedAt: Date.now() } })
+      saveSecondIntakeDraft(id, next)
       router.push(`/customer/case/review/second?id=${id}`)
     }
   }
@@ -327,7 +329,7 @@ function PageContent() {
           const next = { ...accumulated, vnd: d, vndCollection: d }
           setAccumulated(next)
           if (!id) return
-          updateCase(id, { secondIntake: { status: 'draft', data: next, savedAt: Date.now() } })
+          saveSecondIntakeDraft(id, next)
           router.push(`/customer/case/review/second?id=${id}`)
         }}
         onBack={() => goBack(lastEntityStage())}

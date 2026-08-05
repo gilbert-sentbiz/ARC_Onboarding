@@ -1,20 +1,17 @@
-import { useState, useRef, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import {
   CheckCircle,
   Circle,
   ClockCounterClockwise,
-  ChatCircle,
-  PaperPlaneRight,
   ArrowRight,
   CheckFat,
   XCircle,
   WarningCircle,
 } from '@phosphor-icons/react'
 import { useCaseStore } from '../../store/caseStore'
-import { useSessionStore } from '../../store/sessionStore'
+import { useCaseEventStore } from '../../store/caseEventStore'
 import { STATUS_LABELS } from '../../services/stateMachine'
-import type { CaseStatus, Message } from '../../types'
+import type { CaseStatus, CaseEvent } from '../../types'
 import TabBar from '../../components/customer/TabBar'
 
 // ── 상수 ─────────────────────────────────────────────────────────────────────
@@ -67,14 +64,6 @@ function fmtDatetime(ts: number) {
   })
 }
 
-function fmtTime(ts: number) {
-  return new Date(ts).toLocaleString('ko-KR', {
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-  })
-}
-
 function milestoneState(
   ms: CaseStatus,
   effective: CaseStatus
@@ -87,19 +76,17 @@ function milestoneState(
   return 'pending'
 }
 
-// REVISION_REQUESTED는 COMPLIANCE 단계에 표시
-// CLOSED는 이전 상태 기준으로 계산
-function effectiveStatus(c: import('../../types').Case): CaseStatus {
-  if (c.status === 'REVISION_REQUESTED') return 'COMPLIANCE_REVIEW_REQUIRED'
-  if (c.status === 'CLOSED') {
-    const closeEntry = [...c.statusHistory].reverse().find((h) => h.newStatus === 'CLOSED')
-    const prev = closeEntry?.previousStatus
+function effectiveStatus(status: CaseStatus, events: CaseEvent[]): CaseStatus {
+  if (status === 'REVISION_REQUESTED') return 'COMPLIANCE_REVIEW_REQUIRED'
+  if (status === 'CLOSED') {
+    const closeEvent = [...events].reverse().find((e) => e.payload.newStatus === 'CLOSED')
+    const prev = closeEvent?.payload.previousStatus
     if (prev && prev !== 'NOT_REQUESTED' && prev !== 'REQUESTED' && prev !== 'SUBMITTED' && prev !== 'REVISION_REQUIRED' && prev !== 'APPROVED') {
       return prev as CaseStatus
     }
     return 'INQUIRY_RECEIVED'
   }
-  return c.status
+  return status
 }
 
 // ── 컴포넌트 ──────────────────────────────────────────────────────────────────
@@ -107,21 +94,8 @@ function effectiveStatus(c: import('../../types').Case): CaseStatus {
 export default function CasePage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const session = useSessionStore((s) => s.session)
   const c = useCaseStore((s) => (id ? s.cases[id] : null))
-  const updateCase = useCaseStore((s) => s.updateCase)
-
-  const [msgText, setMsgText] = useState('')
-  const messagesEndRef = useRef<HTMLDivElement>(null)
-  const prevMsgLen = useRef(0)
-
-  useEffect(() => {
-    const len = c?.messages.length ?? 0
-    if (len > prevMsgLen.current) {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-    }
-    prevMsgLen.current = len
-  }, [c?.messages.length])
+  const events = useCaseEventStore((s) => id ? s.getByCase(id) : [])
 
   if (!c || !id) {
     return (
@@ -133,26 +107,12 @@ export default function CasePage() {
 
   const isCompleted = c.status === 'COMPLETED'
   const isClosed = c.status === 'CLOSED'
-  const eff = effectiveStatus(c)
+  const eff = effectiveStatus(c.status, events)
   const banner = STATUS_BANNER[c.status]
 
-  const sortedHistory = [...c.statusHistory].sort((a, b) => a.changedAt - b.changedAt)
-  const sortedMessages = [...c.messages].sort((a, b) => a.sentAt - b.sentAt)
-
-  function sendMessage() {
-    const text = msgText.trim()
-    if (!text || !session || !id) return
-    const now = Date.now()
-    const msg: Message = {
-      id: `msg_${now}`,
-      caseId: id,
-      sender: { role: 'CUSTOMER', name: c!.customerName || session.name || '고객' },
-      text,
-      sentAt: now,
-    }
-    updateCase(id, { messages: [...c!.messages, msg] })
-    setMsgText('')
-  }
+  const statusEvents = events.filter(
+    (e) => e.eventType === 'CASE_STATUS_CHANGED' || e.eventType === 'CASE_CREATED'
+  )
 
   return (
     <div className="min-h-screen bg-sb-n50 flex flex-col">
@@ -192,7 +152,7 @@ export default function CasePage() {
           <div className="flex flex-col">
             {MILESTONES.map((m, i) => {
               const state = milestoneState(m.status, eff)
-              const histEntry = sortedHistory.find((h) => h.newStatus === m.status)
+              const histEntry = statusEvents.find((e) => e.payload.newStatus === m.status)
               const isLast = i === MILESTONES.length - 1
               return (
                 <div key={m.status} className="flex items-start gap-3">
@@ -226,7 +186,7 @@ export default function CasePage() {
                     </p>
                     {histEntry && (
                       <p className="text-[11px] text-sb-n400 mt-0.5">
-                        {fmtDatetime(histEntry.changedAt)}
+                        {fmtDatetime(histEntry.createdAt)}
                       </p>
                     )}
                     {state === 'active' && c.status === 'REVISION_REQUESTED' && m.status === 'COMPLIANCE_REVIEW_REQUIRED' && (
@@ -345,99 +305,29 @@ export default function CasePage() {
         {/* ── 변경 이력 ── */}
         <div className="bg-white rounded-[16px] p-6" style={{ boxShadow: 'var(--shadow-200)' }}>
           <p className="text-[13px] font-semibold text-sb-n700 mb-4">변경 이력</p>
-          {sortedHistory.length === 0 ? (
+          {statusEvents.length === 0 ? (
             <p className="text-[13px] text-sb-n400">이력이 없습니다.</p>
           ) : (
             <div className="flex flex-col gap-3">
-              {sortedHistory.map((h) => (
-                <div key={h.id} className="flex items-start justify-between gap-4">
+              {statusEvents.map((e) => (
+                <div key={e.id} className="flex items-start justify-between gap-4">
                   <div className="min-w-0">
                     <p className="text-[13px] text-sb-n800 leading-[18px]">
-                      {h.previousStatus
-                        ? `${STATUS_LABELS[h.previousStatus as CaseStatus] ?? h.previousStatus} → ${STATUS_LABELS[h.newStatus as CaseStatus] ?? h.newStatus}`
-                        : `케이스 생성 · ${STATUS_LABELS[h.newStatus as CaseStatus] ?? h.newStatus}`}
+                      {e.payload.previousStatus
+                        ? `${STATUS_LABELS[e.payload.previousStatus as CaseStatus] ?? e.payload.previousStatus} → ${STATUS_LABELS[e.payload.newStatus as CaseStatus] ?? e.payload.newStatus}`
+                        : `케이스 생성 · ${STATUS_LABELS[e.payload.newStatus as CaseStatus] ?? e.payload.newStatus}`}
                     </p>
-                    {h.notes && (
-                      <p className="text-[11px] text-sb-n400 mt-0.5">{h.notes}</p>
+                    {e.payload.notes && (
+                      <p className="text-[11px] text-sb-n400 mt-0.5">{e.payload.notes}</p>
                     )}
                   </div>
                   <p className="text-[11px] text-sb-n400 flex-shrink-0 mt-0.5">
-                    {fmtDatetime(h.changedAt)}
+                    {fmtDatetime(e.createdAt)}
                   </p>
                 </div>
               ))}
             </div>
           )}
-        </div>
-
-        {/* ── 메시지 ── */}
-        <div
-          className="bg-white rounded-[16px] overflow-hidden"
-          style={{ boxShadow: 'var(--shadow-200)' }}
-        >
-          {/* 헤더 */}
-          <div className="flex items-center gap-2 px-6 py-4 border-b border-sb-n100">
-            <ChatCircle size={17} weight="fill" className="text-sb-brand" />
-            <p className="text-[13px] font-semibold text-sb-n700">담당자와 메시지</p>
-          </div>
-
-          {/* 메시지 목록 */}
-          <div className="px-4 py-4 flex flex-col gap-3 min-h-[100px] max-h-[300px] overflow-y-auto">
-            {sortedMessages.length === 0 ? (
-              <p className="text-[13px] text-sb-n400 text-center py-6">
-                담당자에게 궁금한 사항이 있으면 메시지를 남겨주세요.
-              </p>
-            ) : (
-              sortedMessages.map((msg) => {
-                const isMe = msg.sender.role === 'CUSTOMER'
-                return (
-                  <div
-                    key={msg.id}
-                    className={`flex flex-col gap-0.5 ${isMe ? 'items-end' : 'items-start'}`}
-                  >
-                    <p className="text-[11px] text-sb-n400 px-1">
-                      {isMe ? fmtTime(msg.sentAt) : `${msg.sender.name} · ${fmtTime(msg.sentAt)}`}
-                    </p>
-                    <div
-                      className={`max-w-[78%] px-3.5 py-2.5 text-[14px] leading-[20px] break-words ${
-                        isMe
-                          ? 'bg-sb-brand text-white rounded-[12px] rounded-tr-[4px]'
-                          : 'bg-sb-n100 text-sb-n800 rounded-[12px] rounded-tl-[4px]'
-                      }`}
-                    >
-                      {msg.text}
-                    </div>
-                  </div>
-                )
-              })
-            )}
-            <div ref={messagesEndRef} />
-          </div>
-
-          {/* 입력 */}
-          <div className="px-4 pb-4 flex gap-2 border-t border-sb-n100 pt-3">
-            <textarea
-              value={msgText}
-              onChange={(e) => setMsgText(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
-                  e.preventDefault()
-                  sendMessage()
-                }
-              }}
-              placeholder="메시지를 입력하세요 (Enter 전송, Shift+Enter 줄바꿈)"
-              rows={2}
-              className="flex-1 resize-none rounded-[10px] border border-sb-n200 bg-sb-n50 px-3 py-2.5 text-[13px] text-sb-n800 placeholder-sb-n400 focus:outline-none focus:border-sb-brand focus:bg-white transition-colors"
-            />
-            <button
-              type="button"
-              onClick={sendMessage}
-              disabled={!msgText.trim()}
-              className="flex-shrink-0 w-10 h-10 self-end rounded-[10px] flex items-center justify-center bg-sb-brand text-white hover:opacity-90 transition-opacity disabled:opacity-30 disabled:cursor-not-allowed"
-            >
-              <PaperPlaneRight size={17} weight="fill" />
-            </button>
-          </div>
         </div>
 
       </div>

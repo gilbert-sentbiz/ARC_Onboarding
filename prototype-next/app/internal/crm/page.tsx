@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { SignOut, Tray, PaperPlaneTilt, CaretDown, CaretUp } from '@phosphor-icons/react'
 import { useSessionStore } from '@/store/sessionStore'
 import { useCaseStore } from '@/store/caseStore'
+import { useCaseEventStore } from '@/store/caseEventStore'
 import { useSalesActionStore } from '@/store/salesActionStore'
 import { STATUS_LABELS } from '@/services/stateMachine'
 import type { CaseStatus } from '@/types'
@@ -36,6 +37,7 @@ export default function InternalCRM() {
   const clearSession = useSessionStore((s) => s.clearSession)
   const casesMap = useCaseStore((s) => s.cases)
   const cases = useMemo(() => Object.values(casesMap), [casesMap])
+  const allEvents = useCaseEventStore((s) => s.events)
   const { getActions, addAction } = useSalesActionStore()
 
   const [expandedId, setExpandedId] = useState<string | null>(null)
@@ -134,9 +136,11 @@ export default function InternalCRM() {
               const lastAction = actions[actions.length - 1]
 
               // 종료 직전 상태 찾기
-              const lastHistory = [...c.statusHistory].reverse()
-              const prevStatus = lastHistory.find((h) => h.previousStatus && h.newStatus === 'CLOSED')
-              const beforeClose = prevStatus?.previousStatus as CaseStatus | undefined
+              const caseEvents = Object.values(allEvents)
+                .filter((e) => e.caseId === c.id)
+                .sort((a, b) => b.createdAt - a.createdAt)
+              const closeEvent = caseEvents.find((e) => e.payload.newStatus === 'CLOSED')
+              const beforeClose = closeEvent?.payload.previousStatus as CaseStatus | undefined
 
               return (
                 <div key={c.id} className="bg-white rounded-[12px] border overflow-hidden" style={{ borderColor: 'var(--sb-n100)' }}>
@@ -179,10 +183,10 @@ export default function InternalCRM() {
                   {isExpanded && (
                     <div className="border-t px-5 py-4 flex flex-col gap-4" style={{ borderColor: 'var(--sb-n100)' }}>
                       {/* Closed reason detail */}
-                      {prevStatus?.notes && (
+                      {closeEvent?.payload.notes && (
                         <div className="rounded-[8px] p-3" style={{ background: 'var(--sb-n50)' }}>
                           <p className="text-[11px] mb-1" style={{ color: 'var(--sb-n400)' }}>종료 사유</p>
-                          <p className="text-[13px]" style={{ color: 'var(--sb-n700)' }}>{prevStatus.notes}</p>
+                          <p className="text-[13px]" style={{ color: 'var(--sb-n700)' }}>{closeEvent.payload.notes}</p>
                         </div>
                       )}
 

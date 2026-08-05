@@ -2,17 +2,22 @@ import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import JSZip from 'jszip'
 import {
-  ArrowLeft, CheckCircle, WarningCircle, Clock, ChatCircle,
+  ArrowLeft, CheckCircle, WarningCircle, Clock,
   Note, PaperPlaneTilt, FileText, FileDashed, Check, X, CaretDown, CaretUp, Eye, DownloadSimple,
 } from '@phosphor-icons/react'
 import { useSessionStore } from '../../store/sessionStore'
 import { useCaseStore } from '../../store/caseStore'
+import { useDocumentStore } from '../../store/documentStore'
+import { useDocumentFileStore } from '../../store/documentFileStore'
+import { useRevisionRequestStore } from '../../store/revisionRequestStore'
+import { useCaseEventStore } from '../../store/caseEventStore'
+import { useIntakeResponseStore } from '../../store/intakeResponseStore'
 import { useInternalNoteStore } from '../../store/internalNoteStore'
 import { useInternalStaffStore } from '../../store/internalStaffStore'
 import { transitionStatus, changeOwner } from '../../services/caseService'
+import { approveDocument, requestRevision } from '../../services/documentService'
 import { STATUS_LABELS } from '../../services/stateMachine'
-import { emitNotification } from '../../store/notificationStore'
-import type { CaseStatus, CloseReason, Document, DocumentStatus, UserRole, Message, UploadedFile } from '../../types'
+import type { CaseStatus, CloseReason, DocumentStatus, UserRole, DocumentFile } from '../../types'
 import NotificationBell from '../../components/ui/NotificationBell'
 
 // ── helpers ──────────────────────────────────────────────────────────────────
@@ -22,7 +27,7 @@ function formatDate(ts: number) {
   return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
 }
 
-function downloadFile(file: UploadedFile) {
+function downloadFile(file: DocumentFile) {
   if (!file.dataUrl) return
   const a = document.createElement('a')
   a.href = file.dataUrl
@@ -30,27 +35,28 @@ function downloadFile(file: UploadedFile) {
   a.click()
 }
 
-async function downloadAllDocuments(docs: Document[], companyName: string, caseId: string): Promise<void> {
+async function downloadAllDocuments(
+  docIds: string[],
+  getLatest: (docId: string) => DocumentFile | null,
+  getDisplayName: (docId: string) => string,
+  companyName: string,
+  caseId: string
+): Promise<void> {
   const zip = new JSZip()
   const usedNames = new Set<string>()
 
-  for (const doc of docs) {
-    const latestFiles = doc.uploadedFiles.filter(f => f.isLatest)
-    if (latestFiles.length === 0) continue
-    const base = doc.displayName.replace(/[/\\:*?"<>|]/g, '_')
-    for (let i = 0; i < latestFiles.length; i++) {
-      const file = latestFiles[i]
-      if (!file.dataUrl) continue
-      const b64Match = file.dataUrl.match(/^data:[^;]+;base64,(.+)$/)
-      if (!b64Match) continue
-      const ext = file.fileName.includes('.') ? file.fileName.split('.').pop()! : 'bin'
-      const entryName = latestFiles.length === 1 ? `${base}.${ext}` : `${base}_${i + 1}.${ext}`
-      let finalName = entryName
-      let counter = 1
-      while (usedNames.has(finalName)) { finalName = `${base}_${counter++}.${ext}` }
-      usedNames.add(finalName)
-      zip.file(finalName, b64Match[1], { base64: true })
-    }
+  for (const docId of docIds) {
+    const file = getLatest(docId)
+    if (!file?.dataUrl) continue
+    const b64Match = file.dataUrl.match(/^data:[^;]+;base64,(.+)$/)
+    if (!b64Match) continue
+    const base = getDisplayName(docId).replace(/[/\\:*?"<>|]/g, '_')
+    const ext = file.fileName.includes('.') ? file.fileName.split('.').pop()! : 'bin'
+    let finalName = `${base}.${ext}`
+    let counter = 1
+    while (usedNames.has(finalName)) { finalName = `${base}_${counter++}.${ext}` }
+    usedNames.add(finalName)
+    zip.file(finalName, b64Match[1], { base64: true })
   }
 
   if (usedNames.size === 0) return
@@ -156,17 +162,22 @@ export default function InternalCaseDetail() {
   const c = useCaseStore((s) => (id ? s.cases[id] : null))
   const updateCase = useCaseStore((s) => s.updateCase)
   const { getNotes, addNote } = useInternalNoteStore()
-
   const staff = useInternalStaffStore((s) => s.staff)
+
+  const documents = useDocumentStore((s) => id ? s.getByCase(id) : [])
+  const allFiles = useDocumentFileStore((s) => s.files)
+  const allRevisions = useRevisionRequestStore((s) => s.requests)
+  const events = useCaseEventStore((s) => id ? s.getByCase(id) : [])
+  const firstIntake = useIntakeResponseStore((s) => id ? s.getByCase(id, 'first') : null)
+  const secondIntake = useIntakeResponseStore((s) => id ? s.getByCase(id, 'second') : null)
 
   const [tab, setTab] = useState<TabKey>('info')
   const [pendingAction, setPendingAction] = useState<ActionDef | null>(null)
   const [actionNote, setActionNote] = useState('')
-  const [chatInput, setChatInput] = useState('')
   const [noteInput, setNoteInput] = useState('')
   const [docRevisionId, setDocRevisionId] = useState<string | null>(null)
   const [docRevisionNote, setDocRevisionNote] = useState('')
-  const [previewFile, setPreviewFile] = useState<UploadedFile | null>(null)
+  const [previewFile, setPreviewFile] = useState<DocumentFile | null>(null)
   const [expandedDocFiles, setExpandedDocFiles] = useState<Set<string>>(new Set())
   const [ownerChangeMode, setOwnerChangeMode] = useState(false)
   const [selectedNewOwner, setSelectedNewOwner] = useState('')
@@ -179,7 +190,6 @@ export default function InternalCaseDetail() {
     )
   }
 
-  // Non-null aliases so closures below don't lose narrowing
   const caseId: string = id
   const caseObj = c
   const sess = session
@@ -188,49 +198,30 @@ export default function InternalCaseDetail() {
   const actions = getActions(role, caseObj.status)
   const notes = getNotes(caseId)
 
+  // ── file helpers ──
+  function getLatestFile(docId: string): DocumentFile | null {
+    return Object.values(allFiles).find((f) => f.documentId === docId && f.isLatest) ?? null
+  }
+
+  function getDocFiles(docId: string): DocumentFile[] {
+    return Object.values(allFiles).filter((f) => f.documentId === docId)
+  }
+
+  function getActiveRevisions(docId: string) {
+    return Object.values(allRevisions).filter((r) => r.documentId === docId && !r.resolvedAt)
+  }
+
   // ── document handlers ──
   function approveDoc(docId: string) {
-    updateCase(caseId, {
-      documents: caseObj.documents.map((d) =>
-        d.id === docId ? { ...d, status: 'APPROVED' as DocumentStatus } : d
-      ),
-    })
+    approveDocument(docId, '', sess.name)
   }
 
   function requestDocRevision(docId: string) {
     if (!docRevisionNote.trim()) return
-    const now = Date.now()
-    const fromStatus = caseObj.status
-    updateCase(caseId, {
-      documents: caseObj.documents.map((d) =>
-        d.id === docId
-          ? {
-              ...d,
-              status: 'REVISION_REQUIRED' as DocumentStatus,
-              revisionHistory: [
-                ...d.revisionHistory,
-                {
-                  documentId: docId,
-                  timestamp: now,
-                  requiredBy: sess.name,
-                  reason: docRevisionNote,
-                },
-              ],
-            }
-          : d
-      ),
-      ...(fromStatus !== 'REVISION_REQUESTED' && { revisionRequestedFrom: fromStatus }),
-    })
-    if (fromStatus !== 'REVISION_REQUESTED') {
+    requestRevision(docId, docRevisionNote, sess.name)
+    if (caseObj.status !== 'REVISION_REQUESTED') {
+      updateCase(caseId, { revisionRequestedFrom: caseObj.status })
       transitionStatus(caseId, 'REVISION_REQUESTED', { role, name: sess.name })
-    } else {
-      emitNotification({
-        type: 'REVISION_REQUESTED',
-        caseId,
-        caseLabel: caseObj.customerName || caseObj.customerEmail,
-        message: `'${caseObj.customerName || caseObj.customerEmail}' 케이스에 서류 보완이 요청되었습니다.`,
-        recipient: { role: 'CUSTOMER', userId: caseObj.customerId },
-      })
     }
     setDocRevisionId(null)
     setDocRevisionNote('')
@@ -270,27 +261,6 @@ export default function InternalCaseDetail() {
     }
   }
 
-  // ── chat handler ──
-  function sendMessage() {
-    if (!chatInput.trim()) return
-    const msg: Message = {
-      id: `msg_${Date.now()}`,
-      caseId,
-      sender: { role, name: sess.name },
-      text: chatInput.trim(),
-      sentAt: Date.now(),
-    }
-    updateCase(caseId, { messages: [...caseObj.messages, msg] })
-    setChatInput('')
-    emitNotification({
-      type: 'NEW_MESSAGE',
-      caseId,
-      caseLabel: caseObj.customerName || caseObj.customerEmail,
-      message: `'${caseObj.customerName || caseObj.customerEmail}' 케이스에 새 메시지가 도착했습니다.`,
-      recipient: { role: 'CUSTOMER', userId: caseObj.customerId },
-    })
-  }
-
   // ── note handler ──
   function sendNote() {
     if (!noteInput.trim()) return
@@ -300,11 +270,9 @@ export default function InternalCaseDetail() {
 
   // ── render ──
   const SEGMENT_LABEL: Record<string, string> = {
-    // PI-38 codes
     'ENTITY_CORP': '법인',
     'ENTITY_INDIV': '개인사업자',
     'ENTITY_FI': 'FI',
-    // Legacy (backward compat)
     'SentBiz Corporate': '법인',
     'SentBiz Individual': '개인사업자',
     'FI': 'FI',
@@ -314,11 +282,14 @@ export default function InternalCaseDetail() {
     'SVC_COL_VND': 'VND Collection',
     'SVC_COL_ETC': '기타 Collection',
     'SVC_PAYOUT': 'Payout',
-    // backward compat for pre-rename cases in localStorage
     'SVC_KRW': 'KRW Collection',
     'SVC_VND': 'VND Collection',
     'SVC_ETC': '기타 Collection',
   }
+
+  const statusEvents = events.filter(
+    (e) => e.eventType === 'CASE_STATUS_CHANGED' || e.eventType === 'CASE_CREATED' || e.eventType === 'ASSIGNEE_CHANGED'
+  )
 
   return (
     <div className="min-h-screen bg-sb-n50 flex flex-col">
@@ -348,7 +319,6 @@ export default function InternalCaseDetail() {
                 return ` · ${svcs.map((s: string) => SERVICE_LABEL[s] ?? s).join(' · ')}`
               })()}
             </span>
-            {/* 담당자 표시 + 변경 */}
             {c.currentOwner?.role !== 'CUSTOMER' && c.currentOwner && (
               <div className="flex items-center gap-1.5 flex-shrink-0 ml-2">
                 <span className="text-[12px] text-sb-n400">담당자:</span>
@@ -419,18 +389,18 @@ export default function InternalCaseDetail() {
           <div className="flex flex-col gap-6 max-w-[800px]">
             <div className="bg-white rounded-[12px] border border-sb-n100 p-6 flex flex-col gap-4">
               <h3 className="text-[14px] font-semibold text-sb-n900">1차 입력 정보</h3>
-              {Object.keys(c.firstIntake?.data ?? {}).length > 0 ? (
-                <IntakeDataDisplay data={c.firstIntake.data} />
+              {Object.keys(firstIntake?.answers ?? {}).length > 0 ? (
+                <IntakeDataDisplay data={firstIntake!.answers as Record<string, unknown>} />
               ) : (
                 <p className="text-[13px] text-sb-n400">입력 데이터가 없습니다.</p>
               )}
             </div>
 
-            {c.secondIntake?.status !== 'not_started' && c.secondIntake && (
+            {secondIntake && secondIntake.status !== 'not_started' && (
               <div className="bg-white rounded-[12px] border border-sb-n100 p-6 flex flex-col gap-4">
                 <h3 className="text-[14px] font-semibold text-sb-n900">2차 입력 정보</h3>
-                {Object.keys(c.secondIntake?.data ?? {}).length > 0 ? (
-                  <IntakeDataDisplay data={c.secondIntake.data} />
+                {Object.keys(secondIntake.answers ?? {}).length > 0 ? (
+                  <IntakeDataDisplay data={secondIntake.answers as Record<string, unknown>} />
                 ) : (
                   <p className="text-[13px] text-sb-n400">입력 데이터가 없습니다.</p>
                 )}
@@ -462,7 +432,7 @@ export default function InternalCaseDetail() {
         {/* ── 서류 탭 ── */}
         {tab === 'docs' && (
           <div className="flex flex-col gap-4 max-w-[800px]">
-            {(c.documents ?? []).length === 0 ? (
+            {documents.length === 0 ? (
               <div className="bg-white rounded-[12px] border border-sb-n100 p-12 flex flex-col items-center gap-3 text-center">
                 <FileDashed size={36} className="text-sb-n300" />
                 <p className="text-[14px] text-sb-n400">서류 목록이 없습니다.</p>
@@ -472,14 +442,17 @@ export default function InternalCaseDetail() {
                 <div className="flex items-center justify-between">
                   <div />
                   {(role === 'SALES' || role === 'COMPLIANCE' || role === 'OPS') && (() => {
-                    const hasUploads = (c.documents ?? []).some(doc => {
-                      const latest = doc.uploadedFiles.find(f => f.isLatest) ?? doc.uploadedFiles[doc.uploadedFiles.length - 1]
-                      return !!latest?.dataUrl
-                    })
+                    const hasUploads = documents.some(doc => !!getLatestFile(doc.id)?.dataUrl)
                     return (
                       <div className="flex items-center gap-2">
                         <button
-                          onClick={() => downloadAllDocuments(c.documents ?? [], c.customerName, c.id)}
+                          onClick={() => downloadAllDocuments(
+                            documents.map(d => d.id),
+                            getLatestFile,
+                            (docId) => documents.find(d => d.id === docId)?.displayName ?? '',
+                            c.customerName,
+                            caseId
+                          )}
                           disabled={!hasUploads}
                           title={!hasUploads ? '업로드된 서류가 없습니다' : undefined}
                           className="flex items-center gap-1.5 px-3 py-2 rounded-[8px] text-[13px] font-medium border border-sb-n200 text-sb-n700 hover:border-sb-brand hover:text-sb-brand transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:border-sb-n200 disabled:hover:text-sb-n700"
@@ -492,21 +465,22 @@ export default function InternalCaseDetail() {
                   })()}
                 </div>
 
-                {(c.documents ?? []).map((doc) => {
-                const badge = DOC_STATUS_BADGE[doc.status]
-                const isRevisionOpen = docRevisionId === doc.id
-                return (
-                  <div key={doc.id} className="bg-white rounded-[12px] border border-sb-n100 p-5 flex flex-col gap-3">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex items-start gap-3 min-w-0">
-                        <FileText size={18} className="text-sb-n400 flex-shrink-0 mt-0.5" />
-                        <div className="flex flex-col gap-1 min-w-0">
-                          <span className="text-[14px] font-medium text-sb-n900">{doc.displayName}</span>
-                          {doc.uploadedFiles.length > 0 && (() => {
-                            const currentFiles = doc.uploadedFiles.filter(f => f.isLatest)
-                            const oldFiles = doc.uploadedFiles.filter(f => !f.isLatest)
-                            const isExpanded = expandedDocFiles.has(doc.id)
-                            return (
+                {documents.map((doc) => {
+                  const badge = DOC_STATUS_BADGE[doc.status]
+                  const isRevisionOpen = docRevisionId === doc.id
+                  const docFiles = getDocFiles(doc.id)
+                  const currentFiles = docFiles.filter(f => f.isLatest)
+                  const oldFiles = docFiles.filter(f => !f.isLatest)
+                  const isExpanded = expandedDocFiles.has(doc.id)
+                  const activeRevisions = getActiveRevisions(doc.id)
+                  return (
+                    <div key={doc.id} className="bg-white rounded-[12px] border border-sb-n100 p-5 flex flex-col gap-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-start gap-3 min-w-0">
+                          <FileText size={18} className="text-sb-n400 flex-shrink-0 mt-0.5" />
+                          <div className="flex flex-col gap-1 min-w-0">
+                            <span className="text-[14px] font-medium text-sb-n900">{doc.displayName}</span>
+                            {docFiles.length > 0 && (
                               <div className="flex flex-col gap-0.5">
                                 {currentFiles.length > 0 && (
                                   <div className="flex flex-col gap-0.5">
@@ -566,77 +540,76 @@ export default function InternalCaseDetail() {
                                   </>
                                 )}
                               </div>
-                            )
-                          })()}
-                          {doc.isAdHoc && (
-                            <span className="text-[12px] text-blue-500">
-                              추가 요청 ({doc.requestedBy}) · {doc.revisionHistory[0]?.reason}
-                            </span>
-                          )}
-                          {!doc.isAdHoc && doc.revisionHistory.length > 0 && (
-                            <span className="text-[12px] text-orange-500">
-                              보완 사유: {doc.revisionHistory[doc.revisionHistory.length - 1].reason || '(사유 없음)'}
-                            </span>
+                            )}
+                            {doc.isAdHoc && activeRevisions.length > 0 && (
+                              <span className="text-[12px] text-blue-500">
+                                추가 요청 ({doc.requestedBy}) · {activeRevisions[0]?.reason}
+                              </span>
+                            )}
+                            {!doc.isAdHoc && activeRevisions.length > 0 && (
+                              <span className="text-[12px] text-orange-500">
+                                보완 사유: {activeRevisions[activeRevisions.length - 1].reason || '(사유 없음)'}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <span className={`px-2 py-0.5 rounded-full text-[11px] font-medium ${badge.cls}`}>
+                            {badge.label}
+                          </span>
+                          {doc.status === 'SUBMITTED' && (
+                            <>
+                              {role === 'COMPLIANCE' && (
+                                <button
+                                  onClick={() => approveDoc(doc.id)}
+                                  className="flex items-center gap-1 px-2.5 py-1 rounded-[6px] text-[12px] font-medium bg-sb-positive-light text-sb-positive hover:opacity-80 transition-opacity"
+                                >
+                                  <Check size={13} weight="bold" />
+                                  승인
+                                </button>
+                              )}
+                              {(role === 'COMPLIANCE' || role === 'SALES' || role === 'OPS') && (
+                                <button
+                                  onClick={() => {
+                                    setDocRevisionId(isRevisionOpen ? null : doc.id)
+                                    setDocRevisionNote('')
+                                  }}
+                                  className="flex items-center gap-1 px-2.5 py-1 rounded-[6px] text-[12px] font-medium bg-orange-50 text-orange-600 hover:opacity-80 transition-opacity"
+                                >
+                                  <X size={13} weight="bold" />
+                                  보완요청
+                                </button>
+                              )}
+                            </>
                           )}
                         </div>
                       </div>
-                      <div className="flex items-center gap-2 flex-shrink-0">
-                        <span className={`px-2 py-0.5 rounded-full text-[11px] font-medium ${badge.cls}`}>
-                          {badge.label}
-                        </span>
-                        {doc.status === 'SUBMITTED' && (
-                          <>
-                            {role === 'COMPLIANCE' && (
-                              <button
-                                onClick={() => approveDoc(doc.id)}
-                                className="flex items-center gap-1 px-2.5 py-1 rounded-[6px] text-[12px] font-medium bg-sb-positive-light text-sb-positive hover:opacity-80 transition-opacity"
-                              >
-                                <Check size={13} weight="bold" />
-                                승인
-                              </button>
-                            )}
-                            {(role === 'COMPLIANCE' || role === 'SALES' || role === 'OPS') && (
-                              <button
-                                onClick={() => {
-                                  setDocRevisionId(isRevisionOpen ? null : doc.id)
-                                  setDocRevisionNote('')
-                                }}
-                                className="flex items-center gap-1 px-2.5 py-1 rounded-[6px] text-[12px] font-medium bg-orange-50 text-orange-600 hover:opacity-80 transition-opacity"
-                              >
-                                <X size={13} weight="bold" />
-                                보완요청
-                              </button>
-                            )}
-                          </>
-                        )}
-                      </div>
-                    </div>
 
-                    {isRevisionOpen && (
-                      <div className="flex gap-2 pt-1 border-t border-sb-n100">
-                        <input
-                          className="flex-1 border border-sb-n200 rounded-[8px] px-3 py-2 text-[13px] text-sb-n800 placeholder:text-sb-n400 focus:outline-none focus:border-sb-brand"
-                          placeholder="보완 요청 사유를 입력하세요"
-                          value={docRevisionNote}
-                          onChange={(e) => setDocRevisionNote(e.target.value)}
-                        />
-                        <button
-                          onClick={() => requestDocRevision(doc.id)}
-                          disabled={!docRevisionNote.trim()}
-                          className="px-3 py-2 rounded-[8px] text-[12px] font-medium bg-orange-500 text-white hover:bg-orange-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                        >
-                          전송
-                        </button>
-                        <button
-                          onClick={() => { setDocRevisionId(null); setDocRevisionNote('') }}
-                          className="px-3 py-2 rounded-[8px] text-[12px] text-sb-n500 hover:text-sb-n800 transition-colors"
-                        >
-                          취소
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                )
+                      {isRevisionOpen && (
+                        <div className="flex gap-2 pt-1 border-t border-sb-n100">
+                          <input
+                            className="flex-1 border border-sb-n200 rounded-[8px] px-3 py-2 text-[13px] text-sb-n800 placeholder:text-sb-n400 focus:outline-none focus:border-sb-brand"
+                            placeholder="보완 요청 사유를 입력하세요"
+                            value={docRevisionNote}
+                            onChange={(e) => setDocRevisionNote(e.target.value)}
+                          />
+                          <button
+                            onClick={() => requestDocRevision(doc.id)}
+                            disabled={!docRevisionNote.trim()}
+                            className="px-3 py-2 rounded-[8px] text-[12px] font-medium bg-orange-500 text-white hover:bg-orange-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                          >
+                            전송
+                          </button>
+                          <button
+                            onClick={() => { setDocRevisionId(null); setDocRevisionNote('') }}
+                            className="px-3 py-2 rounded-[8px] text-[12px] text-sb-n500 hover:text-sb-n800 transition-colors"
+                          >
+                            취소
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )
                 })}
               </>
             )}
@@ -651,95 +624,57 @@ export default function InternalCaseDetail() {
               <div className="bg-white rounded-[12px] border border-sb-n100 p-6">
                 <h3 className="text-[14px] font-semibold text-sb-n900 mb-4">상태 변경 이력</h3>
                 <div className="flex flex-col gap-0">
-                  {(c.statusHistory ?? []).map((h, i) => {
-                    const isOwnerChange = h.previousStatus !== null && h.previousStatus === h.newStatus
-                    return (
-                      <div key={h.id} className="flex gap-3">
-                        <div className="flex flex-col items-center">
-                          <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 ${
-                            i === 0 ? 'bg-sb-brand' : isOwnerChange ? 'bg-sb-n50 border border-sb-n200' : 'bg-sb-n100'
-                          }`}>
-                            {i === 0
-                              ? <CheckCircle size={14} weight="fill" className="text-white" />
-                              : isOwnerChange
-                              ? <span className="text-[10px] text-sb-n500">↔</span>
-                              : <Clock size={14} className="text-sb-n400" />
-                            }
-                          </div>
-                          {i < (c.statusHistory ?? []).length - 1 && (
-                            <div className="w-px flex-1 min-h-[20px] bg-sb-n100 my-1" />
-                          )}
-                        </div>
-                        <div className="pb-4 min-w-0">
-                          <p className={`text-[13px] font-medium ${isOwnerChange ? 'text-sb-n500' : 'text-sb-n800'}`}>
-                            {isOwnerChange ? '담당자 변경' : (STATUS_LABELS[h.newStatus as CaseStatus] ?? h.newStatus)}
-                          </p>
-                          <p className="text-[11px] text-sb-n400">
-                            {formatDate(h.changedAt)} · {h.changedBy.name}
-                          </p>
-                          {h.notes && (
-                            <p className="text-[12px] text-sb-n600 mt-0.5 bg-sb-n50 rounded-[6px] px-2 py-1">{h.notes}</p>
-                          )}
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
-            </div>
-
-            {/* Right: chat + notes */}
-            <div className="flex flex-col gap-4">
-              {/* Customer chat */}
-              <div className="bg-white rounded-[12px] border border-sb-n100 p-5 flex flex-col gap-3">
-                <h3 className="text-[13px] font-semibold text-sb-n900 flex items-center gap-1.5">
-                  <ChatCircle size={15} />
-                  고객 채팅
-                </h3>
-                <div className="flex flex-col gap-2 max-h-[240px] overflow-y-auto">
-                  {(c.messages ?? []).length === 0 ? (
-                    <p className="text-[12px] text-sb-n400 text-center py-4">메시지가 없습니다.</p>
+                  {statusEvents.length === 0 ? (
+                    <p className="text-[13px] text-sb-n400">이력이 없습니다.</p>
                   ) : (
-                    (c.messages ?? []).map((msg) => {
-                      const isMe = msg.sender.role !== 'CUSTOMER'
+                    statusEvents.map((e, i) => {
+                      const isAssigneeChange = e.eventType === 'ASSIGNEE_CHANGED'
                       return (
-                        <div key={msg.id} className={`flex flex-col gap-0.5 ${isMe ? 'items-end' : 'items-start'}`}>
-                          <span className="text-[10px] text-sb-n400">{msg.sender.name}</span>
-                          <div className={`max-w-[240px] rounded-[10px] px-3 py-2 text-[13px] ${
-                            isMe ? 'bg-sb-brand text-white' : 'bg-sb-n100 text-sb-n800'
-                          }`}>
-                            {msg.text}
+                        <div key={e.id} className="flex gap-3">
+                          <div className="flex flex-col items-center">
+                            <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 ${
+                              i === 0 ? 'bg-sb-brand' : isAssigneeChange ? 'bg-sb-n50 border border-sb-n200' : 'bg-sb-n100'
+                            }`}>
+                              {i === 0
+                                ? <CheckCircle size={14} weight="fill" className="text-white" />
+                                : isAssigneeChange
+                                ? <span className="text-[10px] text-sb-n500">↔</span>
+                                : <Clock size={14} className="text-sb-n400" />
+                              }
+                            </div>
+                            {i < statusEvents.length - 1 && (
+                              <div className="w-px flex-1 min-h-[20px] bg-sb-n100 my-1" />
+                            )}
                           </div>
-                          <span className="text-[10px] text-sb-n400">{formatDate(msg.sentAt)}</span>
+                          <div className="pb-4 min-w-0">
+                            <p className={`text-[13px] font-medium ${isAssigneeChange ? 'text-sb-n500' : 'text-sb-n800'}`}>
+                              {isAssigneeChange
+                                ? '담당자 변경'
+                                : (STATUS_LABELS[e.payload.newStatus as CaseStatus] ?? e.payload.newStatus)}
+                            </p>
+                            <p className="text-[11px] text-sb-n400">
+                              {formatDate(e.createdAt)} · {e.actorName}
+                            </p>
+                            {e.payload.notes && (
+                              <p className="text-[12px] text-sb-n600 mt-0.5 bg-sb-n50 rounded-[6px] px-2 py-1">{e.payload.notes}</p>
+                            )}
+                          </div>
                         </div>
                       )
                     })
                   )}
                 </div>
-                <div className="flex gap-2 border-t border-sb-n100 pt-3">
-                  <input
-                    className="flex-1 border border-sb-n200 rounded-[8px] px-3 py-2 text-[13px] text-sb-n800 placeholder:text-sb-n400 focus:outline-none focus:border-sb-brand text-[12px]"
-                    placeholder="고객에게 메시지 전송"
-                    value={chatInput}
-                    onChange={(e) => setChatInput(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); sendMessage() } }}
-                  />
-                  <button
-                    onClick={sendMessage}
-                    className="px-3 py-2 rounded-[8px] bg-sb-brand text-white hover:bg-sb-brand/90 transition-colors flex items-center"
-                  >
-                    <PaperPlaneTilt size={14} weight="fill" />
-                  </button>
-                </div>
               </div>
+            </div>
 
-              {/* Internal notes */}
+            {/* Right: internal notes */}
+            <div className="flex flex-col gap-4">
               <div className="bg-white rounded-[12px] border border-sb-n100 p-5 flex flex-col gap-3">
                 <h3 className="text-[13px] font-semibold text-sb-n900 flex items-center gap-1.5">
                   <Note size={15} />
                   내부 노트 <span className="text-[11px] font-normal text-sb-n400">(고객 비공개)</span>
                 </h3>
-                <div className="flex flex-col gap-2 max-h-[200px] overflow-y-auto">
+                <div className="flex flex-col gap-2 max-h-[400px] overflow-y-auto">
                   {notes.length === 0 ? (
                     <p className="text-[12px] text-sb-n400 text-center py-4">내부 노트가 없습니다.</p>
                   ) : (

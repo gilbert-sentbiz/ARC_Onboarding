@@ -1,52 +1,79 @@
-import type { Case, CaseStatus, IntakeRecord, UserRole, UserSession, OnboardingFormData } from '../types'
+import type { Case, CaseStatus, UserRole, UserSession, OnboardingFormData, IntakeResponse, Document } from '../types'
 import { classify, classifySectors } from './segmentClassifier'
 import { buildDocuments } from './documentRequirements'
 import { canTransition, STATUS_LABELS, ROLE_LABELS } from './stateMachine'
 import { useCaseStore } from '../store/caseStore'
+import { useIntakeResponseStore, makeIntakeId } from '../store/intakeResponseStore'
+import { useDocumentStore } from '../store/documentStore'
+import { useCaseEventStore } from '../store/caseEventStore'
+import { useRevisionRequestStore } from '../store/revisionRequestStore'
 import { useInternalStaffStore } from '../store/internalStaffStore'
 import { getRuleSet } from '../store/ruleStore'
 import { emitNotification } from '../store/notificationStore'
-
-const EMPTY_INTAKE: IntakeRecord = { status: 'not_started', data: {}, savedAt: 0 }
 
 function makeCaseId() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 7)
 }
 
+function makeEventId(prefix: string) {
+  return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`
+}
+
+// ── Read helpers ──────────────────────────────────────────────────────────────
+
+export function getIntakeResponse(caseId: string, phase: 'first' | 'second'): IntakeResponse | null {
+  return useIntakeResponseStore.getState().getByCase(caseId, phase)
+}
+
+export function getDocuments(caseId: string): Document[] {
+  return useDocumentStore.getState().getByCase(caseId)
+}
+
+// ── Write operations ──────────────────────────────────────────────────────────
+
 export function saveFirstIntakeDraft(
   formData: Partial<OnboardingFormData>,
   session: UserSession
 ): Case {
-  const store = useCaseStore.getState()
-  const existing = store.findByEmail(session.email)
+  const caseStore = useCaseStore.getState()
+  const intakeStore = useIntakeResponseStore.getState()
+  const existing = caseStore.findByEmail(session.email)
   const now = Date.now()
 
-  if (existing && existing.firstIntake.status === 'draft') {
-    const segmentInfo = classify({
-      companyName: formData.companyName ?? '',
-      contactName: formData.contactName ?? '',
-      contactTitle: formData.contactTitle ?? '',
-      phone: formData.phone ?? '',
-      email: session.email,
-      services: Array.isArray(formData.services) ? formData.services : [],
-      collectionCountries: Array.isArray(formData.collectionCountries) ? formData.collectionCountries : [],
-      collectionOtherCountry: formData.collectionOtherCountry ?? '',
-      remittanceFrom: formData.remittanceFrom ?? '',
-      remittanceTo: formData.remittanceTo ?? '',
-      businessType: formData.businessType ?? '',
-      foundingCountry: formData.foundingCountry ?? '',
-      monthlyVolume: formData.monthlyVolume ?? '',
-      monthlyVolumeCurrency: formData.monthlyVolumeCurrency ?? 'USD',
-      monthlyCount: formData.monthlyCount ?? '',
-      referralSource: formData.referralSource ?? '',
-      additionalNote: formData.additionalNote ?? '',
-    })
-    store.updateCase(existing.id, {
-      customerName: formData.contactName ?? existing.customerName,
-      segmentInfo,
-      firstIntake: { status: 'draft', data: formData as Record<string, unknown>, savedAt: now },
-    })
-    return useCaseStore.getState().cases[existing.id]
+  if (existing) {
+    const existingIntake = intakeStore.getByCase(existing.id, 'first')
+    if (existingIntake && existingIntake.status === 'draft') {
+      const segmentInfo = classify({
+        companyName: formData.companyName ?? '',
+        contactName: formData.contactName ?? '',
+        contactTitle: formData.contactTitle ?? '',
+        phone: formData.phone ?? '',
+        email: session.email,
+        services: Array.isArray(formData.services) ? formData.services : [],
+        collectionCountries: Array.isArray(formData.collectionCountries) ? formData.collectionCountries : [],
+        collectionOtherCountry: formData.collectionOtherCountry ?? '',
+        remittanceFrom: formData.remittanceFrom ?? '',
+        remittanceTo: formData.remittanceTo ?? '',
+        businessType: formData.businessType ?? '',
+        foundingCountry: formData.foundingCountry ?? '',
+        monthlyVolume: formData.monthlyVolume ?? '',
+        monthlyVolumeCurrency: formData.monthlyVolumeCurrency ?? 'USD',
+        monthlyCount: formData.monthlyCount ?? '',
+        referralSource: formData.referralSource ?? '',
+        additionalNote: formData.additionalNote ?? '',
+      })
+      caseStore.updateCase(existing.id, {
+        customerName: formData.contactName ?? existing.customerName,
+        segmentInfo,
+      })
+      intakeStore.upsert({
+        ...existingIntake,
+        status: 'draft',
+        answers: formData as Record<string, unknown>,
+        savedAt: now,
+      })
+      return useCaseStore.getState().cases[existing.id]
+    }
   }
 
   const caseId = makeCaseId()
@@ -54,8 +81,8 @@ export function saveFirstIntakeDraft(
     companyName: '', contactName: '', contactTitle: '', phone: '',
     email: session.email, services: [], collectionCountries: [],
     collectionOtherCountry: '', remittanceFrom: '', remittanceTo: '',
-    businessType: '', foundingCountry: '', monthlyVolume: '',
-    monthlyVolumeCurrency: 'USD', monthlyCount: '', referralSource: '',
+    businessType: '', foundingCountry: '', monthlyVolume: '', monthlyCount: '',
+    monthlyVolumeCurrency: 'USD', referralSource: '',
     additionalNote: '',
     ...formData,
   })
@@ -71,41 +98,66 @@ export function saveFirstIntakeDraft(
     segmentInfo,
     ruleSetVersion: getRuleSet().version,
     currentOwner: { role: 'CUSTOMER', name: formData.contactName ?? '' },
-    firstIntake: { status: 'draft', data: formData as Record<string, unknown>, savedAt: now },
-    secondIntake: { ...EMPTY_INTAKE },
-    documents: [],
-    messages: [],
-    statusHistory: [
-      {
-        id: `hist_${now}`,
-        caseId,
-        previousStatus: null,
-        newStatus: 'INQUIRY_RECEIVED',
-        changedAt: now,
-        changedBy: { role: 'CUSTOMER', name: formData.contactName ?? '' },
-      },
-    ],
   }
 
-  store.addCase(c)
-  return c
+  caseStore.addCase(c)
+
+  intakeStore.upsert({
+    id: makeIntakeId(caseId, 'first'),
+    caseId,
+    phase: 'first',
+    status: 'draft',
+    answers: formData as Record<string, unknown>,
+    savedAt: now,
+  })
+
+  intakeStore.upsert({
+    id: makeIntakeId(caseId, 'second'),
+    caseId,
+    phase: 'second',
+    status: 'not_started',
+    answers: {},
+    savedAt: now,
+  })
+
+  useCaseEventStore.getState().append({
+    id: makeEventId('evt'),
+    caseId,
+    eventType: 'CASE_CREATED',
+    actorType: 'CUSTOMER',
+    actorRole: 'CUSTOMER',
+    actorName: formData.contactName ?? '',
+    payload: { newStatus: 'INQUIRY_RECEIVED' },
+    createdAt: now,
+  })
+
+  return useCaseStore.getState().cases[caseId]
 }
 
 export function createCase(formData: OnboardingFormData, session: UserSession): Case {
-  const store = useCaseStore.getState()
-  const existing = store.findByEmail(session.email)
+  const caseStore = useCaseStore.getState()
+  const intakeStore = useIntakeResponseStore.getState()
+  const existing = caseStore.findByEmail(session.email)
   const now = Date.now()
   const segmentInfo = classify(formData)
 
-  if (existing && existing.firstIntake.status === 'draft') {
-    store.updateCase(existing.id, {
-      customerName: formData.contactName,
-      segmentInfo,
-      currentOwner: { role: 'CUSTOMER', name: formData.contactName },
-      firstIntake: { status: 'submitted', data: formData as unknown as Record<string, unknown>, savedAt: now },
-      secondIntake: { ...EMPTY_INTAKE },
-    })
-    return store.cases[existing.id]
+  if (existing) {
+    const existingIntake = intakeStore.getByCase(existing.id, 'first')
+    if (existingIntake && existingIntake.status === 'draft') {
+      caseStore.updateCase(existing.id, {
+        customerName: formData.contactName,
+        segmentInfo,
+        currentOwner: { role: 'CUSTOMER', name: formData.contactName },
+      })
+      intakeStore.upsert({
+        ...existingIntake,
+        status: 'submitted',
+        answers: formData as unknown as Record<string, unknown>,
+        savedAt: now,
+        submittedAt: now,
+      })
+      return useCaseStore.getState().cases[existing.id]
+    }
   }
 
   const caseId = makeCaseId()
@@ -120,57 +172,101 @@ export function createCase(formData: OnboardingFormData, session: UserSession): 
     segmentInfo,
     ruleSetVersion: getRuleSet().version,
     currentOwner: { role: 'CUSTOMER', name: formData.contactName },
-    firstIntake: { status: 'submitted', data: formData as unknown as Record<string, unknown>, savedAt: now },
-    secondIntake: { ...EMPTY_INTAKE },
-    documents: [],
-    messages: [],
-    statusHistory: [
-      {
-        id: `hist_${now}`,
-        caseId,
-        previousStatus: null,
-        newStatus: 'INQUIRY_RECEIVED',
-        changedAt: now,
-        changedBy: { role: 'CUSTOMER', name: formData.contactName },
-      },
-    ],
   }
 
-  store.addCase(c)
-  return c
+  caseStore.addCase(c)
+
+  intakeStore.upsert({
+    id: makeIntakeId(caseId, 'first'),
+    caseId,
+    phase: 'first',
+    status: 'submitted',
+    answers: formData as unknown as Record<string, unknown>,
+    savedAt: now,
+    submittedAt: now,
+  })
+
+  intakeStore.upsert({
+    id: makeIntakeId(caseId, 'second'),
+    caseId,
+    phase: 'second',
+    status: 'not_started',
+    answers: {},
+    savedAt: now,
+  })
+
+  useCaseEventStore.getState().append({
+    id: makeEventId('evt'),
+    caseId,
+    eventType: 'CASE_CREATED',
+    actorType: 'CUSTOMER',
+    actorRole: 'CUSTOMER',
+    actorName: formData.contactName,
+    payload: { newStatus: 'INQUIRY_RECEIVED' },
+    createdAt: now,
+  })
+
+  return useCaseStore.getState().cases[caseId]
+}
+
+export function saveSecondIntakeDraft(caseId: string, answers: Record<string, unknown>): void {
+  const intakeStore = useIntakeResponseStore.getState()
+  const existing = intakeStore.getByCase(caseId, 'second')
+  const now = Date.now()
+  intakeStore.upsert({
+    id: makeIntakeId(caseId, 'second'),
+    caseId,
+    phase: 'second',
+    status: 'draft',
+    answers,
+    savedAt: now,
+    ...(existing?.submittedAt ? { submittedAt: existing.submittedAt } : {}),
+  })
 }
 
 export function confirmSecondIntake(
   caseId: string,
   actorName: string
 ): { ok: boolean; error?: string } {
-  const store = useCaseStore.getState()
-  const c = store.cases[caseId]
+  const caseStore = useCaseStore.getState()
+  const intakeStore = useIntakeResponseStore.getState()
+  const c = caseStore.cases[caseId]
   if (!c) return { ok: false, error: '케이스를 찾을 수 없습니다.' }
 
   const now = Date.now()
-  const secondData = c.secondIntake.data as Record<string, unknown>
+  const secondIntake = intakeStore.getByCase(caseId, 'second')
+  const secondData = (secondIntake?.answers ?? {}) as Record<string, unknown>
   const sectors = classifySectors(secondData)
   const segmentInfo = { ...c.segmentInfo, sectors }
-  const documents = buildDocuments(caseId, segmentInfo)
+  const builtDocuments = buildDocuments(caseId, segmentInfo)
 
-  store.updateCase(caseId, {
+  caseStore.updateCase(caseId, {
     status: 'DOCUMENT_SUBMISSION_REQUIRED',
     currentOwner: { role: 'CUSTOMER', name: '고객' },
     segmentInfo,
-    secondIntake: { status: 'submitted', data: c.secondIntake.data, savedAt: now },
-    documents,
-    statusHistory: [
-      ...c.statusHistory,
-      {
-        id: `hist_${now}`,
-        caseId,
-        previousStatus: c.status,
-        newStatus: 'DOCUMENT_SUBMISSION_REQUIRED',
-        changedAt: now,
-        changedBy: { role: 'CUSTOMER', name: actorName },
-      },
-    ],
+  })
+
+  intakeStore.upsert({
+    id: makeIntakeId(caseId, 'second'),
+    caseId,
+    phase: 'second',
+    status: 'submitted',
+    answers: secondData,
+    savedAt: now,
+    submittedAt: now,
+  })
+
+  useDocumentStore.getState().addDocuments(builtDocuments)
+
+  useCaseEventStore.getState().append({
+    id: makeEventId('evt'),
+    caseId,
+    eventType: 'CASE_STATUS_CHANGED',
+    actorType: 'CUSTOMER',
+    actorRole: 'CUSTOMER',
+    actorName,
+    payload: { previousStatus: c.status, newStatus: 'DOCUMENT_SUBMISSION_REQUIRED' },
+    createdAt: now,
   })
 
   return { ok: true }
@@ -184,8 +280,8 @@ export function transitionStatus(
   actor: { role: UserRole; name: string },
   notes?: string
 ): TransitionResult {
-  const state = useCaseStore.getState()
-  const c = state.cases[caseId]
+  const caseStore = useCaseStore.getState()
+  const c = caseStore.cases[caseId]
   if (!c) return { ok: false, error: '케이스를 찾을 수 없습니다.' }
 
   if (!canTransition(c.status, newStatus, actor.role)) {
@@ -197,24 +293,19 @@ export function transitionStatus(
 
   const now = Date.now()
   const newOwner = resolveOwner(newStatus)
-  state.updateCase(caseId, {
-    status: newStatus,
-    currentOwner: newOwner,
-    statusHistory: [
-      ...c.statusHistory,
-      {
-        id: `hist_${now}`,
-        caseId,
-        previousStatus: c.status,
-        newStatus,
-        changedAt: now,
-        changedBy: actor,
-        notes,
-      },
-    ],
+  caseStore.updateCase(caseId, { status: newStatus, currentOwner: newOwner })
+
+  useCaseEventStore.getState().append({
+    id: makeEventId('evt'),
+    caseId,
+    eventType: 'CASE_STATUS_CHANGED',
+    actorType: actor.role === 'CUSTOMER' ? 'CUSTOMER' : 'STAFF',
+    actorRole: actor.role,
+    actorName: actor.name,
+    payload: { previousStatus: c.status, newStatus, notes },
+    createdAt: now,
   })
 
-  // Notification: status change → next actor
   const label = c.customerName || c.customerEmail
   const statusLabel = STATUS_LABELS[newStatus]
   if (newStatus === 'REVISION_REQUESTED' || newStatus === 'DOCUMENT_SUBMISSION_REQUIRED') {
@@ -286,10 +377,18 @@ export function resubmitRevision(
   caseId: string,
   actor: { role: UserRole; name: string }
 ): TransitionResult {
-  const state = useCaseStore.getState()
-  const c = state.cases[caseId]
+  const c = useCaseStore.getState().cases[caseId]
   if (!c) return { ok: false, error: '케이스를 찾을 수 없습니다.' }
   const target: CaseStatus = c.revisionRequestedFrom ?? 'COMPLIANCE_REVIEW_REQUIRED'
+
+  const now = Date.now()
+  const revStore = useRevisionRequestStore.getState()
+  const docs = useDocumentStore.getState().getByCase(caseId)
+  for (const doc of docs) {
+    const active = revStore.getActiveByDocument(doc.id)
+    for (const r of active) revStore.resolve(r.id, now)
+  }
+
   return transitionStatus(caseId, target, actor)
 }
 
@@ -298,26 +397,26 @@ export function changeOwner(
   newOwnerName: string,
   actor: { role: UserRole; name: string }
 ): void {
-  const state = useCaseStore.getState()
-  const c = state.cases[caseId]
+  const caseStore = useCaseStore.getState()
+  const c = caseStore.cases[caseId]
   if (!c) return
   const prevName = c.currentOwner.name
   const now = Date.now()
-  state.updateCase(caseId, {
+  caseStore.updateCase(caseId, {
     currentOwner: { ...c.currentOwner, name: newOwnerName },
-    statusHistory: [
-      ...c.statusHistory,
-      {
-        id: `hist_${now}`,
-        caseId,
-        previousStatus: c.status,
-        newStatus: c.status,
-        changedAt: now,
-        changedBy: actor,
-        notes: `담당자 변경: ${prevName} → ${newOwnerName}`,
-      },
-    ],
   })
+
+  useCaseEventStore.getState().append({
+    id: makeEventId('evt'),
+    caseId,
+    eventType: 'ASSIGNEE_CHANGED',
+    actorType: 'STAFF',
+    actorRole: actor.role,
+    actorName: actor.name,
+    payload: { notes: `담당자 변경: ${prevName} → ${newOwnerName}` },
+    createdAt: now,
+  })
+
   emitNotification({
     type: 'ASSIGNED',
     caseId,

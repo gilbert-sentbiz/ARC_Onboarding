@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { SignOut, Tray, PaperPlaneTilt, CaretDown, CaretUp } from '@phosphor-icons/react'
 import { useSessionStore } from '../../store/sessionStore'
 import { useCaseStore } from '../../store/caseStore'
+import { useCaseEventStore } from '../../store/caseEventStore'
 import { useSalesActionStore } from '../../store/salesActionStore'
 import { STATUS_LABELS } from '../../services/stateMachine'
 import type { CaseStatus } from '../../types'
@@ -128,9 +129,9 @@ export default function InternalCRM() {
               const lastAction = actions[actions.length - 1]
 
               // 종료 직전 상태 찾기
-              const lastHistory = [...c.statusHistory].reverse()
-              const prevStatus = lastHistory.find((h) => h.previousStatus && h.newStatus === 'CLOSED')
-              const beforeClose = prevStatus?.previousStatus as CaseStatus | undefined
+              const caseEvents = useCaseEventStore.getState().getByCase(c.id)
+              const closeEvent = [...caseEvents].reverse().find((e) => e.payload.newStatus === 'CLOSED')
+              const beforeClose = closeEvent?.payload.previousStatus as CaseStatus | undefined
 
               return (
                 <div key={c.id} className="bg-white rounded-[12px] border border-sb-n100 overflow-hidden">
@@ -171,10 +172,10 @@ export default function InternalCRM() {
                   {isExpanded && (
                     <div className="border-t border-sb-n100 px-5 py-4 flex flex-col gap-4">
                       {/* Closed reason detail */}
-                      {prevStatus?.notes && (
+                      {closeEvent?.payload.notes && (
                         <div className="bg-sb-n50 rounded-[8px] p-3">
                           <p className="text-[11px] text-sb-n400 mb-1">종료 사유</p>
-                          <p className="text-[13px] text-sb-n700">{prevStatus.notes}</p>
+                          <p className="text-[13px] text-sb-n700">{closeEvent.payload.notes}</p>
                         </div>
                       )}
 

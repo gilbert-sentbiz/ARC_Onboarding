@@ -4,6 +4,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { ArrowLeft, ArrowRight } from '@phosphor-icons/react'
 import { useCaseStore } from '@/store/caseStore'
 import { useSessionStore } from '@/store/sessionStore'
+import { useIntakeResponseStore } from '@/store/intakeResponseStore'
 import { confirmSecondIntake } from '@/services/caseService'
 import { getRuleSet } from '@/store/ruleStore'
 import type { QuestionRule } from '@/types'
@@ -97,6 +98,8 @@ function PageContent() {
   const router = useRouter()
   const session = useSessionStore((s) => s.session)
   const c = useCaseStore((s) => (id ? s.cases[id] : null))
+  const firstIntake = useIntakeResponseStore((s) => id ? s.getByCase(id, 'first') : null)
+  const secondIntake = useIntakeResponseStore((s) => id ? s.getByCase(id, 'second') : null)
 
   if (!c || !id) {
     return (
@@ -106,14 +109,14 @@ function PageContent() {
     )
   }
 
-  const d1 = c.firstIntake.data as Record<string, unknown>
+  const d1 = (firstIntake?.answers ?? {}) as Record<string, unknown>
   const str1 = (key: string) => String(d1[key] ?? '')
   const services = (d1.services as string[]) ?? []
   const collectionCountries = (d1.collectionCountries as string[]) ?? []
 
   const labelMap = buildLabelMap()
 
-  const d2 = c.secondIntake.data as {
+  const d2 = (secondIntake?.answers ?? {}) as {
     entity?: Record<string, unknown>
     krwCollection?: Record<string, unknown>
     vndCollection?: Record<string, unknown>

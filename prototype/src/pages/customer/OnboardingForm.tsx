@@ -17,6 +17,7 @@ import Button from '../../components/ui/Button'
 import { useSessionStore } from '../../store/sessionStore'
 import { saveFirstIntakeDraft } from '../../services/caseService'
 import { useCaseStore } from '../../store/caseStore'
+import { useIntakeResponseStore } from '../../store/intakeResponseStore'
 import { getRuleSet } from '../../store/ruleStore'
 import { validatePhone, validateEmail, validateAmount, validateCount } from '../../services/validators'
 
@@ -179,8 +180,13 @@ export default function OnboardingForm() {
     if (!session?.email) return null
     return Object.values(s.cases).find(c => c.customerEmail === session.email) ?? null
   })
-  const draftData = existingCase?.firstIntake?.status === 'draft'
-    ? existingCase.firstIntake.data as Partial<FormData>
+  const firstIntakeDraft = useIntakeResponseStore((s) => {
+    if (!existingCase) return null
+    const r = s.getByCase(existingCase.id, 'first')
+    return r?.status === 'draft' ? r : null
+  })
+  const draftData = firstIntakeDraft
+    ? firstIntakeDraft.answers as Partial<FormData>
     : null
 
   const [step, setStep] = useState(0)

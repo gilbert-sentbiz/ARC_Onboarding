@@ -202,25 +202,29 @@ export type OnboardingFormData = {
   additionalNote: string
 }
 
-export type UploadedFile = {
+// ERD: document_file — 제출본 (append-only)
+export type DocumentFile = {
   id: string
   documentId: string
   fileName: string
   fileSize: number
   uploadedAt: number
   uploadedBy: string
-  isLatest?: boolean
+  isLatest: boolean
   dataUrl?: string
 }
 
-export type RevisionRecord = {
+// ERD: revision_request — 서류별 보완 사유
+export type RevisionRequest = {
+  id: string
   documentId: string
-  timestamp: number
-  requiredBy: string
   reason: string
+  requestedBy: string
+  requestedAt: number
   resolvedAt?: number
 }
 
+// ERD: document — 케이스별 요구 서류
 export type Document = {
   id: string
   caseId: string
@@ -231,31 +235,39 @@ export type Document = {
   isConditional: boolean
   isAdHoc?: boolean
   requestedBy?: string
-  uploadedFiles: UploadedFile[]
-  revisionHistory: RevisionRecord[]
   approvalNote?: string
 }
 
-export type Message = {
+// ERD: intake_response — 1차/2차 응답
+export type IntakeResponse = {
   id: string
   caseId: string
-  sender: { role: UserRole; name: string }
-  text: string
-  sentAt: number
-  readAt?: number
+  phase: 'first' | 'second'
+  status: IntakeStatus
+  answers: Record<string, unknown>
+  savedAt: number
+  submittedAt?: number
 }
 
-export type StatusChangeHistory = {
+// ERD: case_event — 통합 이력 로그 (append-only)
+export type CaseEvent = {
   id: string
   caseId: string
-  previousStatus: CaseStatus | DocumentStatus | null
-  newStatus: CaseStatus | DocumentStatus
-  changedAt: number
-  changedBy: { role: UserRole; name: string }
-  closeReason?: CloseReason
-  notes?: string
+  eventType: 'CASE_STATUS_CHANGED' | 'DOC_STATUS_CHANGED' | 'ASSIGNEE_CHANGED' | 'CASE_CREATED'
+  actorType: 'CUSTOMER' | 'STAFF' | 'SYSTEM'
+  actorRole: UserRole
+  actorName: string
+  payload: {
+    previousStatus?: CaseStatus | DocumentStatus | null
+    newStatus?: CaseStatus | DocumentStatus
+    closeReason?: CloseReason
+    notes?: string
+    documentId?: string
+  }
+  createdAt: number
 }
 
+// ERD: onboarding_case — 케이스 (중심 테이블, slim)
 export type Case = {
   id: string
   createdAt: number
@@ -269,11 +281,6 @@ export type Case = {
   segmentInfo: SegmentInfo
   ruleSetVersion?: string
   currentOwner: { role: UserRole; name: string }
-  firstIntake: IntakeRecord
-  secondIntake: IntakeRecord
-  documents: Document[]
-  messages: Message[]
-  statusHistory: StatusChangeHistory[]
 }
 
 export type InternalStaff = {
