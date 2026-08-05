@@ -227,7 +227,7 @@ export default function DocumentUpload() {
     const actor = { role: 'CUSTOMER' as const, name: session.name || '고객' }
     const result = isRevision
       ? resubmitRevision(id!, actor)
-      : transitionStatus(id!, 'SALES_REVIEW_REQUIRED', actor)
+      : transitionStatus(id!, 'INITIAL_SCREENING', actor)
     if (result.ok) {
       setSubmitted(true)
       setTimeout(() => navigate(`/customer/case/${id}`), 2000)

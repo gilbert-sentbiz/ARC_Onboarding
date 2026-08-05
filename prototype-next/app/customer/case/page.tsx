@@ -20,26 +20,31 @@ import TabBar from '@/components/customer/TabBar'
 const MILESTONES: { status: CaseStatus; label: string }[] = [
   { status: 'INQUIRY_RECEIVED', label: '문의 접수' },
   { status: 'DOCUMENT_SUBMISSION_REQUIRED', label: '서류 제출' },
-  { status: 'SALES_REVIEW_REQUIRED', label: '영업 검토' },
-  { status: 'COMPLIANCE_REVIEW_REQUIRED', label: '컴플라이언스 검토' },
-  { status: 'OPS_REVIEW_REQUIRED', label: '운영 검토' },
+  { status: 'INITIAL_SCREENING', label: '1차 스크리닝' },
+  { status: 'DOCUMENT_SCREENING_REQUIRED', label: '서류 스크리닝' },
+  { status: 'APPROVAL_REVIEW_REQUIRED', label: '심사·승인' },
+  { status: 'ACCOUNT_SETUP_REQUIRED', label: '계정 개설' },
   { status: 'COMPLETED', label: '온보딩 완료' },
 ]
 const MS_STATUSES = MILESTONES.map((m) => m.status)
 
 type StatusBannerEntry = { title: string; desc: string }
 const STATUS_BANNER: Partial<Record<CaseStatus, StatusBannerEntry>> = {
-  SALES_REVIEW_REQUIRED: {
+  INITIAL_SCREENING: {
     title: '영업팀에서 검토 중입니다',
-    desc: '서류가 접수되어 영업팀에서 검토를 진행하고 있습니다. 일반적으로 영업일 2–3일 내 결과를 안내드립니다.',
+    desc: '서류가 접수되어 영업팀에서 1차 스크리닝을 진행하고 있습니다. 일반적으로 영업일 2–3일 내 결과를 안내드립니다.',
   },
-  COMPLIANCE_REVIEW_REQUIRED: {
-    title: '컴플라이언스 검토 중입니다',
-    desc: '영업 검토가 완료되어 컴플라이언스팀에서 서류를 정밀 검토하고 있습니다. 추가 서류 요청이 있을 수 있습니다.',
+  DOCUMENT_SCREENING_REQUIRED: {
+    title: '서류 스크리닝 중입니다',
+    desc: '1차 스크리닝이 완료되어 운영팀에서 제출된 서류를 검토하고 있습니다. 추가 서류 요청이 있을 수 있습니다.',
   },
-  OPS_REVIEW_REQUIRED: {
-    title: '계정 생성을 진행하고 있습니다',
-    desc: '컴플라이언스 검토가 완료되었습니다. 운영팀에서 계정 생성을 진행 중이며 곧 계정 정보를 안내드립니다.',
+  APPROVAL_REVIEW_REQUIRED: {
+    title: '컴플라이언스 심사 중입니다',
+    desc: '서류 스크리닝이 완료되어 컴플라이언스팀에서 최종 심사를 진행하고 있습니다.',
+  },
+  ACCOUNT_SETUP_REQUIRED: {
+    title: '계정 개설을 진행하고 있습니다',
+    desc: '심사 승인이 완료되었습니다. 운영팀에서 계정 개설을 진행 중이며 곧 안내드립니다.',
   },
 }
 const CLOSE_REASON_DESC: Record<string, string> = {
@@ -64,7 +69,7 @@ function milestoneState(ms: CaseStatus, effective: CaseStatus): 'done' | 'active
 }
 
 function effectiveStatus(status: CaseStatus, events: CaseEvent[]): CaseStatus {
-  if (status === 'REVISION_REQUESTED') return 'COMPLIANCE_REVIEW_REQUIRED'
+  if (status === 'REVISION_REQUESTED') return 'APPROVAL_REVIEW_REQUIRED'
   if (status === 'CLOSED') {
     const closeEv = [...events].reverse().find(
       (e) => e.eventType === 'CASE_STATUS_CHANGED' && e.payload.newStatus === 'CLOSED'
@@ -168,7 +173,7 @@ function PageContent() {
                         {fmtDatetime(ev.createdAt)}
                       </p>
                     )}
-                    {state === 'active' && c.status === 'REVISION_REQUESTED' && m.status === 'COMPLIANCE_REVIEW_REQUIRED' && (
+                    {state === 'active' && c.status === 'REVISION_REQUESTED' && m.status === 'APPROVAL_REVIEW_REQUIRED' && (
                       <p className="text-[11px] text-amber-600 mt-0.5">서류 보완 요청 중</p>
                     )}
                   </div>

@@ -5,37 +5,42 @@ type TransitionRule = {
   allowedRoles: UserRole[]
 }
 
+// 4-stage review workflow: 영업(INITIAL_SCREENING) → 운영(DOCUMENT_SCREENING_REQUIRED) → 컴플(APPROVAL_REVIEW_REQUIRED) → 운영(ACCOUNT_SETUP_REQUIRED)
 const TRANSITIONS: Record<CaseStatus, TransitionRule[]> = {
   INQUIRY_RECEIVED: [
     { to: 'DOCUMENT_SUBMISSION_REQUIRED', allowedRoles: ['CUSTOMER'] },
     { to: 'CLOSED', allowedRoles: ['SALES'] },
   ],
   DOCUMENT_SUBMISSION_REQUIRED: [
-    { to: 'SALES_REVIEW_REQUIRED', allowedRoles: ['CUSTOMER'] },
+    { to: 'INITIAL_SCREENING', allowedRoles: ['CUSTOMER'] },
     { to: 'CLOSED', allowedRoles: ['SALES'] },
   ],
-  SALES_REVIEW_REQUIRED: [
-    { to: 'COMPLIANCE_REVIEW_REQUIRED', allowedRoles: ['SALES'] },
+  INITIAL_SCREENING: [
+    { to: 'DOCUMENT_SCREENING_REQUIRED', allowedRoles: ['SALES'] },
     { to: 'REVISION_REQUESTED', allowedRoles: ['SALES'] },
     { to: 'CLOSED', allowedRoles: ['SALES'] },
   ],
-  COMPLIANCE_REVIEW_REQUIRED: [
-    { to: 'OPS_REVIEW_REQUIRED', allowedRoles: ['COMPLIANCE'] },
+  DOCUMENT_SCREENING_REQUIRED: [
+    { to: 'APPROVAL_REVIEW_REQUIRED', allowedRoles: ['OPS'] },
+    { to: 'REVISION_REQUESTED', allowedRoles: ['OPS'] },
+    { to: 'CLOSED', allowedRoles: ['OPS'] },
+  ],
+  APPROVAL_REVIEW_REQUIRED: [
+    { to: 'ACCOUNT_SETUP_REQUIRED', allowedRoles: ['COMPLIANCE'] },
     { to: 'REVISION_REQUESTED', allowedRoles: ['COMPLIANCE'] },
-    { to: 'SALES_REVIEW_REQUIRED', allowedRoles: ['COMPLIANCE'] }, // 반려
+    { to: 'DOCUMENT_SCREENING_REQUIRED', allowedRoles: ['COMPLIANCE'] }, // 반려
     { to: 'CLOSED', allowedRoles: ['COMPLIANCE'] },
+  ],
+  ACCOUNT_SETUP_REQUIRED: [
+    { to: 'COMPLETED', allowedRoles: ['OPS'] },
+    { to: 'APPROVAL_REVIEW_REQUIRED', allowedRoles: ['OPS'] }, // 반려
+    { to: 'CLOSED', allowedRoles: ['OPS', 'COMPLIANCE'] },
   ],
   REVISION_REQUESTED: [
-    { to: 'COMPLIANCE_REVIEW_REQUIRED', allowedRoles: ['CUSTOMER', 'COMPLIANCE'] },
-    { to: 'SALES_REVIEW_REQUIRED', allowedRoles: ['CUSTOMER'] },
-    { to: 'OPS_REVIEW_REQUIRED', allowedRoles: ['CUSTOMER'] },
-    { to: 'CLOSED', allowedRoles: ['COMPLIANCE'] },
-  ],
-  OPS_REVIEW_REQUIRED: [
-    { to: 'COMPLETED', allowedRoles: ['OPS'] },
-    { to: 'COMPLIANCE_REVIEW_REQUIRED', allowedRoles: ['OPS'] }, // 반려
-    { to: 'REVISION_REQUESTED', allowedRoles: ['OPS'] },
-    { to: 'CLOSED', allowedRoles: ['OPS', 'COMPLIANCE'] },
+    { to: 'INITIAL_SCREENING', allowedRoles: ['CUSTOMER', 'SALES'] },
+    { to: 'DOCUMENT_SCREENING_REQUIRED', allowedRoles: ['CUSTOMER', 'OPS'] },
+    { to: 'APPROVAL_REVIEW_REQUIRED', allowedRoles: ['CUSTOMER', 'COMPLIANCE'] },
+    { to: 'CLOSED', allowedRoles: ['COMPLIANCE', 'OPS', 'SALES'] },
   ],
   COMPLETED: [
     { to: 'CLOSED', allowedRoles: ['OPS', 'SALES'] },
@@ -56,22 +61,23 @@ export function availableTransitions(current: CaseStatus, role: UserRole): CaseS
 export const STATUS_LABELS: Record<CaseStatus, string> = {
   INQUIRY_RECEIVED: '문의 접수',
   DOCUMENT_SUBMISSION_REQUIRED: '서류 제출 대기',
-  SALES_REVIEW_REQUIRED: '영업 검토',
-  COMPLIANCE_REVIEW_REQUIRED: '컴플라이언스 검토',
+  INITIAL_SCREENING: '1차 스크리닝',
+  DOCUMENT_SCREENING_REQUIRED: '서류 스크리닝',
+  APPROVAL_REVIEW_REQUIRED: '심사, 승인 필요',
+  ACCOUNT_SETUP_REQUIRED: '계정 개설 필요',
   REVISION_REQUESTED: '보완 요청',
-  OPS_REVIEW_REQUIRED: '운영 검토',
   COMPLETED: '온보딩 완료',
   CLOSED: '종료',
 }
 
-// §8.3 — 영업은 DOCUMENT_SUBMISSION_REQUIRED 이후 케이스 열람 가능
 export const STATUS_ORDER: CaseStatus[] = [
   'INQUIRY_RECEIVED',
   'DOCUMENT_SUBMISSION_REQUIRED',
-  'SALES_REVIEW_REQUIRED',
-  'COMPLIANCE_REVIEW_REQUIRED',
+  'INITIAL_SCREENING',
+  'DOCUMENT_SCREENING_REQUIRED',
+  'APPROVAL_REVIEW_REQUIRED',
+  'ACCOUNT_SETUP_REQUIRED',
   'REVISION_REQUESTED',
-  'OPS_REVIEW_REQUIRED',
   'COMPLETED',
   'CLOSED',
 ]

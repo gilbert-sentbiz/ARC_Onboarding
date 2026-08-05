@@ -231,7 +231,7 @@ function PageContent() {
     const actor = { role: 'CUSTOMER' as const, name: session.name || '고객' }
     const result = isRevision
       ? resubmitRevision(id!, actor)
-      : transitionStatus(id!, 'SALES_REVIEW_REQUIRED', actor)
+      : transitionStatus(id!, 'INITIAL_SCREENING', actor)
     if (result.ok) {
       setSubmitted(true)
       setTimeout(() => router.push(`/customer/case?id=${id}`), 2000)

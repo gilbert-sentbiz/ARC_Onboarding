@@ -346,9 +346,10 @@ export function transitionStatus(
 }
 
 const ROLE_FOR_STATUS: Partial<Record<CaseStatus, 'SALES' | 'COMPLIANCE' | 'OPS'>> = {
-  SALES_REVIEW_REQUIRED: 'SALES',
-  COMPLIANCE_REVIEW_REQUIRED: 'COMPLIANCE',
-  OPS_REVIEW_REQUIRED: 'OPS',
+  INITIAL_SCREENING: 'SALES',
+  DOCUMENT_SCREENING_REQUIRED: 'OPS',
+  APPROVAL_REVIEW_REQUIRED: 'COMPLIANCE',
+  ACCOUNT_SETUP_REQUIRED: 'OPS',
 }
 
 function resolveOwner(newStatus: CaseStatus): { role: UserRole; name: string } {
@@ -379,7 +380,7 @@ export function resubmitRevision(
 ): TransitionResult {
   const c = useCaseStore.getState().cases[caseId]
   if (!c) return { ok: false, error: '케이스를 찾을 수 없습니다.' }
-  const target: CaseStatus = c.revisionRequestedFrom ?? 'COMPLIANCE_REVIEW_REQUIRED'
+  const target: CaseStatus = c.revisionRequestedFrom ?? 'APPROVAL_REVIEW_REQUIRED'
 
   const now = Date.now()
   const revStore = useRevisionRequestStore.getState()

@@ -9,12 +9,12 @@ import type { CaseStatus, UserRole } from '../../types'
 import NotificationBell from '../../components/ui/NotificationBell'
 
 const ROLE_DEFAULT_FILTER: Record<string, CaseStatus> = {
-  SALES: 'SALES_REVIEW_REQUIRED',
-  COMPLIANCE: 'COMPLIANCE_REVIEW_REQUIRED',
-  OPS: 'OPS_REVIEW_REQUIRED',
+  SALES: 'INITIAL_SCREENING',
+  COMPLIANCE: 'APPROVAL_REVIEW_REQUIRED',
+  OPS: 'DOCUMENT_SCREENING_REQUIRED',
 }
 
-const ALL_STATUSES: CaseStatus[] = ['DOCUMENT_SUBMISSION_REQUIRED', 'SALES_REVIEW_REQUIRED', 'COMPLIANCE_REVIEW_REQUIRED', 'REVISION_REQUESTED', 'OPS_REVIEW_REQUIRED', 'COMPLETED', 'CLOSED']
+const ALL_STATUSES: CaseStatus[] = ['DOCUMENT_SUBMISSION_REQUIRED', 'INITIAL_SCREENING', 'DOCUMENT_SCREENING_REQUIRED', 'APPROVAL_REVIEW_REQUIRED', 'REVISION_REQUESTED', 'ACCOUNT_SETUP_REQUIRED', 'COMPLETED', 'CLOSED']
 
 const ROLE_VIEWABLE_STATUSES: Record<string, CaseStatus[]> = {
   SALES: ALL_STATUSES,
@@ -53,14 +53,15 @@ function getDaysInStatus(c: import('../../types').Case): number {
 }
 
 const STATUS_BADGE: Record<CaseStatus, { bg: string; text: string }> = {
-  INQUIRY_RECEIVED:           { bg: 'bg-sb-n100', text: 'text-sb-n600' },
-  DOCUMENT_SUBMISSION_REQUIRED: { bg: 'bg-blue-50', text: 'text-blue-600' },
-  SALES_REVIEW_REQUIRED:      { bg: 'bg-amber-50', text: 'text-amber-600' },
-  COMPLIANCE_REVIEW_REQUIRED: { bg: 'bg-purple-50', text: 'text-purple-600' },
-  REVISION_REQUESTED:         { bg: 'bg-orange-50', text: 'text-orange-600' },
-  OPS_REVIEW_REQUIRED:        { bg: 'bg-cyan-50', text: 'text-cyan-700' },
-  COMPLETED:                  { bg: 'bg-sb-positive-light', text: 'text-sb-positive' },
-  CLOSED:                     { bg: 'bg-sb-n100', text: 'text-sb-n500' },
+  INQUIRY_RECEIVED:              { bg: 'bg-sb-n100', text: 'text-sb-n600' },
+  DOCUMENT_SUBMISSION_REQUIRED:  { bg: 'bg-blue-50', text: 'text-blue-600' },
+  INITIAL_SCREENING:             { bg: 'bg-amber-50', text: 'text-amber-600' },
+  DOCUMENT_SCREENING_REQUIRED:   { bg: 'bg-amber-50', text: 'text-amber-700' },
+  APPROVAL_REVIEW_REQUIRED:      { bg: 'bg-purple-50', text: 'text-purple-600' },
+  ACCOUNT_SETUP_REQUIRED:        { bg: 'bg-cyan-50', text: 'text-cyan-700' },
+  REVISION_REQUESTED:            { bg: 'bg-orange-50', text: 'text-orange-600' },
+  COMPLETED:                     { bg: 'bg-sb-positive-light', text: 'text-sb-positive' },
+  CLOSED:                        { bg: 'bg-sb-n100', text: 'text-sb-n500' },
 }
 
 export default function InternalDashboard() {
@@ -71,7 +72,7 @@ export default function InternalDashboard() {
   const cases = useMemo(() => Object.values(casesMap), [casesMap])
 
   const role = session?.role as UserRole
-  const defaultFilter = ROLE_DEFAULT_FILTER[role] ?? 'SALES_REVIEW_REQUIRED'
+  const defaultFilter = ROLE_DEFAULT_FILTER[role] ?? 'INITIAL_SCREENING'
   const [filter, setFilter] = useState<CaseStatus | 'ALL'>(defaultFilter)
 
   const viewable = ROLE_VIEWABLE_STATUSES[role] ?? []

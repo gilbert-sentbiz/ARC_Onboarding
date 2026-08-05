@@ -81,14 +81,15 @@ const DOC_STATUS_BADGE: Record<DocumentStatus, { label: string; cls: string }> =
 }
 
 const STATUS_BADGE: Record<CaseStatus, { cls: string; style?: React.CSSProperties }> = {
-  INQUIRY_RECEIVED:             { cls: 'bg-sb-n100 text-sb-n600' },
-  DOCUMENT_SUBMISSION_REQUIRED: { cls: 'bg-blue-50 text-blue-600' },
-  SALES_REVIEW_REQUIRED:        { cls: 'bg-amber-50 text-amber-600' },
-  COMPLIANCE_REVIEW_REQUIRED:   { cls: 'bg-purple-50 text-purple-600' },
-  REVISION_REQUESTED:           { cls: 'bg-orange-50 text-orange-600' },
-  OPS_REVIEW_REQUIRED:          { cls: 'bg-cyan-50 text-cyan-700' },
-  COMPLETED:                    { cls: 'bg-sb-positive-light' },
-  CLOSED:                       { cls: 'bg-sb-n100 text-sb-n500' },
+  INQUIRY_RECEIVED:              { cls: 'bg-sb-n100 text-sb-n600' },
+  DOCUMENT_SUBMISSION_REQUIRED:  { cls: 'bg-blue-50 text-blue-600' },
+  INITIAL_SCREENING:             { cls: 'bg-amber-50 text-amber-600' },
+  DOCUMENT_SCREENING_REQUIRED:   { cls: 'bg-amber-50 text-amber-700' },
+  APPROVAL_REVIEW_REQUIRED:      { cls: 'bg-purple-50 text-purple-600' },
+  ACCOUNT_SETUP_REQUIRED:        { cls: 'bg-cyan-50 text-cyan-700' },
+  REVISION_REQUESTED:            { cls: 'bg-orange-50 text-orange-600' },
+  COMPLETED:                     { cls: 'bg-sb-positive-light' },
+  CLOSED:                        { cls: 'bg-sb-n100 text-sb-n500' },
 }
 
 function IntakeDataDisplay({ data }: { data: Record<string, unknown> }) {
@@ -136,24 +137,31 @@ type ActionDef = {
 }
 
 function getActions(role: UserRole, status: CaseStatus): ActionDef[] {
-  if (role === 'SALES' && status === 'SALES_REVIEW_REQUIRED') {
+  if (role === 'SALES' && status === 'INITIAL_SCREENING') {
     return [
-      { label: '1차 스크리닝 완료', to: 'COMPLIANCE_REVIEW_REQUIRED', variant: 'primary', needsNote: false },
+      { label: '1차 스크리닝 완료', to: 'DOCUMENT_SCREENING_REQUIRED', variant: 'primary', needsNote: false },
       { label: '반려 (종료)', to: 'CLOSED', closeReason: 'DROPPED', variant: 'danger', needsNote: true },
     ]
   }
-  if (role === 'COMPLIANCE' && status === 'COMPLIANCE_REVIEW_REQUIRED') {
+  if (role === 'OPS' && status === 'DOCUMENT_SCREENING_REQUIRED') {
     return [
-      { label: '서류 승인', to: 'OPS_REVIEW_REQUIRED', variant: 'primary', needsNote: false },
+      { label: '서류 스크리닝 완료', to: 'APPROVAL_REVIEW_REQUIRED', variant: 'primary', needsNote: false },
       { label: '보완 요청', to: 'REVISION_REQUESTED', variant: 'outline', needsNote: true },
-      { label: '영업 반려', to: 'SALES_REVIEW_REQUIRED', variant: 'outline', needsNote: true },
       { label: '케이스 종료', to: 'CLOSED', closeReason: 'DROPPED', variant: 'danger', needsNote: true },
     ]
   }
-  if (role === 'OPS' && status === 'OPS_REVIEW_REQUIRED') {
+  if (role === 'COMPLIANCE' && status === 'APPROVAL_REVIEW_REQUIRED') {
+    return [
+      { label: '심사 승인', to: 'ACCOUNT_SETUP_REQUIRED', variant: 'primary', needsNote: false },
+      { label: '보완 요청', to: 'REVISION_REQUESTED', variant: 'outline', needsNote: true },
+      { label: '서류 스크리닝 반려', to: 'DOCUMENT_SCREENING_REQUIRED', variant: 'outline', needsNote: true },
+      { label: '케이스 종료', to: 'CLOSED', closeReason: 'DROPPED', variant: 'danger', needsNote: true },
+    ]
+  }
+  if (role === 'OPS' && status === 'ACCOUNT_SETUP_REQUIRED') {
     return [
       { label: '계정 생성', to: 'COMPLETED', variant: 'primary', needsNote: false, isConfirmOnly: true },
-      { label: '컴플라이언스 반려', to: 'COMPLIANCE_REVIEW_REQUIRED', variant: 'outline', needsNote: true },
+      { label: '컴플라이언스 반려', to: 'APPROVAL_REVIEW_REQUIRED', variant: 'outline', needsNote: true },
       { label: '케이스 종료', to: 'CLOSED', closeReason: 'DROPPED', variant: 'danger', needsNote: true },
     ]
   }
