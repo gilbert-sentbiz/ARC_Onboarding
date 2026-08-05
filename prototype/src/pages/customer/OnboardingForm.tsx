@@ -8,7 +8,6 @@ import {
   Bank,
   User,
   PaperPlaneRight,
-  HandCoins,
 } from '@phosphor-icons/react'
 import Input from '../../components/ui/Input'
 import Textarea from '../../components/ui/Textarea'
@@ -66,7 +65,7 @@ const INITIAL: FormData = {
   contactTitle: '',
   phone: '',
   email: '',
-  services: [],
+  services: ['remittance'],
   collectionCountries: [],
   collectionOtherCountry: '',
   remittanceFrom: '',
@@ -210,22 +209,6 @@ export default function OnboardingForm() {
     setErrors((prev) => ({ ...prev, [key]: undefined }))
   }
 
-  function toggleService(value: string) {
-    setData((prev) => {
-      const nextServices = prev.services.includes(value)
-        ? prev.services.filter((s) => s !== value)
-        : [...prev.services, value]
-      const collectionOn = nextServices.includes('collection')
-      return {
-        ...prev,
-        services: nextServices,
-        collectionCountries:
-          value === 'collection' && prev.services.includes('collection') ? [] : prev.collectionCountries,
-        ...(collectionOn ? { businessType: 'financial' } : {}),
-      }
-    })
-    setErrors((prev) => ({ ...prev, services: undefined }))
-  }
 
   function toggleCollectionCountry(value: string) {
     setData((prev) => ({
@@ -248,11 +231,6 @@ export default function OnboardingForm() {
       else { const e = validatePhone(data.phone); if (e) next.phone = e }
       if (!data.email.trim()) next.email = '필수 항목입니다.'
       else { const e = validateEmail(data.email); if (e) next.email = e }
-      if (data.services.length === 0) next.services = '서비스를 하나 이상 선택해주세요.'
-      if (data.services.includes('collection') && data.collectionCountries.length === 0)
-        next.collectionCountries = '수금 국가를 하나 이상 선택해주세요.'
-      if (data.collectionCountries.includes('OTHER') && !data.collectionOtherCountry.trim())
-        next.collectionOtherCountry = '수금 국가를 직접 입력해주세요.'
       if (data.services.includes('remittance')) {
         const fromVal = data.remittanceFrom === '__OTHER__' ? data.remittanceFromOther : data.remittanceFrom
         if (!fromVal.trim()) next.remittanceFrom = '필수 항목입니다.'
@@ -422,28 +400,16 @@ export default function OnboardingForm() {
             <div className="h-px bg-sb-n100" />
 
             <div className="flex flex-col gap-4">
-              <div className="flex items-baseline gap-2">
-                <SectionLabel>서비스 선택</SectionLabel>
-                <span className="text-[12px] text-sb-n400">(중복 선택 가능)</span>
-              </div>
+              <SectionLabel>서비스 선택</SectionLabel>
               <div className="flex flex-col gap-3">
                 <OptionCard
                   icon={<PaperPlaneRight size={20} weight="fill" />}
                   label="해외 송금"
                   desc="해외 거래처로 외화를 송금합니다"
-                  selected={data.services.includes('remittance')}
-                  onClick={() => toggleService('remittance')}
-                />
-                <OptionCard
-                  icon={<HandCoins size={20} weight="fill" />}
-                  label="수금"
-                  desc="현재 준비 중입니다. 이용 가능 시 별도 안내드리겠습니다."
-                  selected={false}
+                  selected
                   onClick={() => {}}
-                  disabled
                 />
               </div>
-              {errors.services && <p className="text-[11px] text-sb-negative">{errors.services}</p>}
 
               {/* 수금 국가 */}
               {data.services.includes('collection') && (
