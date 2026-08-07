@@ -86,7 +86,9 @@ SentBe(센트비)의 B2B 고객 온보딩 플랫폼 서버. 고객이 설문에 
 | (caseEventStore) | GET /cases/{id}/events (타임라인) | 고객(일부), 내부 |
 | (ruleStore) | GET /rules/active (1차 질문, 세그먼트, 핀 대상 조회용) | 고객, 내부 |
 
-인증: 고객 = email + password (잠정, Open), 내부 = 구글 SSO(백오피스 계정) + staff 테이블 role 인가. 내부 API는 VDI/백오피스 망, 고객 API는 인터넷망 — 망 분리는 API 계층에서, DB는 공유.
+인증: 고객 = **email + 이메일 OTP**(2026-08-07 확정 — 비밀번호 없음, `password_hash`는 항상 null. OTP 코드 저장은 별도 단기 저장소로 개발팀 선택), 내부 = 구글 SSO(백오피스 계정) + staff 테이블 role 인가. 내부 API는 VDI/백오피스 망, 고객 API는 인터넷망 — 망 분리는 API 계층에서, DB는 공유.
+
+파일 업로드(2026-08-07 확정): 허용 형식 pdf, png, jpg / 상한 10MB / **서류당 1파일(멀티업로드 불가)** / 바이러스 스캔은 Full. 형식, 용량 검증은 API에서.
 
 ## MVP에서 만들지 않는 것
 

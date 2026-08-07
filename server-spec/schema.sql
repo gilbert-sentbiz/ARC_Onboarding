@@ -99,12 +99,14 @@ comment on table doc_template is '서류 사전. 케이스 판정 시 document �
 create table customer (
   id              uuid primary key default gen_random_uuid(),
   email           varchar not null unique,
-  auth_method     varchar not null default 'password' check (auth_method in ('password', 'otp')),  -- MVP 잠정 password
-  password_hash   varchar,
+  auth_method     varchar not null default 'otp' check (auth_method in ('otp', 'password')),  -- MVP = 이메일 OTP (2026-08-07 확정)
+  password_hash   varchar,             -- MVP 미사용(항상 null). password 전환 대비 남겨둠
   business_reg_no varchar,             -- 2차 제출 시 백필. MVP는 저장만(자동 중복 판단 없음, 운영 수동 식별용)
   company_name    varchar,
   created_at      timestamptz not null default now()
 );
+-- 고객 인증 = 이메일 OTP. OTP 코드 발급/검증 저장(단기 TTL)은 별도 저장소(테이블 또는 외부 서비스/Redis)
+-- — 인증 인프라라 개발팀 구현 선택. 이 스키마(케이스 도메인 11테이블)에는 포함하지 않음.
 create index customer_biz_reg_no_idx on customer (business_reg_no);
 
 create table onboarding_case (
@@ -165,8 +167,8 @@ create table document_file (
   id                uuid primary key default gen_random_uuid(),
   document_id       uuid not null references document (id),
   file_name         varchar not null,
-  file_size         int not null,     -- 상한 미정(Open) — API에서 검증
-  mime_type         varchar not null, -- pdf, png, jpg (확정 필요 — Open)
+  file_size         int not null,     -- 상한 10MB (2026-08-07 확정) — API에서 검증
+  mime_type         varchar not null, -- 허용: pdf, png, jpg (2026-08-07 확정). 바이러스 스캔은 Full
   storage_key       varchar not null, -- 오브젝트 스토리지 키. 바이너리는 DB에 두지 않는다
   uploader_type     varchar not null check (uploader_type in ('CUSTOMER', 'STAFF')),
   uploader_staff_id uuid references staff (id),
@@ -176,7 +178,7 @@ create table document_file (
 );
 create index document_file_document_idx on document_file (document_id);
 
-comment on table document_file is 'append-only. 새 제출본 업로드 시 이전 행 is_latest=false, 삭제 없음. MVP는 서류당 1파일(API 제약)';
+comment on table document_file is 'append-only. 새 제출본 업로드 시 이전 행 is_latest=false, 삭제 없음. MVP는 서류당 1파일(멀티업로드 불가, API 제약) / 허용 pdf,png,jpg / 상한 10MB';
 
 create table revision_request (
   id                     uuid primary key default gen_random_uuid(),

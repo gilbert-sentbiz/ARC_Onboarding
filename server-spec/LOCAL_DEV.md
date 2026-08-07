@@ -35,7 +35,7 @@ services:
 | `DB_URL` | `db:5432` (compose 내부 DNS) | 사내 Postgres |
 | `S3_ENDPOINT` | `http://storage:9000` (MinIO) | 실 S3 엔드포인트 |
 | `S3_BUCKET` / `S3_ACCESS_KEY` / `S3_SECRET_KEY` | MinIO 로컬 값 | 실 S3 크리덴셜 (시크릿 매니저) |
-| `AUTH_MODE` (고객) | `password` (잠정) | 확정 후 (OTP 등) |
+| `AUTH_MODE` (고객) | `otp` (확정) — 로컬은 OTP 메일 발송을 콘솔 로그로 목킹 | 실제 메일 발송(SES 등) |
 | 내부 SSO 설정 | 목(mock) 또는 스킵 | 백오피스 구글 SSO |
 
 > **이관이 쉬운 이유**: 앱은 S3 *엔드포인트*만 바라보므로 MinIO → 실 S3 교체가 환경변수 몇 개다. DB는 같은 Postgres라 스키마 그대로 간다.
@@ -50,4 +50,4 @@ services:
 1. `S3_ENDPOINT` 등 스토리지 변수를 실 S3로 교체 → 업로드/다운로드 재확인
 2. DB를 사내 Postgres로 → `schema.sql`(또는 마이그레이션) 재적용
 3. 망 분리 반영 — 내부 API는 백오피스/VDI 망, 고객 API는 인터넷망 (API 계층 분리, DB 공유)
-4. 인증을 목에서 실제(내부 구글 SSO, 고객 확정 방식)로 교체
+4. 인증을 목에서 실제로 교체 — 내부 구글 SSO, 고객 이메일 OTP(로컬 콘솔 목 → 실제 메일 발송)
