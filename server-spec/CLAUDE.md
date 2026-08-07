@@ -2,6 +2,13 @@
 
 SentBe(센트비)의 B2B 고객 온보딩 플랫폼 서버. 고객이 설문에 답하고 서류를 올리면, 내부 3역할(영업 → 운영 → 컴플라이언스 → 운영)이 순서대로 심사해서 계정을 개설한다. MVP는 **송금 전용** — 한국 법인(CORP)과 한국 개인사업자(INDIV)만 온보딩한다.
 
+## 스택, 로컬 환경
+
+- **backend: Kotlin** (Spring Boot 또는 Ktor — 개발팀 선택), Gradle
+- **frontend: React** — 기존 `prototype-next`(Next.js)를 재사용, localStorage 접근을 API 호출로 전환. 접점은 `prototype-next/services/`
+- **db: Postgres** (`schema.sql`) · **storage: MinIO**(로컬 S3 호환, 회사 환경에선 실 S3)
+- 로컬은 **도커 compose**로 db/storage/backend/frontend를 통째로 기동 → 검증 후 회사 환경 이관. 목표 구조와 이관 규격은 `LOCAL_DEV.md`. 로컬↔회사 차이는 **환경변수로만** 흡수(S3 엔드포인트 등 하드코딩 금지).
+
 ## 스펙 원천 (충돌 시 이 순서)
 
 1. [테이블 정의서](https://sentbe-product.atlassian.net/wiki/spaces/NSBS/pages/4158980234) — 스키마 (`schema.sql`의 원본)

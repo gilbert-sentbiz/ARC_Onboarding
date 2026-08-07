@@ -6,7 +6,12 @@ ARC 온보딩 플랫폼 **서버 구현 핸드오버 패키지**입니다. 파�
 | --- | --- | --- |
 | `CLAUDE.md` | AI 코딩 도구용 컨텍스트 (도메인, 불변식, 상태 전이, API 후보) | **서버 리포 루트에 복사**하면 끝. Cursor 등 다른 도구면 rules 파일로 |
 | `schema.sql` | Postgres DDL — 테이블 11개, 제약, 인덱스 | 그대로 실행하면 DB가 뜹니다. 이후 오너십은 개발팀에 |
+| `LOCAL_DEV.md` | 로컬 도커 환경 목표 구조 (스택, compose 서비스, 이관 규격) | compose/Dockerfile을 이 규격대로 작성 |
 | `README.md` | 이 문서 | |
+
+## 스택 (2026-08-07 확정)
+
+backend **Kotlin**(Spring Boot/Ktor는 개발팀 선택) · frontend **React**(프로토타입 `prototype-next` 재사용, localStorage → API 전환) · db **Postgres** · storage **MinIO**(로컬 S3 대역). 로컬은 도커로 전체 스택을 돌려보고 회사 환경으로 이관 — 상세는 `LOCAL_DEV.md`.
 
 ## 스펙은 어디 있나요
 
