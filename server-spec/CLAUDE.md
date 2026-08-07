@@ -88,7 +88,9 @@ SentBe(센트비)의 B2B 고객 온보딩 플랫폼 서버. 고객이 설문에 
 
 인증: 고객 = **email + 이메일 OTP**(2026-08-07 확정 — 비밀번호 없음, `password_hash`는 항상 null. OTP 코드 저장은 별도 단기 저장소로 개발팀 선택), 내부 = 구글 SSO(백오피스 계정) + staff 테이블 role 인가. 내부 API는 VDI/백오피스 망, 고객 API는 인터넷망 — 망 분리는 API 계층에서, DB는 공유.
 
-파일 업로드(2026-08-07 확정): 허용 형식 pdf, png, jpg / 상한 10MB / **서류당 1파일(멀티업로드 불가)** / 바이러스 스캔은 Full. 형식, 용량 검증은 API에서.
+파일 업로드(2026-08-07 확정): 허용 형식 pdf, png, jpg / 상한 10MB / **MVP는 서류당 1파일, Full은 멀티업로드** / 바이러스 스캔은 Full. 형식, 용량 검증은 API에서.
+
+데이터 파기(2026-08-07 확정): **MVP는 수동 파기만**. **Full은 케이스 종료 1개월 후 파기 배치** — intake_response·document·document_file·revision_request 삭제, customer(company_name, contact_name)·onboarding_case(entity_code, services, status)만 잔존. company_name/contact_name을 customer에 복사해두는 이유가 이 잔존 때문. ⚠️ 1개월 기준·담당자명 보관 근거는 컴플라이언스 사인오프 대상.
 
 ## MVP에서 만들지 않는 것
 

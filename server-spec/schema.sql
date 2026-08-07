@@ -102,11 +102,18 @@ create table customer (
   auth_method     varchar not null default 'otp' check (auth_method in ('otp', 'password')),  -- MVP = 이메일 OTP (2026-08-07 확정)
   password_hash   varchar,             -- MVP 미사용(항상 null). password 전환 대비 남겨둠
   business_reg_no varchar,             -- 2차 제출 시 백필. MVP는 저장만(자동 중복 판단 없음, 운영 수동 식별용)
-  company_name    varchar,
+  company_name    varchar,             -- 1차 응답에서 복사. 파기 후에도 유지되는 기본정보
+  contact_name    varchar,             -- 1차 응답에서 복사. 파기 후에도 유지 (Full 파기 정책의 잔존 항목)
   created_at      timestamptz not null default now()
 );
 -- 고객 인증 = 이메일 OTP. OTP 코드 발급/검증 저장(단기 TTL)은 별도 저장소(테이블 또는 외부 서비스/Redis)
 -- — 인증 인프라라 개발팀 구현 선택. 이 스키마(케이스 도메인 11테이블)에는 포함하지 않음.
+--
+-- [Full Spec 파기 정책] 케이스 종료 후 1개월 경과 시 파기 배치가:
+--   삭제 = intake_response(응답), document, document_file(파일), revision_request
+--   유지 = customer(company_name, contact_name) + onboarding_case(entity_code, services=희망거래형태, status)
+-- MVP는 자동 파기 없음(수동만). ⚠️ 1개월 기준, 담당자명(개인정보) 보관 근거는 컴플라이언스 사인오프 필요.
+-- company_name/contact_name을 customer에 복사해두는 이유가 이 파기 후 잔존 때문 — 응답을 지워도 남도록.
 create index customer_biz_reg_no_idx on customer (business_reg_no);
 
 create table onboarding_case (
