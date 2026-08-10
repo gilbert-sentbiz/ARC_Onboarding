@@ -185,6 +185,54 @@ data class DocTemplateDto(
     }
 }
 
+data class RevisionRequestDto(
+    val id: java.util.UUID,
+    val documentId: java.util.UUID,
+    val reason: String,
+    val requestedByStaffId: java.util.UUID,
+    val requestedFromStatus: String,
+    val requestedAt: java.time.OffsetDateTime,
+    val resolvedAt: java.time.OffsetDateTime?
+) {
+    companion object {
+        fun from(r: com.sentbe.arc.domain.RevisionRequest) = RevisionRequestDto(
+            id = r.id,
+            documentId = r.documentId,
+            reason = r.reason,
+            requestedByStaffId = r.requestedByStaffId,
+            requestedFromStatus = r.requestedFromStatus,
+            requestedAt = r.requestedAt,
+            resolvedAt = r.resolvedAt
+        )
+    }
+}
+
+data class DocumentFileDto(
+    val id: java.util.UUID,
+    val documentId: java.util.UUID,
+    val fileName: String,
+    val fileSize: Int,
+    val mimeType: String,
+    val storageKey: String,
+    val uploaderType: String,
+    val isLatest: Boolean,
+    val uploadedAt: java.time.OffsetDateTime
+) {
+    companion object {
+        fun from(f: com.sentbe.arc.domain.DocumentFile) = DocumentFileDto(
+            id = f.id,
+            documentId = f.documentId,
+            fileName = f.fileName,
+            fileSize = f.fileSize,
+            mimeType = f.mimeType,
+            storageKey = f.storageKey,
+            uploaderType = f.uploaderType,
+            isLatest = f.isLatest,
+            uploadedAt = f.uploadedAt
+        )
+    }
+}
+
 data class ActiveRulesResponse(
     val segments: List<SegmentDto>,
     val firstQuestions: List<QuestionDto>,

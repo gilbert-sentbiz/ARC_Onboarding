@@ -3,6 +3,7 @@ package com.sentbe.arc.api
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.sentbe.arc.api.dto.*
 import com.sentbe.arc.service.CaseService
+import com.sentbe.arc.service.DocumentService
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.*
 import java.util.UUID
@@ -15,6 +16,7 @@ import java.util.UUID
 @RequestMapping("/cases")
 class CaseController(
     private val caseService: CaseService,
+    private val documentService: DocumentService,
     private val objectMapper: ObjectMapper
 ) {
     // POST /cases — 케이스 생성
@@ -62,5 +64,19 @@ class CaseController(
     fun getSecondQuestions(@PathVariable id: UUID): List<QuestionDto> {
         return caseService.getSecondQuestions(id)
             .map { QuestionDto.from(it, objectMapper) }
+    }
+
+    // POST /cases/{id}/resubmit — 고객 보완 재제출
+    @PostMapping("/{id}/resubmit")
+    fun resubmit(@PathVariable id: UUID): CaseResponse {
+        val case = documentService.resubmit(id)
+        return CaseResponse.fromCase(case)
+    }
+
+    // GET /cases/{id}/revisions — 미해결 보완 사유 목록 (고객용)
+    @GetMapping("/{id}/revisions")
+    fun getOpenRevisions(@PathVariable id: UUID): List<RevisionRequestDto> {
+        return documentService.getOpenRevisions(id)
+            .map { RevisionRequestDto.from(it) }
     }
 }
