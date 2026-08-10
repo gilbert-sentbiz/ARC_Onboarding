@@ -2,16 +2,14 @@ package com.sentbe.arc.api
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.sentbe.arc.api.dto.*
+import com.sentbe.arc.auth.AuthContext
 import com.sentbe.arc.service.CaseService
 import com.sentbe.arc.service.DocumentService
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.*
+import org.springframework.web.server.ResponseStatusException
 import java.util.UUID
 
-/**
- * 고객 케이스 API.
- * 인증 미구현(PI-132). X-Customer-Email 헤더로 고객 식별(임시).
- */
 @RestController
 @RequestMapping("/cases")
 class CaseController(
@@ -23,8 +21,10 @@ class CaseController(
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     fun createCase(@RequestBody req: CreateCaseRequest): CaseResponse {
+        val customer = AuthContext.customer
+            ?: throw ResponseStatusException(HttpStatus.UNAUTHORIZED, "인증이 필요합니다")
         val case = caseService.createCase(
-            email = req.email,
+            email = customer.email,
             companyName = req.companyName,
             contactName = req.contactName,
             firstAnswers = req.firstIntakeAnswers
@@ -38,7 +38,9 @@ class CaseController(
         @PathVariable id: UUID,
         @RequestBody req: SubmitIntakeRequest
     ): CaseResponse {
-        val case = caseService.submitFirstIntake(id, req.answers)
+        val customer = AuthContext.customer
+            ?: throw ResponseStatusException(HttpStatus.UNAUTHORIZED, "인증이 필요합니다")
+        val case = caseService.submitFirstIntake(id, req.answers, customer.id)
         return CaseResponse.fromCase(case)
     }
 
@@ -48,14 +50,21 @@ class CaseController(
         @PathVariable id: UUID,
         @RequestBody req: SubmitIntakeRequest
     ): CaseResponse {
-        val case = caseService.submitSecondIntake(id, req.answers)
+        val customer = AuthContext.customer
+            ?: throw ResponseStatusException(HttpStatus.UNAUTHORIZED, "인증이 필요합니다")
+        val case = caseService.submitSecondIntake(id, req.answers, customer.id)
         return CaseResponse.fromCase(case)
     }
 
     // GET /cases/{id} — 케이스 상세
     @GetMapping("/{id}")
     fun getCase(@PathVariable id: UUID): CaseResponse {
+        val customer = AuthContext.customer
+            ?: throw ResponseStatusException(HttpStatus.UNAUTHORIZED, "인증이 필요합니다")
         val detail = caseService.getCase(id)
+        if (detail.case.customerId != customer.id) {
+            throw ResponseStatusException(HttpStatus.FORBIDDEN, "이 케이스에 접근 권한이 없습니다")
+        }
         return CaseResponse.from(detail, objectMapper)
     }
 
@@ -69,6 +78,12 @@ class CaseController(
     // POST /cases/{id}/resubmit — 고객 보완 재제출
     @PostMapping("/{id}/resubmit")
     fun resubmit(@PathVariable id: UUID): CaseResponse {
+        val customer = AuthContext.customer
+            ?: throw ResponseStatusException(HttpStatus.UNAUTHORIZED, "인증이 필요합니다")
+        val detail = caseService.getCase(id)
+        if (detail.case.customerId != customer.id) {
+            throw ResponseStatusException(HttpStatus.FORBIDDEN, "이 케이스에 접근 권한이 없습니다")
+        }
         val case = documentService.resubmit(id)
         return CaseResponse.fromCase(case)
     }

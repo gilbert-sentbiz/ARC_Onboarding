@@ -108,8 +108,11 @@ class CaseService(
     // 1차 제출 (POST /cases/{id}/intake/first)
     // ────────────────────────────────────────────────────────────────
 
-    fun submitFirstIntake(caseId: UUID, answers: Map<String, Any>): OnboardingCase {
+    fun submitFirstIntake(caseId: UUID, answers: Map<String, Any>, customerId: UUID): OnboardingCase {
         val case = loadCase(caseId)
+        if (case.customerId != customerId) {
+            throw ResponseStatusException(HttpStatus.FORBIDDEN, "이 케이스에 접근 권한이 없습니다")
+        }
         if (case.status != "INQUIRY_RECEIVED") {
             throw ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "케이스 상태가 INQUIRY_RECEIVED가 아닙니다")
         }
@@ -162,8 +165,11 @@ class CaseService(
     // 2차 제출 (POST /cases/{id}/intake/second)
     // ────────────────────────────────────────────────────────────────
 
-    fun submitSecondIntake(caseId: UUID, answers: Map<String, Any>): OnboardingCase {
+    fun submitSecondIntake(caseId: UUID, answers: Map<String, Any>, customerId: UUID): OnboardingCase {
         val case = loadCase(caseId)
+        if (case.customerId != customerId) {
+            throw ResponseStatusException(HttpStatus.FORBIDDEN, "이 케이스에 접근 권한이 없습니다")
+        }
         if (case.status != "INQUIRY_RECEIVED") {
             throw ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "케이스 상태가 INQUIRY_RECEIVED가 아닙니다")
         }

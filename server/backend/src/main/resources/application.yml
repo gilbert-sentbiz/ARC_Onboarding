@@ -24,3 +24,20 @@ arc:
     access-key: ${S3_ACCESS_KEY:minio_access}
     secret-key: ${S3_SECRET_KEY:minio_secret}
     region: ap-northeast-2
+  auth:
+    # console: OTP를 서버 로그로 출력 (로컬 개발용)
+    # smtp: 실제 이메일 발송 (회사 환경 — MAIL_* 변수 필요)
+    mode: ${AUTH_MODE:console}
+  mail:
+    from: ${MAIL_FROM:arc-noreply@sentbe.com}
+    smtp-host: ${MAIL_SMTP_HOST:}
+    smtp-port: ${MAIL_SMTP_PORT:587}
+    smtp-username: ${MAIL_SMTP_USERNAME:}
+    smtp-password: ${MAIL_SMTP_PASSWORD:}
+  sso:
+    # 내부 직원 Google SSO (회사 환경 전환 시 설정)
+    # mock: 로컬 목 로그인 엔드포인트 사용 (/internal/auth/mock-login)
+    # google: 실제 Google OAuth2 (GOOGLE_CLIENT_ID/SECRET 필요)
+    mode: ${SSO_MODE:mock}
+    google-client-id: ${GOOGLE_CLIENT_ID:}
+    google-client-secret: ${GOOGLE_CLIENT_SECRET:}

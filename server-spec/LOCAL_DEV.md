@@ -2,52 +2,151 @@
 
 개발팀과 합의(2026-08-07): **로컬에서 도커로 전체 스택을 돌려보고, 검증 후 회사 환경으로 이관**한다. 회사 인프라 정책(망 분리, 실 S3 등)이 확정되기 전에 개발을 시작할 수 있고, 이 로컬 구성이 이관의 청사진이 된다.
 
-이 문서는 **목표 구조와 규격**이다. 실제 `docker-compose.yml`, `Dockerfile`은 개발팀이 프레임워크 확정 후 작성한다 (아래 규격대로 짜면 우리가 의도한 구조로 수렴).
-
 ## 스택
 
 | 레이어 | 기술 | 비고 |
 | --- | --- | --- |
-| backend | **Kotlin** (Spring Boot 또는 Ktor — 개발팀 선택) | Gradle 빌드 |
-| frontend | **React** | 지금 `prototype-next`(Next.js) 재사용 — 새로 짜지 않고 localStorage → API 전환 |
-| db | **PostgreSQL** | `server-spec/schema.sql` 그대로 |
+| backend | **Kotlin** (Spring Boot 3.4) | Gradle 빌드, Docker 멀티스테이지 |
+| frontend | **React** | `prototype-next`(Next.js) 재사용 — localStorage → API 전환 |
+| db | **PostgreSQL 16** | Flyway 마이그레이션 자동 적용 |
 | storage | **MinIO** (S3 호환) | 로컬 S3 대역. 회사 환경에선 실 S3로 교체 |
 
 ## compose 서비스 구성
 
 ```
 services:
-  db        Postgres      :5432   ← schema.sql로 초기화
+  db        Postgres 16   :5432   ← Flyway V1(DDL) + V2(seed) + V3(auth) 자동 적용
   storage   MinIO         :9000 (API) / :9001 (콘솔)  ← 부팅 시 버킷 생성
-  backend   Kotlin API    :8080   ← db, storage에 의존
+  backend   Kotlin API    :8080   ← db, storage 헬스체크 후 기동
   frontend  React         :3000   ← backend API 호출
 ```
 
-- 컨테이너 기동 순서: db, storage 먼저 → backend(마이그레이션/헬스체크 후) → frontend
-- db 초기화는 `schema.sql`을 Postgres 이미지의 init 마운트로 실행하거나 백엔드 마이그레이션 툴(Flyway 등)로. **택1은 개발팀 결정** — 단 스키마의 원본은 항상 정의서(Confluence)임을 유지
+- 컨테이너 기동 순서: db, storage 먼저 → backend(마이그레이션 완료 후) → frontend
 
-## 환경변수 (이관 지점)
+## 환경변수 전체 목록
 
-로컬 ↔ 회사 환경 차이는 **환경변수로만** 흡수되게 한다. 코드에 엔드포인트를 하드코딩하지 않는다.
+`.env` 파일로 관리한다. 실제 `.env`는 커밋하지 않고 `.env.example`만 공유.
 
-| 변수 | 로컬(도커) | 회사 환경 |
-| --- | --- | --- |
-| `DB_URL` | `db:5432` (compose 내부 DNS) | 사내 Postgres |
-| `S3_ENDPOINT` | `http://storage:9000` (MinIO) | 실 S3 엔드포인트 |
-| `S3_BUCKET` / `S3_ACCESS_KEY` / `S3_SECRET_KEY` | MinIO 로컬 값 | 실 S3 크리덴셜 (시크릿 매니저) |
-| `AUTH_MODE` (고객) | `otp` (확정) — 로컬은 OTP 메일 발송을 콘솔 로그로 목킹 | 실제 메일 발송(SES 등) |
-| 내부 SSO 설정 | 목(mock) 또는 스킵 | 백오피스 구글 SSO |
+```env
+# ── 데이터베이스 ──────────────────────────────────
+DB_URL=jdbc:postgresql://db:5432/arc_db
+DB_USERNAME=arc_user
+DB_PASSWORD=arc_pass
 
-> **이관이 쉬운 이유**: 앱은 S3 *엔드포인트*만 바라보므로 MinIO → 실 S3 교체가 환경변수 몇 개다. DB는 같은 Postgres라 스키마 그대로 간다.
+# ── 스토리지 (MinIO / S3) ─────────────────────────
+S3_ENDPOINT=http://storage:9000
+S3_BUCKET=arc-documents
+S3_ACCESS_KEY=minio_access
+S3_SECRET_KEY=minio_secret
+
+# ── 인증 모드 ─────────────────────────────────────
+# console: OTP를 서버 로그로 출력 (로컬 기본값)
+# smtp:    실제 이메일 발송 (회사 환경)
+AUTH_MODE=console
+
+# smtp 모드일 때만 필요
+MAIL_FROM=arc-noreply@sentbe.com
+MAIL_SMTP_HOST=
+MAIL_SMTP_PORT=587
+MAIL_SMTP_USERNAME=
+MAIL_SMTP_PASSWORD=
+
+# ── 내부 SSO ─────────────────────────────────────
+# mock:   /internal/auth/mock-login 엔드포인트 사용 (로컬 기본값)
+# google: 실제 Google OAuth2 (회사 환경)
+SSO_MODE=mock
+
+# google 모드일 때만 필요
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+```
+
+## 로컬 인증 흐름
+
+### 고객 (이메일 OTP)
+
+```
+1. POST /auth/otp/request   { "email": "customer@example.com" }
+   → 서버 로그에서 OTP 코드 확인 (AUTH_MODE=console)
+   예시: [OTP] email=customer@example.com code=482931 expires_at=...
+
+2. POST /auth/otp/verify    { "email": "customer@example.com", "code": "482931" }
+   → { "token": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" }
+
+3. 이후 모든 고객 API 호출 시:
+   Authorization: Bearer xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+```
+
+### 내부 직원 (목 SSO)
+
+시드 직원 ID (V2 마이그레이션 기준):
+| staffId | role |
+| --- | --- |
+| h0000001-0001-0001-0001-000000000001 | SALES |
+| h0000002-0001-0001-0001-000000000002 | OPS |
+| h0000003-0001-0001-0001-000000000003 | COMPLIANCE |
+| h0000004-0001-0001-0001-000000000004 | ADMIN |
+
+```
+1. POST /internal/auth/mock-login   { "staffId": "h0000002-0001-..." }
+   → { "token": "yyyyyyyy-yyyy-yyyy-yyyy-yyyyyyyyyyyy" }
+
+2. 이후 모든 내부 API 호출 시:
+   Authorization: Bearer yyyyyyyy-yyyy-yyyy-yyyy-yyyyyyyyyyyy
+```
+
+## 회사 환경 이관 절차
+
+### 1단계 — 스토리지 교체 (MinIO → S3)
+
+```env
+S3_ENDPOINT=https://s3.ap-northeast-2.amazonaws.com
+S3_BUCKET=<실 버킷명>
+S3_ACCESS_KEY=<IAM 액세스키>
+S3_SECRET_KEY=<IAM 시크릿>
+```
+
+확인: 업로드/다운로드 동작, 버킷 퍼블릭 액세스 차단 설정
+
+### 2단계 — 데이터베이스 교체
+
+사내 Postgres에 접속하도록 `DB_URL`, `DB_USERNAME`, `DB_PASSWORD` 교체.  
+Flyway가 V1~V3 마이그레이션을 자동 적용함.
+
+확인: `flyway_schema_history` 테이블 확인
+
+### 3단계 — 고객 이메일 발송 교체 (콘솔 → SES)
+
+```env
+AUTH_MODE=smtp
+MAIL_FROM=arc-noreply@sentbe.com
+MAIL_SMTP_HOST=email-smtp.ap-northeast-2.amazonaws.com
+MAIL_SMTP_PORT=587
+MAIL_SMTP_USERNAME=<SES SMTP username>
+MAIL_SMTP_PASSWORD=<SES SMTP password>
+```
+
+> `MailService` 클래스(향후 구현)가 AUTH_MODE=smtp일 때 실제 발송으로 분기한다.  
+> 현재 AUTH_MODE=console이면 서버 로그에만 출력한다.
+
+### 4단계 — 내부 SSO 교체 (목 → Google OAuth2)
+
+```env
+SSO_MODE=google
+GOOGLE_CLIENT_ID=<백오피스 Google OAuth 클라이언트 ID>
+GOOGLE_CLIENT_SECRET=<Google OAuth 클라이언트 시크릿>
+```
+
+> `StaffAuthFilter` 교체: 목 토큰 대신 Google ID Token 검증으로 전환.  
+> `/internal/auth/mock-login` 엔드포인트는 프로덕션에서 비활성화.
+
+### 5단계 — 망 분리
+
+- 고객 API (`/auth/**`, `/cases/**`, `/documents/**`): 인터넷망 노출
+- 내부 API (`/internal/**`): 백오피스/VDI 망으로만 접근 허용 (방화벽/로드밸런서 레벨 제어)
+- DB: 내/외부 API가 동일 Postgres 공유 (네트워크 경계는 앱 위에서 처리)
 
 ## 데이터 주의
 
 - MinIO, db의 시드, 테스트 데이터는 **전부 가짜**. 실고객 데이터, 운영 크리덴셜을 로컬 컨테이너나 AI 도구 입력에 넣지 않는다.
 - 로컬 크리덴셜(MinIO 키 등)은 `.env.example`로 형태만 공유하고 실제 `.env`는 커밋하지 않는다.
-
-## 이관 체크리스트 (로컬 검증 완료 후)
-
-1. `S3_ENDPOINT` 등 스토리지 변수를 실 S3로 교체 → 업로드/다운로드 재확인
-2. DB를 사내 Postgres로 → `schema.sql`(또는 마이그레이션) 재적용
-3. 망 분리 반영 — 내부 API는 백오피스/VDI 망, 고객 API는 인터넷망 (API 계층 분리, DB 공유)
-4. 인증을 목에서 실제로 교체 — 내부 구글 SSO, 고객 이메일 OTP(로컬 콘솔 목 → 실제 메일 발송)
