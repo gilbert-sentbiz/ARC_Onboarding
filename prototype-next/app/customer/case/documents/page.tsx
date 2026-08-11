@@ -1,5 +1,6 @@
 'use client'
 import { useRef, useState, Suspense } from 'react'
+import { useShallow } from 'zustand/react/shallow'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { CheckCircle, CloudArrowUp, Warning, ArrowRight, Clock, Link } from '@phosphor-icons/react'
 import { useCaseStore } from '@/store/caseStore'
@@ -164,7 +165,7 @@ function PageContent() {
   const router = useRouter()
   const session = useSessionStore((s) => s.session)
   const c = useCaseStore((s) => (id ? s.cases[id] : null))
-  const documents = useDocumentStore((s) => s.getByCase(id))
+  const documents = useDocumentStore(useShallow((s) => s.getByCase(id)))
   const allFiles = useDocumentFileStore((s) => s.files)
   const allRevisions = useRevisionRequestStore((s) => s.requests)
   const [submitted, setSubmitted] = useState(false)

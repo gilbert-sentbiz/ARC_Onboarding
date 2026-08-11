@@ -1,5 +1,6 @@
 'use client'
 import { Suspense, useState } from 'react'
+import { useShallow } from 'zustand/react/shallow'
 import { useRouter, useSearchParams } from 'next/navigation'
 import JSZip from 'jszip'
 import {
@@ -182,12 +183,12 @@ function CaseDetailContent() {
   const { getNotes, addNote } = useInternalNoteStore()
   const staff = useInternalStaffStore((s) => s.staff)
 
-  const documents = useDocumentStore((s) => s.getByCase(id))
+  const documents = useDocumentStore(useShallow((s) => s.getByCase(id)))
   const allFiles = useDocumentFileStore((s) => s.files)
   const allRevisions = useRevisionRequestStore((s) => s.requests)
   const firstIntake = useIntakeResponseStore((s) => id ? s.getByCase(id, 'first') : null)
   const secondIntake = useIntakeResponseStore((s) => id ? s.getByCase(id, 'second') : null)
-  const events = useCaseEventStore((s) => id ? s.getByCase(id) : [])
+  const events = useCaseEventStore(useShallow((s) => id ? s.getByCase(id) : []))
 
   const [tab, setTab] = useState<TabKey>('info')
   const [pendingAction, setPendingAction] = useState<ActionDef | null>(null)
