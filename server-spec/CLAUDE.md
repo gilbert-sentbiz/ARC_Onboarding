@@ -19,10 +19,10 @@ SentBe(센트비)의 B2B 고객 온보딩 플랫폼 서버. 고객이 설문에 
 
 ### 아키텍처 — 헥사고날 (Ports & Adapters)
 
-ARC는 **bizplatform 안의 모듈로 편입**한다. 패키지 루트 `com.sentbe.bizplatform.onboarding.{도메인}` (모듈명 `onboarding`은 제안 — 정확한 명칭은 백엔드팀 컨벤션에 맞춰 확정). 도메인마다 동일 계층:
+ARC는 **bizplatform 안의 모듈로 편입**한다. 패키지 루트 `com.sentbe.bizplatform.arc.{도메인}` (모듈명 `arc`는 **잠정** — 백엔드팀 컨벤션 확정 시 리네임, 패키지 경로 찾아바꾸기라 기계적 작업). 도메인마다 동일 계층:
 
 ```
-com.sentbe.bizplatform.onboarding.{도메인}/
+com.sentbe.bizplatform.arc.{도메인}/
 ├── adapter/
 │   ├── in/          # REST 컨트롤러, 요청·응답 DTO
 │   └── out/         # JDBC 리포지토리, S3·외부 API 클라이언트
