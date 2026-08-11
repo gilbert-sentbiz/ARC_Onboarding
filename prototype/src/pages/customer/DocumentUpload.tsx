@@ -163,6 +163,11 @@ export default function DocumentUpload() {
   const allFiles = useDocumentFileStore((s) => s.files)
   const allRevisions = useRevisionRequestStore((s) => s.requests)
   const [submitted, setSubmitted] = useState(false)
+  const [uploadError, setUploadError] = useState<string | null>(null)
+
+  const ALLOWED_MIME = ['application/pdf', 'image/png', 'image/jpeg']
+  const ALLOWED_EXT = ['.pdf', '.png', '.jpg', '.jpeg']
+  const MAX_BYTES = 10 * 1024 * 1024
 
   if (!c || !id) {
     return (
@@ -210,6 +215,16 @@ export default function DocumentUpload() {
     : [...documents.filter((d) => d.isRequired), ...documents.filter((d) => !d.isRequired)]
 
   function handleUpload(docId: string, file: File) {
+    const ext = '.' + (file.name.split('.').pop()?.toLowerCase() ?? '')
+    if (!ALLOWED_MIME.includes(file.type) && !ALLOWED_EXT.includes(ext)) {
+      setUploadError('pdf, png, jpg 파일만 업로드할 수 있습니다.')
+      return
+    }
+    if (file.size > MAX_BYTES) {
+      setUploadError(`파일 크기는 10MB를 초과할 수 없습니다. (현재: ${(file.size / 1024 / 1024).toFixed(1)}MB)`)
+      return
+    }
+    setUploadError(null)
     const reader = new FileReader()
     reader.onload = (e) => {
       const dataUrl = e.target?.result as string
@@ -264,6 +279,13 @@ export default function DocumentUpload() {
                 : `필수 서류 ${requiredDocs.length}개를 모두 업로드해주세요.`}
             </p>
           </div>
+
+          {uploadError && (
+            <div className="flex items-center gap-2 px-4 py-3 rounded-[8px] bg-red-50 border border-red-200 text-[13px] text-red-700">
+              <Warning size={15} weight="fill" className="flex-shrink-0" />
+              {uploadError}
+            </div>
+          )}
 
           <div className="flex flex-col gap-3">
             {displayDocs.map((doc) =>

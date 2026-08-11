@@ -492,9 +492,6 @@ export default function InternalCaseDetail() {
                               <div className="flex flex-col gap-0.5">
                                 {currentFiles.length > 0 && (
                                   <div className="flex flex-col gap-0.5">
-                                    {currentFiles.length > 1 && (
-                                      <span className="text-[11px] text-sb-n500 font-medium">현재 파일 ({currentFiles.length}개)</span>
-                                    )}
                                     {currentFiles.map(f => (
                                       <div key={f.id} className="flex items-center gap-2">
                                         <button
