@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useShallow } from 'zustand/react/shallow'
 import { useParams, useNavigate } from 'react-router-dom'
 import JSZip from 'jszip'
 import {
@@ -172,10 +173,10 @@ export default function InternalCaseDetail() {
   const { getNotes, addNote } = useInternalNoteStore()
   const staff = useInternalStaffStore((s) => s.staff)
 
-  const documents = useDocumentStore((s) => id ? s.getByCase(id) : [])
+  const documents = useDocumentStore(useShallow((s) => id ? s.getByCase(id) : []))
   const allFiles = useDocumentFileStore((s) => s.files)
   const allRevisions = useRevisionRequestStore((s) => s.requests)
-  const events = useCaseEventStore((s) => id ? s.getByCase(id) : [])
+  const events = useCaseEventStore(useShallow((s) => id ? s.getByCase(id) : []))
   const firstIntake = useIntakeResponseStore((s) => id ? s.getByCase(id, 'first') : null)
   const secondIntake = useIntakeResponseStore((s) => id ? s.getByCase(id, 'second') : null)
 
