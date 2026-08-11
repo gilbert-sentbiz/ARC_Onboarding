@@ -4,12 +4,15 @@
 
 ## 스택
 
+회사 백엔드 표준(`CLAUDE.md`)을 따른다. **아래 표가 기준이며, 현재 `server/` 참조 구현의 값(Spring Boot 3.4·Flyway 등)은 비준수 — PI-133에서 표준으로 재정렬한다.**
+
 | 레이어 | 기술 | 비고 |
 | --- | --- | --- |
-| backend | **Kotlin** (Spring Boot 3.4) | Gradle 빌드, Docker 멀티스테이지 |
+| backend | **Kotlin 2.3.20 + Spring Boot 4.1.0**, JDK 25, Gradle 9.2.1 | Spring Data JDBC(JPA 아님), Docker 멀티스테이지(temurin 25) |
 | frontend | **React** | `prototype-next`(Next.js) 재사용 — localStorage → API 전환 |
-| db | **PostgreSQL 16** | Flyway 마이그레이션 자동 적용 |
-| storage | **MinIO** (S3 호환) | 로컬 S3 대역. 회사 환경에선 실 S3로 교체 |
+| db | **PostgreSQL** | **Liquibase** 마이그레이션(= schema.sql 내용) |
+| cache | **Redis** | OTP 코드 등 단기 TTL |
+| storage | **MinIO** (S3 호환) | 로컬 S3 대역. 회사 환경에선 실 S3(AWS SDK v2)로 교체 |
 
 ## compose 서비스 구성
 

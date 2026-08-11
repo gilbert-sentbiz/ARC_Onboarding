@@ -4,12 +4,84 @@ SentBe(센트비)의 B2B 고객 온보딩 플랫폼 서버. 고객이 설문에 
 
 ## 스택, 로컬 환경
 
-- **backend: Kotlin** (Spring Boot 또는 Ktor — 개발팀 선택), Gradle
-- **frontend: React** — 기존 `prototype-next`(Next.js)를 재사용, localStorage 접근을 API 호출로 전환. 접점은 `prototype-next/services/`
-- **db: Postgres** (`schema.sql`) · **storage: MinIO**(로컬 S3 호환, 회사 환경에선 실 S3)
-- 로컬은 **도커 compose**로 db/storage/backend/frontend를 통째로 기동 → 검증 후 회사 환경 이관. 목표 구조와 이관 규격은 `LOCAL_DEV.md`. 로컬↔회사 차이는 **환경변수로만** 흡수(S3 엔드포인트 등 하드코딩 금지).
+**회사 백엔드 표준(BizPlatform / Tech-SentBiz-Backend)을 그대로 따른다.** 아래 "회사 백엔드 표준" 섹션이 아키텍처·스택·컨벤션의 상위 규범이고 어긋나면 안 된다.
+
+- **backend: Kotlin 2.3.20 + Spring Boot 4.1.0**(Spring MVC, 동기 + 코루틴 병행), **JDK 25**, Gradle 9.2.1(Kotlin DSL, wrapper). 영속성은 **Spring Data JDBC (JPA 아님)**, 마이그레이션은 **Liquibase**.
+- **frontend: React** — 기존 `prototype-next`(Next.js) 재사용, localStorage → API 전환. 접점 `prototype-next/services/`. **프론트 전용 회사 표준 문서는 없음** → 백엔드의 API 계약·4프로필(local/dev/stg/prd)·인증(OTP/SSO)에 맞춘다.
+- **db: PostgreSQL** · **cache: Redis**(OTP 코드 등 단기 TTL) · **storage: AWS S3(SDK v2)** — 로컬은 MinIO(S3 호환).
+- 로컬은 **도커 compose**로 db/redis/storage/backend/frontend 기동 → 검증 후 회사 환경 이관. 규격 `LOCAL_DEV.md`. 로컬↔회사 차이는 **환경변수로만** 흡수(엔드포인트 하드코딩 금지).
+
+> ⚠️ 현재 `server/`의 코드(arc-dev 참조 구현, PI-128~132)는 이 표준 확정 이전에 작성돼 **비준수**다(Spring Boot 3.4 / JPA / Flyway / 평면 레이어 / Kotlin 1.9 / JDK 21). 동작하는 **참조 구현**으로만 쓰고, 실제 백엔드는 아래 표준 위에서 재구성(re-scaffold)한다 — PI-133.
+
+## 회사 백엔드 표준 (상위 규범, BINDING)
+
+출처: [백엔드 테크 스펙 (BizPlatform 기준)](https://sentbe-product.atlassian.net/wiki/spaces/S2/pages/4173660292). 아키텍처·컨벤션·버전은 이 문서가 최종이다. ARC는 *무엇을 만드나*(도메인)를 제공하고, *어떻게 만드나*는 전부 여기 따른다.
+
+### 아키텍처 — 헥사고날 (Ports & Adapters)
+
+ARC는 **bizplatform 안의 모듈로 편입**한다. 패키지 루트 `com.sentbe.bizplatform.onboarding.{도메인}` (모듈명 `onboarding`은 제안 — 정확한 명칭은 백엔드팀 컨벤션에 맞춰 확정). 도메인마다 동일 계층:
+
+```
+com.sentbe.bizplatform.onboarding.{도메인}/
+├── adapter/
+│   ├── in/          # REST 컨트롤러, 요청·응답 DTO
+│   └── out/         # JDBC 리포지토리, S3·외부 API 클라이언트
+└── application/
+    ├── domain/      # 도메인 모델
+    ├── port/in/     # 유스케이스 인터페이스 (컨트롤러가 호출)
+    ├── port/out/    # 외부 의존 인터페이스 (서비스가 호출)
+    ├── service/     # 비즈니스 로직
+    ├── event/       # 도메인 이벤트
+    └── exception/   # 도메인 예외
+```
+
+비즈니스 로직(`application`)은 `port` 인터페이스에만 의존하고, DB·S3 등 구체 기술은 `adapter`에 격리한다.
+
+### ARC 도메인 분할
+
+| 도메인 | 테이블 | 핵심 유스케이스 |
+| --- | --- | --- |
+| `case` | onboarding_case, case_event | 케이스 생성, 4단계 상태 전이, 타임라인 |
+| `intake` | intake_response | 1·2차 응답 저장·제출 |
+| `document` | document, document_file, revision_request | 서류 생성·업로드·보완 루프·승인 |
+| `rule` | segment, question, doc_template | 룰 시드 조회, 분류·질문·서류 결정 |
+| `customer` | customer | 고객 계정, 이메일 OTP 인증 |
+| `staff` | staff | 내부 계정, 역할 인가(SSO) |
+| `global` | — | 공통(예외, 설정, 이벤트 인프라) |
+
+케이스 생성/1·2차 제출은 `case` 도메인 서비스가 `rule`·`document`·`intake`의 `port/out`을 호출하는 오케스트레이션이다(도메인 간 직접 DB 접근 금지).
+
+### 영속성 — Spring Data JDBC (JPA 금지)
+
+- `@Entity`·지연 로딩 등 JPA 스타일 금지. 애그리거트 루트 단위 리포지토리.
+- `jsonb`(pinned_question_ids, answers, segment_meta, payload, options 등)와 `text[]`(services, sectors)는 **커스텀 컨버터**로 매핑(Jackson jsonb, Postgres array).
+- 스키마는 `schema.sql` 내용을 **Liquibase changelog**로 옮긴다(포맷만 변경, 내용 동일). `question` 불변 트리거·partial unique index 등 DB 레벨 제약은 ORM 무관하게 그대로 유지.
+
+### 컨벤션·품질 게이트
+
+- **ktlint 1.8.0 강제** — 위반 시 컴파일 실패. 커밋 전 `./gradlew ktlintFormat`.
+- 컴파일러 null 안정성 엄격(`-Xjsr305=strict`).
+- 직렬화 kotlinx-serialization + Jackson 병행, 로깅 Log4j2(Logback 제외).
+- API 문서 Springdoc OpenAPI(Swagger UI) + Spring REST Docs.
+
+### 테스트
+
+- **Kotest 6.x(BDD 스타일)** + JUnit 5. DB 테스트는 **Testcontainers(PostgreSQL)**, 스키마는 Liquibase. mockito-kotlin, 외부 HTTP는 MockWebServer.
+
+### 인프라·빌드
+
+- Docker 멀티스테이지(temurin 25, alpine, 비루트 실행), 사내 Nexus 저장소 — 빌드에 `NEXUS_USERNAME`/`NEXUS_PASSWORD` 필요(없으면 빌드 실패).
+- AWS SDK v2: Secrets Manager, S3, STS/SSO. 환경 프로필 4개(local/dev/stg/prd).
+
+### AI 코딩 주의 (회사 문서 6장)
+
+- **Spring Boot 4.x·Kotlin 2.3·JDK 25는 최신 메이저** — AI가 3.x/구버전 API를 제안하기 쉬우니 버전을 항상 컨텍스트에 넣는다.
+- JPA 스타일 코드가 나오면 동작 안 함(Spring Data JDBC임)을 프롬프트에 명시.
+- 온보딩은 금액 계산이 없는 대신 **상태 전이·불변식**이 위험 지점 — AI 생성 코드라도 반드시 리뷰·테스트.
 
 ## 스펙 원천 (충돌 시 이 순서)
+
+> **아키텍처·스택·컨벤션은 위 "회사 백엔드 표준"이 최우선.** 아래는 *무엇을 만드나*(도메인)의 원천이다.
 
 1. [테이블 정의서](https://sentbe-product.atlassian.net/wiki/spaces/NSBS/pages/4158980234) — 스키마 (`schema.sql`의 원본)
 2. [PRD](https://sentbe-product.atlassian.net/wiki/spaces/NSBS/pages/4134994324) — 스콥, 화면, 워크플로우 (섹션별 MVP vs Full 표 — MVP 열만 구현)
