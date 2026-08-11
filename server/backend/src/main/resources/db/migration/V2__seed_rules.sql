@@ -22,10 +22,10 @@ INSERT INTO segment (id, axis, code, label, classification_trigger) VALUES
 -- 2. staff (테스트 계정 4명 — role별 1명)
 -- ──────────────────────────────
 INSERT INTO staff (id, email, name, role) VALUES
-  ('h0000001-0001-0000-0000-000000000000', 'sales@sentbe.com',      '영업 테스트',      'SALES'),
-  ('h0000002-0001-0000-0000-000000000000', 'ops@sentbe.com',        '운영 테스트',      'OPS'),
-  ('h0000003-0001-0000-0000-000000000000', 'compliance@sentbe.com', '컴플라이언스 테스트', 'COMPLIANCE'),
-  ('h0000004-0001-0000-0000-000000000000', 'admin@sentbe.com',      '관리자 테스트',     'ADMIN');
+  ('00000001-0001-0000-0000-000000000000', 'sales@sentbe.com',      '영업 테스트',      'SALES'),
+  ('00000002-0001-0000-0000-000000000000', 'ops@sentbe.com',        '운영 테스트',      'OPS'),
+  ('00000003-0001-0000-0000-000000000000', 'compliance@sentbe.com', '컴플라이언스 테스트', 'COMPLIANCE'),
+  ('00000004-0001-0000-0000-000000000000', 'admin@sentbe.com',      '관리자 테스트',     'ADMIN');
 
 -- ──────────────────────────────
 -- 3. question — 1차 (phase='first', classification='common', 14문항)
