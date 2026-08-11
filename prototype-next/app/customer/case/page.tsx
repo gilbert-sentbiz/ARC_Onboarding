@@ -1,6 +1,7 @@
 'use client'
 
 import { Suspense } from 'react'
+import { useShallow } from 'zustand/react/shallow'
 import { useRouter, useSearchParams } from 'next/navigation'
 import {
   CheckCircle,
@@ -88,7 +89,7 @@ function PageContent() {
   const id = searchParams.get('id') ?? ''
   const router = useRouter()
   const c = useCaseStore((s) => (id ? s.cases[id] : null))
-  const events = useCaseEventStore((s) => s.getByCase(id))
+  const events = useCaseEventStore(useShallow((s) => s.getByCase(id)))
 
   if (!c || !id) {
     return (
