@@ -282,13 +282,13 @@ INSERT INTO question (id, code, phase, classification, owner_segment_id, label, 
 --    공통 7종 (CORP+INDIV 모두) + ENTITY_CORP 고유 2종
 -- ──────────────────────────────
 INSERT INTO doc_template (id, type, display_name, classification, owner_segment_id, is_required, is_conditional, guide) VALUES
-  ('g0000001-0001-0000-0000-000000000000', 'BIZ_REGISTRATION',        '사업자등록증',          'common', null, true,  false, '발급 3개월 이내 원본'),
-  ('g0000002-0001-0000-0000-000000000000', 'ID_COPY',                 '대표자 신분증 사본',    'common', null, true,  false, '주민등록증 · 운전면허증 · 여권 중 1종'),
-  ('g0000003-0001-0000-0000-000000000000', 'SHAREHOLDER_LIST',        '주주명부',              'common', null, true,  false, '법인인감 날인 필수'),
-  ('g0000004-0001-0000-0000-000000000000', 'CONTRACT',                '거래 계약서 (견본)',    'common', null, false, false, '최근 실거래 계약서 또는 주문서 샘플'),
-  ('g0000005-0001-0000-0000-000000000000', 'SAMPLE_INVOICE_SHIPPING', '인보이스 / 선적서류',  'common', null, false, false, '수출입 실거래 증빙: 인보이스 또는 선적서류'),
-  ('g0000006-0001-0000-0000-000000000000', 'BANK_PROOF',              '통장 사본',             'common', null, true,  false, '법인 명의 계좌 (최근 3개월 거래내역 포함)'),
-  ('g0000007-0001-0000-0000-000000000000', 'WEBSITE_URL',             '홈페이지 URL',          'common', null, false, false, null),
+  ('e0000001-0001-0000-0000-000000000000', 'BIZ_REGISTRATION',        '사업자등록증',          'common', null, true,  false, '발급 3개월 이내 원본'),
+  ('e0000002-0001-0000-0000-000000000000', 'ID_COPY',                 '대표자 신분증 사본',    'common', null, true,  false, '주민등록증 · 운전면허증 · 여권 중 1종'),
+  ('e0000003-0001-0000-0000-000000000000', 'SHAREHOLDER_LIST',        '주주명부',              'common', null, true,  false, '법인인감 날인 필수'),
+  ('e0000004-0001-0000-0000-000000000000', 'CONTRACT',                '거래 계약서 (견본)',    'common', null, false, false, '최근 실거래 계약서 또는 주문서 샘플'),
+  ('e0000005-0001-0000-0000-000000000000', 'SAMPLE_INVOICE_SHIPPING', '인보이스 / 선적서류',  'common', null, false, false, '수출입 실거래 증빙: 인보이스 또는 선적서류'),
+  ('e0000006-0001-0000-0000-000000000000', 'BANK_PROOF',              '통장 사본',             'common', null, true,  false, '법인 명의 계좌 (최근 3개월 거래내역 포함)'),
+  ('e0000007-0001-0000-0000-000000000000', 'WEBSITE_URL',             '홈페이지 URL',          'common', null, false, false, null),
   -- ENTITY_CORP 고유
-  ('g0000008-0001-0000-0000-000000000000', 'CORPORATE_REGISTRY', '법인등기부등본',    'own', 'a0000001-0001-0000-0000-000000000000', true,  false, '발급 3개월 이내'),
-  ('g0000009-0001-0000-0000-000000000000', 'SEAL_CERTIFICATE',   '법인인감증명서',    'own', 'a0000001-0001-0000-0000-000000000000', true,  false, '발급 3개월 이내');
+  ('e0000008-0001-0000-0000-000000000000', 'CORPORATE_REGISTRY', '법인등기부등본',    'own', 'a0000001-0001-0000-0000-000000000000', true,  false, '발급 3개월 이내'),
+  ('e0000009-0001-0000-0000-000000000000', 'SEAL_CERTIFICATE',   '법인인감증명서',    'own', 'a0000001-0001-0000-0000-000000000000', true,  false, '발급 3개월 이내');
