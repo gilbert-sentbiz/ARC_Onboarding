@@ -7,10 +7,10 @@
 - **정본 = GitHub `ARC_Onboarding/docs/` (main 브랜치)**: PRD.md, ERD.md, TABLE-SPEC.md, CHANGELOG.md, README(문서 허브) 신규. Confluence 3개 문서(4134994324/4148920321/4158980234)는 미러. 각 문서 상단에 정본/미러 헤더.
 - 로컬 Obsidian PRD·CHANGELOG는 이관 배너 후 참고용. 낡은 `docs/arc-client-portal-spec.md`(5월 초기 스펙)는 DEPRECATED.
 - 수정 방향 전환: **GitHub 마크다운 편집 → Confluence 미러 반영 → CHANGELOG**. arc-pm·arc-qa 스킬 지침에 반영.
-- **서버 관련 산출물 위치** (이번 통일에서 docs/로 옮기지 않고 각 위치 유지, README에 안내):
+- **서버 문서도 docs/로 이관** (완전 통일): `docs/SERVER-STANDARD.md`(구 server-spec/CLAUDE.md 규범), `docs/LOCAL_DEV.md`, `docs/schema.sql`. server-spec 브랜치 `server-spec/`는 이제 구 위치.
+  - 단, `SERVER-STANDARD.md`는 AI 자동 로드를 위해 `arc-backend` 레포 루트에 `CLAUDE.md`로도 복사 필요(현재 부재) — 후속.
   - 서버 코드: `gilbert-sentbiz/arc-backend` 레포 (Kotlin/Spring, 회사 백엔드 표준).
-  - 서버 규범(CLAUDE.md 바인딩)·DDL(schema.sql)·로컬 도커 규격(LOCAL_DEV.md): `server-spec` 브랜치 `server-spec/`.
-  - 서버 데이터 모델은 docs/ERD.md·TABLE-SPEC.md로 통일됨(정본).
+  - 서버 데이터 모델은 docs/ERD.md·TABLE-SPEC.md(정본).
   - 서버 QA 적대 리뷰 결과(상태머신 설계 위반 PI-142·143 등)는 아래 2026-08-12 항목 참조 — 아직 미수정(To Do).
 
 ## 2026-08-12 — 서버 코드 QA 적대 리뷰: 상태머신 설계 위반 발견 (PI-142~145)
