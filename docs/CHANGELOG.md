@@ -1,5 +1,18 @@
 # 온보딩 플랫폼 PRD 변경 로그
 
+## 2026-08-13 — 문서 GitHub 정본 통일 + 서버 작업 위치 정리
+
+> 기획 문서가 Confluence·로컬 Obsidian·낡은 GitHub 사본으로 흩어져 있던 것을 GitHub 정본으로 통일. Confluence는 열람용 미러로 전환.
+
+- **정본 = GitHub `ARC_Onboarding/docs/` (main 브랜치)**: PRD.md, ERD.md, TABLE-SPEC.md, CHANGELOG.md, README(문서 허브) 신규. Confluence 3개 문서(4134994324/4148920321/4158980234)는 미러. 각 문서 상단에 정본/미러 헤더.
+- 로컬 Obsidian PRD·CHANGELOG는 이관 배너 후 참고용. 낡은 `docs/arc-client-portal-spec.md`(5월 초기 스펙)는 DEPRECATED.
+- 수정 방향 전환: **GitHub 마크다운 편집 → Confluence 미러 반영 → CHANGELOG**. arc-pm·arc-qa 스킬 지침에 반영.
+- **서버 관련 산출물 위치** (이번 통일에서 docs/로 옮기지 않고 각 위치 유지, README에 안내):
+  - 서버 코드: `gilbert-sentbiz/arc-backend` 레포 (Kotlin/Spring, 회사 백엔드 표준).
+  - 서버 규범(CLAUDE.md 바인딩)·DDL(schema.sql)·로컬 도커 규격(LOCAL_DEV.md): `server-spec` 브랜치 `server-spec/`.
+  - 서버 데이터 모델은 docs/ERD.md·TABLE-SPEC.md로 통일됨(정본).
+  - 서버 QA 적대 리뷰 결과(상태머신 설계 위반 PI-142·143 등)는 아래 2026-08-12 항목 참조 — 아직 미수정(To Do).
+
 ## 2026-08-12 — 서버 코드 QA 적대 리뷰: 상태머신 설계 위반 발견 (PI-142~145)
 
 > arc-dev가 재정렬(PI-133) 백엔드 구현 완료(arc-backend 레포). QA 적대 리뷰 결과 빌드/스택/스키마/소급차단은 표준 부합, 워크플로우 상태전이에서 설계 위반 4건.
