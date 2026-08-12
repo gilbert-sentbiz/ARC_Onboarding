@@ -1,11 +1,27 @@
-# Docs
+# ARC 온보딩 플랫폼 — 문서 허브
 
-온보딩 플랫폼의 기획 문서와 화면 정의 문서를 둔다.
+**이 폴더가 기획 문서의 정본(source of truth)이다.** Confluence는 이해관계자(업무·컴플) 열람용 미러다 — 내용 수정은 여기(GitHub)에서 하고 Confluence 미러에 반영한다.
 
-## 기준 문서
+## 문서
 
-이 repo에서는 아래 파일을 고객용 온보딩 기준 문서로 본다.
+| 문서 | 내용 | Confluence 미러 |
+| --- | --- | --- |
+| [PRD.md](PRD.md) | 제품 요구사항 — 개요·화면·상태값·분류/질문/서류·MVP 요약 | [4134994324](https://sentbe-product.atlassian.net/wiki/spaces/NSBS/pages/4134994324) |
+| [ERD.md](ERD.md) | 서버 데이터 모델 — 설계 원칙·다이어그램·동작 흐름 | [4148920321](https://sentbe-product.atlassian.net/wiki/spaces/NSBS/pages/4148920321) |
+| [TABLE-SPEC.md](TABLE-SPEC.md) | 테이블 정의서 — 컬럼·제약 상세 (11개 테이블) | [4158980234](https://sentbe-product.atlassian.net/wiki/spaces/NSBS/pages/4158980234) |
+| [CHANGELOG.md](CHANGELOG.md) | 전체 변경 이력 | (로컬에서 이관) |
 
-- [`source/arc-client-portal-spec-ko.txt`](./source/arc-client-portal-spec-ko.txt)
+## 코드·스펙 (다른 위치)
 
-화면기획서나 파생 문서는 이 파일을 기준으로 해석하고 갱신한다.
+| 자산 | 위치 |
+| --- | --- |
+| 서버 백엔드 코드 | `gilbert-sentbiz/arc-backend` 레포 (Kotlin/Spring) |
+| 서버 규범(AI 컨텍스트)·DDL·로컬 도커 규격 | `server-spec` 브랜치 `server-spec/` (CLAUDE.md, schema.sql, LOCAL_DEV.md) |
+| 프론트 프로토타입 | 이 레포 `prototype-next/` (mvp 브랜치 배포) |
+| 질문 문구·옵션 원천 | [설문 시트](https://docs.google.com/spreadsheets/d/1b7ZMAWl6QIgLT-fnRnrt3r2fdmLUKc785VzyRk1J3pQ/edit) |
+
+## 운영 규칙
+
+- **정본은 이 docs/ (main 브랜치).** 낡은 `arc-client-portal-spec.md`는 2026년 5월 초기 스펙 — deprecated, 참고용.
+- 문서는 배포에 영향 없는 `main` 브랜치에 둔다(배포는 `mvp` 푸시만 트리거).
+- PRD/ERD/정의서 수정 시: 이 마크다운을 고치고 → Confluence 미러 반영 → CHANGELOG 기록.
