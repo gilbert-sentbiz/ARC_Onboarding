@@ -11,12 +11,21 @@
 | [TABLE-SPEC.md](TABLE-SPEC.md) | 테이블 정의서 — 컬럼·제약 상세 (11개 테이블) | [4158980234](https://sentbe-product.atlassian.net/wiki/spaces/NSBS/pages/4158980234) |
 | [CHANGELOG.md](CHANGELOG.md) | 전체 변경 이력 | (로컬에서 이관) |
 
-## 코드·스펙 (다른 위치)
+### 서버 문서 (2026-08-13 docs/로 이관)
+
+| 문서 | 내용 |
+| --- | --- |
+| [SERVER-STANDARD.md](SERVER-STANDARD.md) | 서버 규범 — 회사 백엔드 표준 바인딩, 불변식, 상태 전이, API 후보, 도메인 (구 `server-spec/CLAUDE.md`) |
+| [LOCAL_DEV.md](LOCAL_DEV.md) | 로컬 도커 환경 규격 (compose, 이관 지점) |
+| [schema.sql](schema.sql) | Postgres DDL 원본 (Liquibase changelog의 짝) |
+
+> **AI 컨텍스트용**: `SERVER-STANDARD.md`는 백엔드 레포(`arc-backend`) 루트에 `CLAUDE.md`로도 복사해 둬야 코딩 AI가 자동 로드한다(docs/는 참조 정본, arc-backend 루트는 실행 컨텍스트). — arc-backend 루트에 CLAUDE.md 부재, 추가 필요.
+
+## 코드 (다른 위치)
 
 | 자산 | 위치 |
 | --- | --- |
 | 서버 백엔드 코드 | `gilbert-sentbiz/arc-backend` 레포 (Kotlin/Spring) |
-| 서버 규범(AI 컨텍스트)·DDL·로컬 도커 규격 | `server-spec` 브랜치 `server-spec/` (CLAUDE.md, schema.sql, LOCAL_DEV.md) |
 | 프론트 프로토타입 | 이 레포 `prototype-next/` (mvp 브랜치 배포) |
 | 질문 문구·옵션 원천 | [설문 시트](https://docs.google.com/spreadsheets/d/1b7ZMAWl6QIgLT-fnRnrt3r2fdmLUKc785VzyRk1J3pQ/edit) |
 
