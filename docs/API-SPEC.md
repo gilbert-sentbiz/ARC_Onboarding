@@ -3,6 +3,18 @@
 > **정본: 이 GitHub 문서.** 프론트↔서버 데이터 계약의 단일 원천. 백엔드 표준([SERVER-STANDARD.md](SERVER-STANDARD.md))을 따른다 — 각 엔드포인트는 헥사고날 `adapter/in` 컨트롤러 + **타입드 요청/응답 DTO**(Map 금지), Springdoc OpenAPI + Spring REST Docs 스니펫 산출. 프론트는 생성된 OpenAPI를 계약으로 삼아 연동한다.
 > 최종: 2026-08-15. **MVP 대상 = 18개**(+ `/health` 제외). **임시저장 PUT 2개(C3·C5)는 MVP 제외 — Full Spec**(2026-08-15 확정).
 
+## 백엔드 표준 반영 (설계 원칙)
+
+이 API 설계는 [SERVER-STANDARD.md](SERVER-STANDARD.md)(회사 백엔드 표준)를 그대로 따른다:
+
+- **아키텍처(헥사고날)**: 각 엔드포인트 = 도메인 `adapter/in` 컨트롤러 + `adapter/in`의 요청/응답 DTO. 컨트롤러는 **비즈니스 로직 없이** `application/port/in` 유스케이스만 호출. 영속성은 서비스가 `port/out`(JDBC 어댑터)로.
+- **스택**: Kotlin 2.3.20 + Spring Boot 4.1.0(Spring MVC, 동기 + 코루틴), JDK 25. 영속성 Spring Data JDBC(JPA 아님), 마이그레이션 Liquibase.
+- **DTO/직렬화**: 응답은 **타입드 data class(Map 금지)**, kotlinx-serialization + Jackson.
+- **문서**: Springdoc OpenAPI(Swagger) + Spring REST Docs — 프론트 계약 원본.
+- **품질**: ktlint 1.8.0, null 안정성 strict. 테스트 Kotest + Testcontainers(계약 테스트).
+- **로깅** Log4j2, 오류 `GlobalExceptionHandler` 표준 에러 DTO.
+- **인증/망분리**: 고객 API(인터넷망) OTP 세션 / 내부 `/internal/*`(백오피스·VDI 망) SSO + staff role. AWS SDK v2(S3·Secrets Manager), 4프로필(local/dev/stg/prd).
+
 ## 공통 규칙
 
 - **인증**: 고객 API = 이메일 OTP 세션(인터넷망), 내부 API(`/internal/*`) = 구글 SSO + staff role(백오피스/VDI 망). 헤더/세션 방식은 인증 티켓 기준.
