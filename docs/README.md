@@ -16,6 +16,7 @@
 | 문서 | 내용 |
 | --- | --- |
 | [SERVER-STANDARD.md](SERVER-STANDARD.md) | 서버 규범 — 회사 백엔드 표준 바인딩, 불변식, 상태 전이, API 후보, 도메인 (구 `server-spec/CLAUDE.md`) |
+| [API-SPEC.md](API-SPEC.md) | 프론트↔서버 API 계약 — 엔드포인트 20개, 타입드 DTO, 인증 (구현 티켓 PI-152~) |
 | [LOCAL_DEV.md](LOCAL_DEV.md) | 로컬 도커 환경 규격 (compose, 이관 지점) |
 | [schema.sql](schema.sql) | Postgres DDL 원본 (Liquibase changelog의 짝) |
 
