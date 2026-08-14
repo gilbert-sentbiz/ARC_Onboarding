@@ -4,16 +4,20 @@ import type { UserSession } from '@/types'
 
 type SessionState = {
   session: UserSession | null
-  setSession: (session: UserSession) => void
+  token: string | null
+  setSession: (session: UserSession, token?: string) => void
   clearSession: () => void
+  getToken: () => string | null
 }
 
 export const useSessionStore = create<SessionState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       session: null,
-      setSession: (session) => set({ session }),
-      clearSession: () => set({ session: null }),
+      token: null,
+      setSession: (session, token) => set({ session, token: token ?? null }),
+      clearSession: () => set({ session: null, token: null }),
+      getToken: () => get().token,
     }),
     { name: 'session' }
   )
