@@ -1,7 +1,7 @@
 # ARC - API 설계서 (프론트 ↔ 서버 계약)
 
 > **정본: 이 GitHub 문서.** 프론트↔서버 데이터 계약의 단일 원천. 백엔드 표준([SERVER-STANDARD.md](SERVER-STANDARD.md))을 따른다 — 각 엔드포인트는 헥사고날 `adapter/in` 컨트롤러 + **타입드 요청/응답 DTO**(Map 금지), Springdoc OpenAPI + Spring REST Docs 스니펫 산출. 프론트는 생성된 OpenAPI를 계약으로 삼아 연동한다.
-> 최종: 2026-08-15. 대상 = 현재 `arc-backend` 실제 엔드포인트 20개(+ `/health` 제외).
+> 최종: 2026-08-15. **MVP 대상 = 18개**(+ `/health` 제외). **임시저장 PUT 2개(C3·C5)는 MVP 제외 — Full Spec**(2026-08-15 확정).
 
 ## 공통 규칙
 
@@ -11,15 +11,15 @@
 - 오류는 표준 에러 DTO `{ code, message }` + 적절한 HTTP status(GlobalExceptionHandler).
 - 각 엔드포인트 = 프론트 서비스 레이어(`prototype-next/services/`)의 대응 함수와 1:1.
 
-## 1. 고객 API (13)
+## 1. 고객 API (13 — MVP 11 + Full 2: C3·C5 임시저장)
 
 | # | 메서드·경로 | 용도 | 요청 DTO | 응답 DTO |
 | --- | --- | --- | --- | --- |
 | C1 | `POST /cases` | 케이스 생성 + 1차 응답 시작 | `CreateCaseRequest{ }`(고객 세션에서 customerId) | `CaseResponse` |
 | C2 | `GET /cases/{id}` | 고객 케이스 상세(본인 소유) | — | `CaseResponse`(status, 서류 요약, 안내) |
-| C3 | `PUT /cases/{id}/intake/first` | 1차 응답 저장(제출 전) | `IntakeAnswersRequest{ answers }` | `IntakeResponse` |
+| ~~C3~~ | `PUT /cases/{id}/intake/first` | 1차 응답 저장 — **MVP 제외(임시저장 Full Spec)** | — | — |
 | C4 | `POST /cases/{id}/intake/first/submit` | 1차 제출 → 분류 1회 + 2차 질문 고정 | `IntakeAnswersRequest{ answers }` | `CaseResponse`(entityCode, services, pinned) |
-| C5 | `PUT /cases/{id}/intake/second` | 2차 응답 저장 | `IntakeAnswersRequest{ answers }` | `IntakeResponse` |
+| ~~C5~~ | `PUT /cases/{id}/intake/second` | 2차 응답 저장 — **MVP 제외(임시저장 Full Spec)** | — | — |
 | C6 | `POST /cases/{id}/intake/second/submit` | 2차 제출 → 서류 생성 → 서류 제출 대기 | `IntakeAnswersRequest{ answers }` | `CaseResponse` |
 | C7 | `GET /cases/{id}/intake/{phase}` | 저장된 응답 조회 | — | `IntakeResponse` |
 | C8 | `POST /cases/{id}/resubmit` | 보완 재제출 → 요청 검토 단계로 복귀 | — | `CaseResponse` |
@@ -66,7 +66,7 @@ AuthSessionResponse { token/sessionId; role?; expiresAt }
 1. **응답 `Map<String,Any>` → 위 타입드 DTO로 전환**(전 엔드포인트). OpenAPI 응답 스키마 정확화.
 2. **프론트 연동 미검증** → 각 엔드포인트를 `prototype-next/services/` 대응 함수에서 실제 호출로 연결, OpenAPI 계약 기준.
 3. **경로/동사 확정** — 업로드는 `/cases/{caseId}/documents/{docId}/file`(단수), 전이는 `advance`/`close`. generic `/transitions` 아님. 프론트는 이 실제 경로에 맞춘다.
-4. **임시저장(PUT intake save) 정합** — MVP는 임시저장 제외인데 `PUT /intake/first|second`가 있음. "제출 전 단순 저장"으로 유지할지, MVP에서 뺄지 확정 필요(C3·C5 티켓에서 판단).
+4. **임시저장(PUT intake save)** — [확정 2026-08-15] **MVP 제외**(임시저장 = Full Spec). C3·C5 스코프 아웃 — 프론트 미연동, 백엔드 PUT 엔드포인트는 제거 또는 비활성. 제출(C4·C6)이 answers를 직접 받으므로 선행 저장 불필요.
 5. **담당자 수동 변경**은 MVP 제외(역할당 1계정) — 엔드포인트 없음(정상).
 
 ## 5. 엔드포인트별 완료 기준 (공통 AC 템플릿)
