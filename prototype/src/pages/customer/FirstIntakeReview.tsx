@@ -1,9 +1,12 @@
+import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { ArrowLeft, ArrowRight } from '@phosphor-icons/react'
 import { useCaseStore } from '../../store/caseStore'
 import { useIntakeResponseStore } from '../../store/intakeResponseStore'
+import { useSessionStore } from '../../store/sessionStore'
 import Button from '../../components/ui/Button'
 import { getCountryName } from '../../utils/countryNames'
+import * as arcApi from '../../services/arcApi'
 
 const SERVICE_LABELS: Record<string, string> = {
   remittance: '해외 송금',
@@ -46,6 +49,9 @@ export default function FirstIntakeReview() {
   const navigate = useNavigate()
   const c = useCaseStore((s) => (id ? s.cases[id] : null))
   const firstIntake = useIntakeResponseStore((s) => id ? s.getByCase(id, 'first') : null)
+  const { setActiveCaseId } = useSessionStore()
+  const [submitting, setSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState('')
 
   if (!c || !id) {
     return (
@@ -60,9 +66,52 @@ export default function FirstIntakeReview() {
   const services = (d.services as string[]) ?? []
   const collectionCountries = (d.collectionCountries as string[]) ?? []
 
-  function handleConfirm() {
+  async function handleConfirm() {
     if (!id) return
-    navigate(`/customer/case/${id}/information`)
+    setSubmitting(true)
+    setSubmitError('')
+    try {
+      const created = await arcApi.createCase()
+      const backendId = created.id
+      await arcApi.submitFirstIntake(backendId, firstIntake?.answers ?? {})
+      // Carry the local case into the store under the backend UUID so downstream
+      // components that read by ID still find it.
+      const now = Date.now()
+      if (c) {
+        useCaseStore.getState().addCase({
+          ...c,
+          id: backendId,
+          createdAt: c.createdAt ?? now,
+          updatedAt: c.updatedAt ?? now,
+          status: c.status ?? 'INQUIRY_RECEIVED',
+        })
+      }
+      useIntakeResponseStore.getState().upsert({
+        id: `${backendId}:first`,
+        caseId: backendId,
+        phase: 'first',
+        status: 'submitted',
+        answers: firstIntake?.answers ?? {},
+        savedAt: Date.now(),
+      })
+      useIntakeResponseStore.getState().upsert({
+        id: `${backendId}:second`,
+        caseId: backendId,
+        phase: 'second',
+        status: 'not_started',
+        answers: {},
+        savedAt: Date.now(),
+      })
+      setActiveCaseId(backendId)
+      navigate(`/customer/case/${backendId}/information`)
+    } catch (err) {
+      const msg = err instanceof arcApi.ApiError
+        ? `API 오류 (${err.status}): ${err.message}`
+        : '케이스 생성에 실패했습니다. 다시 시도해주세요.'
+      setSubmitError(msg)
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   return (
@@ -203,18 +252,22 @@ export default function FirstIntakeReview() {
         )}
 
         {/* Navigation */}
+        {submitError && (
+          <p className="text-[13px] text-sb-negative leading-[18px] px-1">{submitError}</p>
+        )}
         <div className="flex gap-3 pt-2">
           <Button
             variant="outline"
             onClick={() => navigate('/customer/onboarding')}
             className="flex-1"
+            disabled={submitting}
           >
             <ArrowLeft size={16} />
             수정하기
           </Button>
-          <Button onClick={handleConfirm} className="flex-1">
-            확인하고 계속하기
-            <ArrowRight size={16} />
+          <Button onClick={handleConfirm} className="flex-1" disabled={submitting}>
+            {submitting ? '처리 중...' : '확인하고 계속하기'}
+            {!submitting && <ArrowRight size={16} />}
           </Button>
         </div>
       </div>

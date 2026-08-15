@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useRef, useState, useEffect } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { useParams, useNavigate } from 'react-router-dom'
 import { CheckCircle, CloudArrowUp, Warning, ArrowRight, Clock, Link } from '@phosphor-icons/react'
@@ -12,6 +12,7 @@ import { uploadFile as uploadDocFile } from '../../services/documentService'
 import type { Document, DocumentFile, RevisionRequest } from '../../types'
 import Button from '../../components/ui/Button'
 import TabBar from '../../components/customer/TabBar'
+import * as arcApi from '../../services/arcApi'
 
 function UrlRow({
   doc,
@@ -165,6 +166,26 @@ export default function DocumentUpload() {
   const allRevisions = useRevisionRequestStore((s) => s.requests)
   const [submitted, setSubmitted] = useState(false)
   const [uploadError, setUploadError] = useState<string | null>(null)
+  const addDocuments = useDocumentStore((s) => s.addDocuments)
+  const updateDocument = useDocumentStore((s) => s.updateDocument)
+
+  // Load documents from backend
+  useEffect(() => {
+    if (!id) return
+    arcApi.getDocuments(id).then((docs) => {
+      addDocuments(
+        docs.map((d) => ({
+          id: d.id,
+          caseId: d.caseId,
+          type: d.type,
+          displayName: d.displayName,
+          status: d.status as Document['status'],
+          isRequired: d.required ?? d.isRequired ?? false,
+          isConditional: false,
+        }))
+      )
+    }).catch(() => { /* fallback to local store if API fails */ })
+  }, [id])
 
   const ALLOWED_MIME = ['application/pdf', 'image/png', 'image/jpeg']
   const ALLOWED_EXT = ['.pdf', '.png', '.jpg', '.jpeg']
@@ -226,12 +247,19 @@ export default function DocumentUpload() {
       return
     }
     setUploadError(null)
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      const dataUrl = e.target?.result as string
-      uploadDocFile(docId, file.name, file.size, session?.name || session?.email || '고객', dataUrl)
+    // Try backend upload first; fall back to local state on error
+    if (id) {
+      arcApi.uploadDocumentFile(id, docId, file)
+        .then((updated) => {
+          updateDocument(docId, { status: updated.status as Document['status'] })
+        })
+        .catch(() => {
+          // Fallback: store locally so the UI still responds
+          uploadDocFile(docId, file.name, file.size, session?.name || session?.email || '고객')
+        })
+    } else {
+      uploadDocFile(docId, file.name, file.size, session?.name || session?.email || '고객')
     }
-    reader.readAsDataURL(file)
   }
 
   function handleUrlSave(docId: string, url: string) {

@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { ArrowLeft, ArrowRight } from '@phosphor-icons/react'
 import { useCaseStore } from '../../store/caseStore'
@@ -8,6 +9,7 @@ import { getRuleSet } from '../../store/ruleStore'
 import type { QuestionRule } from '../../types'
 import Button from '../../components/ui/Button'
 import { getCountryName } from '../../utils/countryNames'
+import * as arcApi from '../../services/arcApi'
 
 function buildLabelMap(): Record<string, string> {
   const rs = getRuleSet()
@@ -94,6 +96,8 @@ export default function SecondIntakeReview() {
   const c = useCaseStore((s) => (id ? s.cases[id] : null))
   const firstIntake = useIntakeResponseStore((s) => id ? s.getByCase(id, 'first') : null)
   const secondIntake = useIntakeResponseStore((s) => id ? s.getByCase(id, 'second') : null)
+  const [submitting, setSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState('')
 
   if (!c || !id) {
     return (
@@ -116,11 +120,22 @@ export default function SecondIntakeReview() {
     vndCollection?: Record<string, unknown>
   }
 
-  function handleConfirm() {
+  async function handleConfirm() {
     if (!id) return
-    const result = confirmSecondIntake(id, session?.name || session?.email || '고객')
-    if (result.ok) {
+    setSubmitting(true)
+    setSubmitError('')
+    try {
+      await arcApi.submitSecondIntake(id, secondIntake?.answers ?? {})
+      // Also update local state for display
+      confirmSecondIntake(id, session?.name || session?.email || '고객')
       navigate(`/customer/case/${id}/documents`)
+    } catch (err) {
+      const msg = err instanceof arcApi.ApiError
+        ? `API 오류 (${err.status}): ${err.message}`
+        : '제출에 실패했습니다. 다시 시도해주세요.'
+      setSubmitError(msg)
+    } finally {
+      setSubmitting(false)
     }
   }
 
@@ -261,18 +276,22 @@ export default function SecondIntakeReview() {
         </div>
 
         {/* Navigation */}
+        {submitError && (
+          <p className="text-[13px] text-sb-negative leading-[18px] px-1">{submitError}</p>
+        )}
         <div className="flex gap-3 pt-2">
           <Button
             variant="outline"
             onClick={() => navigate(`/customer/case/${id}/information`)}
             className="flex-1"
+            disabled={submitting}
           >
             <ArrowLeft size={16} />
             수정하기
           </Button>
-          <Button onClick={handleConfirm} className="flex-1">
-            제출하기
-            <ArrowRight size={16} />
+          <Button onClick={handleConfirm} className="flex-1" disabled={submitting}>
+            {submitting ? '제출 중...' : '제출하기'}
+            {!submitting && <ArrowRight size={16} />}
           </Button>
         </div>
       </div>

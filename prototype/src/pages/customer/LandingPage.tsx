@@ -1,12 +1,10 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowRight, Envelope, Lock, Eye, EyeSlash, CheckCircle, FileText, Buildings, ArrowsLeftRight } from '@phosphor-icons/react'
+import { ArrowRight, Envelope, FileText, Buildings, ArrowsLeftRight } from '@phosphor-icons/react'
 import Button from '../../components/ui/Button'
 import Input from '../../components/ui/Input'
 import { useSessionStore } from '../../store/sessionStore'
-import { useCaseStore } from '../../store/caseStore'
-import { useIntakeResponseStore } from '../../store/intakeResponseStore'
-import { useAccountStore } from '../../store/accountStore'
+import * as api from '../../services/arcApi'
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
@@ -30,68 +28,60 @@ const FEATURES = [
 
 export default function LandingPage() {
   const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [showPassword, setShowPassword] = useState(false)
-  const [agreed, setAgreed] = useState(false)
-  const [errors, setErrors] = useState<{ email?: string; password?: string; agreed?: string }>({})
+  const [otp, setOtp] = useState('')
+  const [step, setStep] = useState<'email' | 'otp'>('email')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
 
   const navigate = useNavigate()
-  const setSession = useSessionStore((s) => s.setSession)
-  const findByEmail = useCaseStore((s) => s.findByEmail)
-  const { exists, verify, register } = useAccountStore()
+  const { setSession, activeCaseId } = useSessionStore()
 
-  const isReturning = EMAIL_RE.test(email) && exists(email)
-
-  function handleSubmit(e: React.FormEvent) {
+  async function handleRequestOtp(e: React.FormEvent) {
     e.preventDefault()
+    setError('')
+    if (!EMAIL_RE.test(email)) { setError('올바른 이메일 주소를 입력해주세요.'); return }
+    setLoading(true)
+    try {
+      await api.requestOtp(email)
+      setStep('otp')
+    } catch {
+      setError('OTP 발송에 실패했습니다. 잠시 후 다시 시도해주세요.')
+    } finally {
+      setLoading(false)
+    }
+  }
 
-    const next: typeof errors = {}
+  async function handleVerifyOtp(e: React.FormEvent) {
+    e.preventDefault()
+    setError('')
+    if (!otp.trim()) { setError('OTP 코드를 입력해주세요.'); return }
+    setLoading(true)
+    try {
+      const { token } = await api.verifyOtp(email, otp.trim())
+      setSession({ userId: email, role: 'CUSTOMER', name: '', email }, token)
 
-    if (!EMAIL_RE.test(email)) next.email = '올바른 이메일 주소를 입력해주세요.'
-    if (!password) next.password = '비밀번호를 입력해주세요.'
-
-    if (Object.keys(next).length === 0 && isReturning) {
-      if (!verify(email, password)) {
-        next.password = '비밀번호가 올바르지 않습니다.'
+      // Route based on active case if we have one
+      if (activeCaseId) {
+        try {
+          const c = await api.getCase(activeCaseId)
+          const s = c.status
+          if (s === 'DOCUMENT_SUBMISSION_REQUIRED' || s === 'REVISION_REQUESTED') {
+            navigate(`/customer/case/${activeCaseId}/documents`)
+          } else if (s === 'INQUIRY_RECEIVED' || s === 'DOCUMENT_SCREENING_REQUIRED') {
+            navigate(`/customer/case/${activeCaseId}`)
+          } else {
+            navigate(`/customer/case/${activeCaseId}`)
+          }
+          return
+        } catch {
+          // Case not found or error → start fresh
+        }
       }
-    }
-
-    if (Object.keys(next).length === 0 && !isReturning && !agreed) {
-      next.agreed = '개인정보 수집 및 이용에 동의해주세요.'
-    }
-
-    if (Object.keys(next).length > 0) {
-      setErrors(next)
-      return
-    }
-
-    if (!isReturning) register(email, password)
-
-    setSession({ userId: email, role: 'CUSTOMER', name: '', email })
-
-    const existing = findByEmail(email)
-
-    const intakeStore = useIntakeResponseStore.getState()
-    const firstIntake = existing ? intakeStore.getByCase(existing.id, 'first') : null
-    const secondIntake = existing ? intakeStore.getByCase(existing.id, 'second') : null
-
-    if (!existing || firstIntake?.status !== 'submitted') {
-      // No case, or 1차 form not yet confirmed → 1차 입력 (pre-fills draft if any)
       navigate('/customer/onboarding')
-    } else if (!secondIntake || secondIntake.status === 'not_started') {
-      // 1차 confirmed, 2차 not started → 2차 입력
-      navigate(`/customer/case/${existing.id}/information`)
-    } else if (secondIntake.status === 'draft') {
-      // 2차 draft saved → continue 2차 입력 (not review)
-      navigate(`/customer/case/${existing.id}/information`)
-    } else {
-      // 2차 confirmed (submitted) → route by case status
-      const s = existing.status
-      if (s === 'DOCUMENT_SUBMISSION_REQUIRED' || s === 'REVISION_REQUESTED') {
-        navigate(`/customer/case/${existing.id}/documents`)
-      } else {
-        navigate(`/customer/case/${existing.id}`)
-      }
+    } catch {
+      setError('OTP 코드가 올바르지 않거나 만료되었습니다.')
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -153,91 +143,58 @@ export default function LandingPage() {
           >
             <div className="flex flex-col gap-1.5">
               <h2 className="text-[22px] leading-[34px] font-bold text-sb-n900">
-                {isReturning ? '다시 오셨군요' : '온보딩 시작하기'}
+                {step === 'email' ? '온보딩 시작하기' : '이메일 인증'}
               </h2>
               <p className="text-[14px] leading-[20px] text-sb-n500">
-                {isReturning
-                  ? '비밀번호를 입력해 진행 중인 케이스를 이어가세요.'
-                  : '이메일과 비밀번호를 입력하면 온보딩을 시작합니다.'}
+                {step === 'email'
+                  ? '이메일 주소를 입력하면 인증 코드를 보내드립니다.'
+                  : `${email}로 발송된 6자리 코드를 입력하세요.`}
               </p>
             </div>
 
-            <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-5">
-              <Input
-                label="이메일 주소"
-                type="email"
-                placeholder="example@company.com"
-                value={email}
-                onChange={(e) => {
-                  setEmail(e.target.value)
-                  setErrors((prev) => ({ ...prev, email: undefined }))
-                }}
-                error={errors.email}
-                iconLeft={<Envelope size={16} />}
-                autoComplete="email"
-                autoFocus
-              />
-
-              <Input
-                label="비밀번호"
-                type={showPassword ? 'text' : 'password'}
-                placeholder={isReturning ? '비밀번호 입력' : '사용할 비밀번호 설정'}
-                value={password}
-                onChange={(e) => {
-                  setPassword(e.target.value)
-                  setErrors((prev) => ({ ...prev, password: undefined }))
-                }}
-                error={errors.password}
-                iconLeft={<Lock size={16} />}
-                iconRight={
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword((v) => !v)}
-                    className="flex items-center text-sb-n400 hover:text-sb-n600 transition-colors"
-                    tabIndex={-1}
-                  >
-                    {showPassword ? <EyeSlash size={16} /> : <Eye size={16} />}
-                  </button>
-                }
-                autoComplete={isReturning ? 'current-password' : 'new-password'}
-              />
-
-              {/* Agreement — 신규 가입 시만 */}
-              {!isReturning && (
-                <div>
-                  <label
-                    className="flex items-start gap-3 cursor-pointer group"
-                    onClick={() => {
-                      setAgreed((v) => !v)
-                      setErrors((prev) => ({ ...prev, agreed: undefined }))
-                    }}
-                  >
-                    <div
-                      className={`mt-0.5 flex-shrink-0 w-[18px] h-[18px] rounded-[4px] border flex items-center justify-center transition-colors duration-[120ms] ${
-                        agreed
-                          ? 'bg-sb-brand border-sb-brand'
-                          : errors.agreed
-                          ? 'border-sb-negative bg-sb-negative-light'
-                          : 'border-sb-n300 bg-white group-hover:border-sb-brand'
-                      }`}
-                    >
-                      {agreed && <CheckCircle size={12} weight="fill" className="text-white" />}
-                    </div>
-                    <span className={`text-[13px] leading-[20px] ${errors.agreed ? 'text-sb-negative' : 'text-sb-n600'}`}>
-                      <span className="font-medium">개인정보 수집 및 이용</span>에 동의합니다.
-                    </span>
-                  </label>
-                  {errors.agreed && (
-                    <p className="mt-1.5 text-[11px] leading-[16px] text-sb-negative">{errors.agreed}</p>
-                  )}
-                </div>
-              )}
-
-              <Button type="submit" fullWidth size="lg">
-                {isReturning ? '계속하기' : '시작하기'}
-                <ArrowRight size={16} weight="bold" />
-              </Button>
-            </form>
+            {step === 'email' ? (
+              <form onSubmit={handleRequestOtp} noValidate className="flex flex-col gap-5">
+                <Input
+                  label="이메일 주소"
+                  type="email"
+                  placeholder="example@company.com"
+                  value={email}
+                  onChange={(e) => { setEmail(e.target.value); setError('') }}
+                  error={error}
+                  iconLeft={<Envelope size={16} />}
+                  autoComplete="email"
+                  autoFocus
+                />
+                <Button type="submit" fullWidth size="lg" disabled={loading}>
+                  {loading ? '발송 중...' : '인증 코드 받기'}
+                  {!loading && <ArrowRight size={16} weight="bold" />}
+                </Button>
+              </form>
+            ) : (
+              <form onSubmit={handleVerifyOtp} noValidate className="flex flex-col gap-5">
+                <Input
+                  label="인증 코드"
+                  type="text"
+                  placeholder="6자리 숫자 입력"
+                  value={otp}
+                  onChange={(e) => { setOtp(e.target.value); setError('') }}
+                  error={error}
+                  autoComplete="one-time-code"
+                  autoFocus
+                />
+                <Button type="submit" fullWidth size="lg" disabled={loading}>
+                  {loading ? '확인 중...' : '확인'}
+                  {!loading && <ArrowRight size={16} weight="bold" />}
+                </Button>
+                <button
+                  type="button"
+                  onClick={() => { setStep('email'); setOtp(''); setError('') }}
+                  className="text-[13px] text-sb-n500 hover:text-sb-n700 transition-colors text-center"
+                >
+                  이메일 다시 입력
+                </button>
+              </form>
+            )}
 
             <div className="flex items-center gap-3">
               <div className="flex-1 h-px bg-sb-n100" />

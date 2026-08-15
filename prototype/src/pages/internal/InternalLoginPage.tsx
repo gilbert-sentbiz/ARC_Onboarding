@@ -1,43 +1,48 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Envelope, Lock, Eye, EyeSlash, ArrowRight } from '@phosphor-icons/react'
+import { Envelope, ArrowRight } from '@phosphor-icons/react'
 import Button from '../../components/ui/Button'
 import Input from '../../components/ui/Input'
 import { useSessionStore } from '../../store/sessionStore'
-import { useInternalStaffStore } from '../../store/internalStaffStore'
+import * as api from '../../services/arcApi'
+
+const ROLE_MAP: Record<string, 'SALES' | 'COMPLIANCE' | 'OPS'> = {
+  'sales@sentbe.com': 'SALES',
+  'compliance@sentbe.com': 'COMPLIANCE',
+  'ops@sentbe.com': 'OPS',
+  'admin@sentbe.com': 'SALES',
+}
+const NAME_MAP: Record<string, string> = {
+  'sales@sentbe.com': '영업 테스트',
+  'compliance@sentbe.com': '컴플라이언스 테스트',
+  'ops@sentbe.com': '운영 테스트',
+  'admin@sentbe.com': '관리자 테스트',
+}
 
 export default function InternalLoginPage() {
   const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [showPassword, setShowPassword] = useState(false)
+  const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
   const navigate = useNavigate()
-  const setSession = useSessionStore((s) => s.setSession)
-  const login = useInternalStaffStore((s) => s.login)
+  const { setStaffSession } = useSessionStore()
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError('')
-
-    if (!email || !password) {
-      setError('이메일과 비밀번호를 모두 입력해주세요.')
-      return
+    if (!email.trim()) { setError('이메일을 입력해주세요.'); return }
+    setLoading(true)
+    try {
+      const { token } = await api.mockLogin(email.trim().toLowerCase())
+      const role = ROLE_MAP[email.trim().toLowerCase()] ?? 'SALES'
+      const name = NAME_MAP[email.trim().toLowerCase()] ?? email
+      setStaffSession({ userId: email, role, name, email: email.trim().toLowerCase() }, token)
+      navigate('/internal/dashboard')
+    } catch {
+      setError('등록되지 않은 이메일이거나 로그인에 실패했습니다.')
+    } finally {
+      setLoading(false)
     }
-
-    const staff = login(email.trim().toLowerCase(), password)
-    if (!staff) {
-      setError('이메일 또는 비밀번호가 올바르지 않습니다.')
-      return
-    }
-
-    setSession({
-      userId: staff.email,
-      role: staff.role,
-      name: staff.name,
-      email: staff.email,
-    })
-    navigate('/internal/dashboard')
   }
 
   return (
@@ -47,7 +52,7 @@ export default function InternalLoginPage() {
           <img src="/ARC_Onboarding/logos/wordmark-navy.svg" alt="SentBiz" className="h-7 w-auto" />
           <div className="flex flex-col gap-1">
             <h2 className="text-[20px] leading-[30px] font-bold text-sb-n900">내부 담당자 로그인</h2>
-            <p className="text-[14px] leading-[20px] text-sb-n500">계정 이메일과 비밀번호를 입력하세요</p>
+            <p className="text-[14px] leading-[20px] text-sb-n500">계정 이메일을 입력하세요 (로컬 환경)</p>
           </div>
         </div>
 
@@ -64,39 +69,18 @@ export default function InternalLoginPage() {
               autoFocus
             />
 
-            <Input
-              label="비밀번호"
-              type={showPassword ? 'text' : 'password'}
-              placeholder="비밀번호"
-              value={password}
-              onChange={(e) => { setPassword(e.target.value); setError('') }}
-              iconLeft={<Lock size={16} />}
-              iconRight={
-                <button
-                  type="button"
-                  onClick={() => setShowPassword((v) => !v)}
-                  className="flex items-center text-sb-n400 hover:text-sb-n600 transition-colors"
-                  tabIndex={-1}
-                >
-                  {showPassword ? <EyeSlash size={16} /> : <Eye size={16} />}
-                </button>
-              }
-              autoComplete="current-password"
-            />
-
             {error && (
               <p className="text-[13px] text-sb-negative leading-[18px]">{error}</p>
             )}
 
-            <Button type="submit" fullWidth size="lg">
-              로그인
-              <ArrowRight size={16} weight="bold" />
+            <Button type="submit" fullWidth size="lg" disabled={loading}>
+              {loading ? '로그인 중...' : '로그인'}
+              {!loading && <ArrowRight size={16} weight="bold" />}
             </Button>
           </form>
 
-          {/* Demo account hint */}
           <div className="border-t border-sb-n100 pt-4">
-            <p className="text-[12px] text-sb-n400 mb-2">데모 계정 (비밀번호: sentbe1234)</p>
+            <p className="text-[12px] text-sb-n400 mb-2">테스트 계정</p>
             <div className="flex flex-col gap-1">
               {[
                 { email: 'sales@sentbe.com', label: '영업' },
@@ -106,7 +90,7 @@ export default function InternalLoginPage() {
                 <button
                   key={d.email}
                   type="button"
-                  onClick={() => { setEmail(d.email); setPassword('sentbe1234') }}
+                  onClick={() => setEmail(d.email)}
                   className="text-left text-[12px] text-sb-brand hover:underline"
                 >
                   {d.label} — {d.email}

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { useParams, useNavigate } from 'react-router-dom'
 import JSZip from 'jszip'
@@ -20,6 +20,7 @@ import { approveDocument, requestRevision } from '../../services/documentService
 import { STATUS_LABELS } from '../../services/stateMachine'
 import type { CaseStatus, CloseReason, DocumentStatus, UserRole, DocumentFile } from '../../types'
 import NotificationBell from '../../components/ui/NotificationBell'
+import * as arcApi from '../../services/arcApi'
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -190,6 +191,23 @@ export default function InternalCaseDetail() {
   const [expandedDocFiles, setExpandedDocFiles] = useState<Set<string>>(new Set())
   const [ownerChangeMode, setOwnerChangeMode] = useState(false)
   const [selectedNewOwner, setSelectedNewOwner] = useState('')
+  const addDocuments = useDocumentStore((s) => s.addDocuments)
+
+  // Load case + documents from backend
+  useEffect(() => {
+    if (!id) return
+    arcApi.getInternalCase(id).then((bc) => {
+      updateCase(id, { status: bc.status as CaseStatus })
+    }).catch(() => {})
+    arcApi.getDocuments(id).then((docs) => {
+      addDocuments(docs.map((d) => ({
+        id: d.id, caseId: d.caseId, type: d.type, displayName: d.displayName,
+        status: d.status as DocumentStatus,
+        isRequired: (d as { required?: boolean }).required ?? d.isRequired ?? false,
+        isConditional: false,
+      })))
+    }).catch(() => {})
+  }, [id])
 
   if (!c || !id || !session) {
     return (
@@ -222,16 +240,24 @@ export default function InternalCaseDetail() {
 
   // ── document handlers ──
   function approveDoc(docId: string) {
-    approveDocument(docId, '', sess.name)
+    arcApi.approveDocument(docId).then((updated) => {
+      useDocumentStore.getState().updateDocument(docId, { status: updated.status as DocumentStatus })
+    }).catch(() => {
+      approveDocument(docId, '', sess.name) // fallback
+    })
   }
 
   function requestDocRevision(docId: string) {
     if (!docRevisionNote.trim()) return
-    requestRevision(docId, docRevisionNote, sess.name)
-    if (caseObj.status !== 'REVISION_REQUESTED') {
-      updateCase(caseId, { revisionRequestedFrom: caseObj.status })
-      transitionStatus(caseId, 'REVISION_REQUESTED', { role, name: sess.name })
-    }
+    arcApi.requestRevision(docId, docRevisionNote).then(() => {
+      requestRevision(docId, docRevisionNote, sess.name)
+      if (caseObj.status !== 'REVISION_REQUESTED') {
+        updateCase(caseId, { revisionRequestedFrom: caseObj.status })
+        transitionStatus(caseId, 'REVISION_REQUESTED', { role, name: sess.name })
+      }
+    }).catch(() => {
+      requestRevision(docId, docRevisionNote, sess.name)
+    })
     setDocRevisionId(null)
     setDocRevisionNote('')
   }
@@ -254,20 +280,25 @@ export default function InternalCaseDetail() {
   // ── case action handler ──
   function executeAction(action: ActionDef) {
     if (action.needsNote && !actionNote.trim()) return
-    const result = transitionStatus(
-      caseId,
-      action.to,
-      { role, name: sess.name },
-      actionNote || undefined,
-    )
-    if (result.ok) {
-      if (action.closeReason) {
-        updateCase(caseId, { closeReason: action.closeReason })
-      }
+    const apiCall = action.closeReason
+      ? arcApi.closeCase(caseId, actionNote || action.closeReason)
+      : arcApi.advanceCase(caseId)
+    apiCall.then((updated) => {
+      updateCase(caseId, { status: updated.status as CaseStatus })
+      if (action.closeReason) updateCase(caseId, { closeReason: action.closeReason })
       setPendingAction(null)
       setActionNote('')
       navigate('/internal/dashboard')
-    }
+    }).catch(() => {
+      // Fallback to local mock
+      const result = transitionStatus(caseId, action.to, { role, name: sess.name }, actionNote || undefined)
+      if (result.ok) {
+        if (action.closeReason) updateCase(caseId, { closeReason: action.closeReason })
+        setPendingAction(null)
+        setActionNote('')
+        navigate('/internal/dashboard')
+      }
+    })
   }
 
   // ── note handler ──

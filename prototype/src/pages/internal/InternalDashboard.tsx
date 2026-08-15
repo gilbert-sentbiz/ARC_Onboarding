@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { SignOut, Buildings } from '@phosphor-icons/react'
 import { useSessionStore } from '../../store/sessionStore'
@@ -7,6 +7,7 @@ import { useCaseEventStore } from '../../store/caseEventStore'
 import { STATUS_LABELS, canView } from '../../services/stateMachine'
 import type { CaseStatus, UserRole } from '../../types'
 import NotificationBell from '../../components/ui/NotificationBell'
+import * as arcApi from '../../services/arcApi'
 
 const ROLE_DEFAULT_FILTER: Record<string, CaseStatus> = {
   SALES: 'INITIAL_SCREENING',
@@ -69,6 +70,7 @@ export default function InternalDashboard() {
   const session = useSessionStore((s) => s.session)
   const clearSession = useSessionStore((s) => s.clearSession)
   const casesMap = useCaseStore((s) => s.cases)
+  const addCase = useCaseStore((s) => s.addCase)
   const cases = useMemo(() => Object.values(casesMap), [casesMap])
 
   const role = session?.role as UserRole
@@ -76,6 +78,33 @@ export default function InternalDashboard() {
   const [filter, setFilter] = useState<CaseStatus | 'ALL'>(defaultFilter)
 
   const viewable = ROLE_VIEWABLE_STATUSES[role] ?? []
+
+  // Load cases from backend
+  useEffect(() => {
+    arcApi.getInternalCases().then((backendCases) => {
+      for (const bc of backendCases) {
+        addCase({
+          id: bc.id,
+          createdAt: new Date(bc.createdAt).getTime(),
+          updatedAt: new Date(bc.updatedAt).getTime(),
+          status: bc.status as CaseStatus,
+          customerId: bc.customerId,
+          customerName: '',
+          customerEmail: bc.customerId,
+          segmentInfo: {
+            entity: (bc.entityCode ?? 'ENTITY_CORP') as import('../../types').EntityCode,
+            services: [],
+            sectors: [],
+            foundingCountry: '',
+            monthlyVolumeCurrency: 'USD',
+            monthlyVolume: '',
+            monthlyCount: '',
+          },
+          currentOwner: { role: 'SALES', name: '' },
+        })
+      }
+    }).catch(() => { /* show local state */ })
+  }, [])
 
   const filtered = cases
     .filter((c) => canView(c.status, role))
