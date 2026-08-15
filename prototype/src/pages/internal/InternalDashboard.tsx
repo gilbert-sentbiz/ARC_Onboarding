@@ -89,7 +89,7 @@ export default function InternalDashboard() {
           updatedAt: new Date(bc.updatedAt).getTime(),
           status: bc.status as CaseStatus,
           customerId: bc.customerId,
-          customerName: '',
+          customerName: bc.companyName ?? '',
           customerEmail: bc.customerId,
           segmentInfo: {
             entity: (bc.entityCode ?? 'ENTITY_CORP') as import('../../types').EntityCode,

@@ -161,7 +161,7 @@ export function uploadDocumentFile(caseId: string, docId: string, file: File): P
 // ── Internal cases ────────────────────────────────────────────────────────────
 
 export interface CaseSummaryResponse {
-  id: string; customerId: string; status: string; entityCode?: string
+  id: string; customerId: string; companyName?: string; status: string; entityCode?: string
   services: string[]; assigneeStaffId?: string
   createdAt: string; updatedAt: string
 }
