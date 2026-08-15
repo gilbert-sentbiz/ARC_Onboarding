@@ -39,8 +39,8 @@ DB_PASSWORD=arc_pass
 # ── 스토리지 (MinIO / S3) ─────────────────────────
 S3_ENDPOINT=http://storage:9000
 S3_BUCKET=arc-documents
-S3_ACCESS_KEY=minio_access
-S3_SECRET_KEY=minio_secret
+S3_ACCESS_KEY=minioadmin
+S3_SECRET_KEY=minioadmin
 
 # ── 인증 모드 ─────────────────────────────────────
 # console: OTP를 서버 로그로 출력 (로컬 기본값)
@@ -63,6 +63,23 @@ SSO_MODE=mock
 GOOGLE_CLIENT_ID=
 GOOGLE_CLIENT_SECRET=
 ```
+
+## JAR 직접 실행 (docker-compose 없이 백엔드만)
+
+db / redis / storage 컨테이너는 docker-compose로 유지하고 백엔드만 로컬 JAR로 실행할 때는 아래 환경변수를 명시한다. **`application.yml` 기본값과 docker-compose MinIO 크리덴셜을 일치시켜야 403을 막을 수 있다.**
+
+```bash
+JAVA_HOME=/opt/homebrew/opt/openjdk \
+DB_URL=jdbc:postgresql://localhost:5432/arc \
+DB_USERNAME=arc DB_PASSWORD=arc \
+REDIS_HOST=localhost REDIS_PORT=6379 \
+S3_ENDPOINT=http://localhost:9000 \
+S3_BUCKET=arc-documents \
+SPRING_PROFILES_ACTIVE=local \
+java -jar build/libs/arc-backend-0.0.1-SNAPSHOT.jar
+```
+
+> `S3_ACCESS_KEY` / `S3_SECRET_KEY`는 생략 — `application.yml` 기본값 `minioadmin:minioadmin`이 docker-compose MinIO 기본값과 일치하기 때문이다. 환경변수로 덮어쓰면 불일치 → 403이 발생한다.
 
 ## 로컬 인증 흐름
 
