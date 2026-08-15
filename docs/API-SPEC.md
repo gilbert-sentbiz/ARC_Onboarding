@@ -49,7 +49,7 @@
 | I2 | `GET /internal/cases/{id}` | 케이스 상세 + 타임라인(case_event) | — | `InternalCaseResponse`(+ timeline) |
 | I3 | `POST /internal/cases/{id}/advance` | 다음 검토 단계로 전이(역할 가드) | — | `CaseResponse` |
 | I4 | `POST /internal/cases/{id}/close` | 케이스 종료(사유 필수) | `CloseRequest{ reason: DROPPED\|EXITED }` | `CaseResponse` |
-| I5 | `POST /internal/documents/{id}/revision-requests` | 서류 보완요청(사유 필수, 영업·운영·컴플) | `RevisionRequest{ reason }` | `RevisionResponse` |
+| I5 | `POST /internal/documents/{id}/revision-requests` | 서류 보완요청(사유 필수, 영업·운영·컴플) | `RevisionRequest{ reason }` | `DocumentResponse` |
 | I6 | `POST /internal/documents/{id}/approve` | 서류 승인(컴플라이언스, 개별) | — | `DocumentResponse` |
 | I7 | `POST /internal/auth/mock-login` | (로컬) 내부 SSO 목 로그인 | `MockLoginRequest{ email, role }` | `AuthSessionResponse` |
 
@@ -62,13 +62,12 @@ CaseResponse {
   pinnedQuestionIds: { first: uuid[]; second: uuid[] };
   createdAt; updatedAt
 }
-CaseSummaryResponse { id; companyName; status; entityCode; services; waitingDays; assigneeStaffId?; updatedAt }
+CaseSummaryResponse { id; customerId; companyName?; status; entityCode?; services; assigneeStaffId?; createdAt; updatedAt }
 InternalCaseResponse : CaseResponse + { segmentMeta; assigneeStaffId?; timeline: CaseEvent[] }
 CaseEvent { id; eventType; actorType; actorId?; payload; createdAt }
 IntakeResponse { caseId; phase; status; answers; savedAt; submittedAt? }
 DocumentResponse { id; caseId; type; displayName; status; isRequired; latestFile?: DocumentFileResponse; openRevisionReason?: string }
 DocumentFileResponse { id; documentId; fileName; fileSize; mimeType; isLatest; uploadedAt; uploaderType }
-RevisionResponse { id; documentId; reason; requestedFromStatus; requestedAt; resolvedAt? }
 ActiveRulesResponse { segments: Segment[]; questions: Question[]; docTemplates: DocTemplate[] }
 AuthSessionResponse { token/sessionId; role?; expiresAt }
 ```
