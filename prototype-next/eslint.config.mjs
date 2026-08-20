@@ -70,4 +70,79 @@ export default [
       'import/no-default-export': 'off',
     },
   },
+  // FSD views layer and shared/ui + widgets also need default exports
+  {
+    files: [
+      'src/views/**/*.tsx',
+      'src/views/**/*.ts',
+      'src/shared/ui/**/*.tsx',
+      'src/shared/ui/**/*.ts',
+      'src/widgets/**/*.tsx',
+      'src/widgets/**/*.ts',
+    ],
+    rules: {
+      'import/no-default-export': 'off',
+    },
+  },
+  // FSD layer boundary rules (no-restricted-imports)
+  // shared: cannot import from upper layers
+  {
+    files: ['src/shared/**/*.ts', 'src/shared/**/*.tsx'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            { group: ['@/src/entities/**'], message: 'shared cannot import from entities' },
+            { group: ['@/src/features/**'], message: 'shared cannot import from features' },
+            { group: ['@/src/widgets/**'], message: 'shared cannot import from widgets' },
+            { group: ['@/src/views/**'], message: 'shared cannot import from views' },
+          ],
+        },
+      ],
+    },
+  },
+  // entities: can use shared only
+  {
+    files: ['src/entities/**/*.ts', 'src/entities/**/*.tsx'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            { group: ['@/src/features/**'], message: 'entities cannot import from features' },
+            { group: ['@/src/widgets/**'], message: 'entities cannot import from widgets' },
+            { group: ['@/src/views/**'], message: 'entities cannot import from views' },
+          ],
+        },
+      ],
+    },
+  },
+  // features: can use shared + entities
+  {
+    files: ['src/features/**/*.ts', 'src/features/**/*.tsx'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            { group: ['@/src/widgets/**'], message: 'features cannot import from widgets' },
+            { group: ['@/src/views/**'], message: 'features cannot import from views' },
+          ],
+        },
+      ],
+    },
+  },
+  // widgets: can use shared + entities + features
+  {
+    files: ['src/widgets/**/*.ts', 'src/widgets/**/*.tsx'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [{ group: ['@/src/views/**'], message: 'widgets cannot import from views' }],
+        },
+      ],
+    },
+  },
 ]
