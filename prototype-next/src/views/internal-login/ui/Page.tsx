@@ -50,7 +50,7 @@ export default function InternalLoginPage() {
     >
       <div className="w-full max-w-[400px] flex flex-col gap-8">
         <div className="flex flex-col items-center gap-3 text-center">
-          <img src="/ARC_Onboarding/logos/wordmark-navy.svg" alt="SentBiz" className="h-7 w-auto" />
+          <img src="/ARK_Onboarding/logos/wordmark-navy.svg" alt="SentBiz" className="h-7 w-auto" />
           <div className="flex flex-col gap-1">
             <h2
               className="text-[20px] leading-[30px] font-bold"

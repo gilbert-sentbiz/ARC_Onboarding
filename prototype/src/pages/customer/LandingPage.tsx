@@ -95,7 +95,7 @@ export default function LandingPage() {
       {/* ── Left: Brand panel ── */}
       <div className="hidden lg:flex flex-col justify-between w-[480px] flex-shrink-0 bg-sb-n900 px-12 py-12">
         <img
-          src="/ARC_Onboarding/logos/wordmark-white.svg"
+          src="/ARK_Onboarding/logos/wordmark-white.svg"
           alt="SentBiz"
           className="h-7 w-auto object-left object-contain"
         />
@@ -138,7 +138,7 @@ export default function LandingPage() {
       {/* ── Right: Form panel ── */}
       <div className="flex-1 flex flex-col items-center justify-center px-6 py-12 bg-sb-n50">
         <div className="lg:hidden mb-10">
-          <img src="/ARC_Onboarding/logos/wordmark-navy.svg" alt="SentBiz" className="h-7 w-auto" />
+          <img src="/ARK_Onboarding/logos/wordmark-navy.svg" alt="SentBiz" className="h-7 w-auto" />
         </div>
 
         <div className="w-full max-w-[440px]">

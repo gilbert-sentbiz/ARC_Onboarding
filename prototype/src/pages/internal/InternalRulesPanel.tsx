@@ -2206,7 +2206,7 @@ export default function InternalRulesPanel() {
       <header className="bg-white border-b border-sb-n100 sticky top-0 z-10">
         <div className="max-w-[1200px] mx-auto px-6 h-14 flex items-center justify-between">
           <div className="flex items-center gap-6">
-            <img src="/ARC_Onboarding/logos/wordmark-navy.svg" alt="SentBiz" className="h-6 w-auto" />
+            <img src="/ARK_Onboarding/logos/wordmark-navy.svg" alt="SentBiz" className="h-6 w-auto" />
             <nav className="flex items-center gap-1">
               <button
                 className="px-3 py-1.5 rounded-[6px] text-[13px] font-medium text-sb-n500 hover:text-sb-n800 hover:bg-sb-n50 transition-colors"

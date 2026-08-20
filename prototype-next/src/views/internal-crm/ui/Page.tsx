@@ -91,7 +91,7 @@ export default function InternalCrmPage() {
         <div className="max-w-[1200px] mx-auto px-6 h-14 flex items-center justify-between">
           <div className="flex items-center gap-6">
             <img
-              src="/ARC_Onboarding/logos/wordmark-navy.svg"
+              src="/ARK_Onboarding/logos/wordmark-navy.svg"
               alt="SentBiz"
               className="h-6 w-auto"
             />
