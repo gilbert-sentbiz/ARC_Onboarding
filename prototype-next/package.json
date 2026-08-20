@@ -6,6 +6,8 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
+    "test": "TZ=Asia/Seoul vitest run",
+    "test:watch": "TZ=Asia/Seoul vitest",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
@@ -28,11 +30,15 @@
     "zustand": "^5.0.2"
   },
   "devDependencies": {
+    "@testing-library/jest-dom": "^7.0.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.5",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@typescript-eslint/eslint-plugin": "^8.67.0",
     "@typescript-eslint/parser": "^8.67.0",
+    "@vitejs/plugin-react": "^6.1.0",
     "autoprefixer": "^10.5.4",
     "commitizen": "^4.3.2",
     "cz-conventional-changelog": "^3.3.0",
@@ -41,8 +47,11 @@
     "eslint-plugin-import": "^2.32.0",
     "eslint-plugin-promise": "^7.3.0",
     "husky": "^9.1.7",
+    "jsdom": "^29.1.1",
     "lint-staged": "^17.3.0",
+    "msw": "^2.15.0",
     "prettier": "^3.9.6",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^4.1.11"
   }
 }
