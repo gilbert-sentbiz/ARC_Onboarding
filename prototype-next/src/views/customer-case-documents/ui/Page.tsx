@@ -1,4 +1,5 @@
 'use client'
+import styled from '@emotion/styled'
 import { CheckCircle, CloudArrowUp, Warning, ArrowRight, Clock, Link } from '@phosphor-icons/react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useRef, useState, Suspense } from 'react'
@@ -6,9 +7,351 @@ import { useRef, useState, Suspense } from 'react'
 import { useSessionStore } from '@/src/entities/auth/model/sessionStore'
 import { useCaseStore } from '@/src/entities/case/model/caseStore'
 import { transitionStatus, resubmitRevision } from '@/src/features/case-actions/api/caseService'
+import { colors } from '@/src/shared/const/tokens'
 import type { Document, UploadedFile } from '@/src/shared/type'
 import Button from '@/src/shared/ui/Button'
 import TabBar from '@/src/widgets/customer/tab-bar/ui/TabBar'
+
+// Amber palette for warning/revision state (not in design tokens)
+const amber50 = '#fffbeb'
+const amber100 = '#fef3c7'
+const amber300 = '#fcd34d'
+const amber500 = '#f59e0b'
+const amber600 = '#d97706'
+const amber700 = '#b45309'
+
+const PageWrap = styled.div`
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: ${colors.n50};
+`
+
+const PageBody = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 32px 16px;
+`
+
+const Inner = styled.div`
+  width: 100%;
+  max-width: 640px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+`
+
+const RevisionBanner = styled.div`
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: ${amber50};
+  border: 1px solid ${amber300};
+  border-radius: 12px;
+  padding: 16px;
+`
+
+const BannerIcon = styled.div`
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: ${amber500};
+`
+
+const BannerTitle = styled.p`
+  font-size: 14px;
+  font-weight: 600;
+  margin: 0 0 2px;
+  color: ${colors.n800};
+`
+
+const BannerDesc = styled.p`
+  font-size: 13px;
+  margin: 0;
+  color: ${colors.n600};
+`
+
+const DocCard = styled.div`
+  background: ${colors.white};
+  border-radius: 16px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  box-shadow: var(--shadow-200);
+`
+
+const DocCardTitle = styled.p`
+  font-size: 16px;
+  font-weight: 700;
+  margin: 0 0 4px;
+  color: ${colors.n900};
+`
+
+const DocCardSubtitle = styled.p`
+  font-size: 13px;
+  margin: 0;
+  color: ${colors.n500};
+`
+
+const DocList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+`
+
+const ProgressCard = styled.div`
+  background: ${colors.white};
+  border-radius: 16px;
+  padding: 16px 24px;
+  box-shadow: var(--shadow-200);
+`
+
+const ProgressHeader = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 13px;
+  margin-bottom: 8px;
+`
+
+const ProgressTrack = styled.div`
+  width: 100%;
+  height: 6px;
+  border-radius: 9999px;
+  overflow: hidden;
+  background: ${colors.n100};
+`
+
+const ProgressFill = styled.div<{ pct: number }>`
+  height: 100%;
+  border-radius: 9999px;
+  background: ${colors.brand};
+  transition: width 300ms;
+  width: ${({ pct }) => pct}%;
+`
+
+const SubmitCard = styled.div`
+  background: ${colors.white};
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: var(--shadow-200);
+`
+
+const SubmitHint = styled.p`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  margin: 0 0 16px;
+  color: ${colors.n500};
+`
+
+// ── UrlRow ──────────────────────────────────────────────────
+
+const UrlRowWrap = styled.div<{ isSubmitted: boolean; needsRevision: boolean }>`
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 10px;
+  border: 1px solid
+    ${({ isSubmitted, needsRevision }) =>
+      needsRevision ? amber300 : isSubmitted ? colors.positive : colors.n200};
+  background: ${({ isSubmitted, needsRevision }) =>
+    needsRevision ? amber50 : isSubmitted ? colors.positiveLight : colors.white};
+  transition:
+    background 200ms,
+    border-color 200ms;
+`
+
+const DocRowTop = styled.div`
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  min-width: 0;
+`
+
+const DocIconWrap = styled.div`
+  flex-shrink: 0;
+  margin-top: 2px;
+`
+
+const DocInfo = styled.div`
+  min-width: 0;
+  flex: 1;
+`
+
+const DocName = styled.p`
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+  margin: 0;
+  color: ${colors.n800};
+`
+
+const DocConditionalLabel = styled.p`
+  font-size: 11px;
+  margin: 2px 0 0;
+  color: ${colors.n400};
+`
+
+const UrlInputRow = styled.div`
+  display: flex;
+  gap: 8px;
+`
+
+const UrlInput = styled.input`
+  flex: 1;
+  font-size: 13px;
+  border-radius: 6px;
+  padding: 6px 12px;
+  outline: none;
+  border: 1px solid ${colors.n200};
+  box-sizing: border-box;
+`
+
+const UrlSaveBtn = styled.button`
+  flex-shrink: 0;
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid ${colors.brand};
+  font-size: 13px;
+  font-weight: 500;
+  color: ${colors.brand};
+  background: none;
+  cursor: pointer;
+  transition: opacity 120ms;
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+`
+
+// ── DocRow ───────────────────────────────────────────────────
+
+const DocRowWrap = styled.div<{ isUploaded: boolean; isWarning: boolean }>`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px;
+  border-radius: 10px;
+  border: 1px solid
+    ${({ isUploaded, isWarning }) =>
+      isWarning ? amber300 : isUploaded ? colors.positive : colors.n200};
+  background: ${({ isUploaded, isWarning }) =>
+    isWarning ? amber50 : isUploaded ? colors.positiveLight : colors.white};
+  transition:
+    background 200ms,
+    border-color 200ms;
+`
+
+const DocRowLeft = styled.div`
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  min-width: 0;
+`
+
+const DocNameRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+`
+
+const AdHocBadge = styled.span`
+  font-size: 10px;
+  font-weight: 500;
+  padding: 2px 6px;
+  border-radius: 9999px;
+  background: ${amber100};
+  color: ${amber700};
+`
+
+const DocUploadedLabel = styled.p`
+  font-size: 11px;
+  margin: 2px 0 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: ${colors.positive};
+`
+
+const DocRevisionReason = styled.p`
+  font-size: 11px;
+  margin: 2px 0 0;
+  color: ${amber600};
+`
+
+const DocCircleIcon = styled.div`
+  width: 18px;
+  height: 18px;
+  border-radius: 9999px;
+  border: 2px solid ${colors.n300};
+`
+
+const UploadBtn = styled.button<{ uploaded: boolean }>`
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid ${({ uploaded }) => (uploaded ? colors.n200 : colors.brand)};
+  font-size: 13px;
+  font-weight: 500;
+  color: ${({ uploaded }) => (uploaded ? colors.n500 : colors.brand)};
+  background: none;
+  cursor: pointer;
+  transition: opacity 120ms;
+`
+
+const HiddenInput = styled.input`
+  display: none;
+`
+
+// ── Submitted state ──────────────────────────────────────────
+
+const SuccessWrap = styled.div`
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: ${colors.n50};
+`
+
+const SuccessCard = styled.div`
+  width: 100%;
+  max-width: 480px;
+  background: ${colors.white};
+  border-radius: 20px;
+  padding: 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  text-align: center;
+  box-shadow: var(--shadow-200);
+`
+
+const SuccessTitle = styled.p`
+  font-size: 18px;
+  font-weight: 700;
+  margin: 0 0 8px;
+  color: ${colors.n900};
+`
+
+const SuccessDesc = styled.p`
+  font-size: 14px;
+  line-height: 1.6;
+  margin: 0;
+  color: ${colors.n600};
+`
+
+// ── Sub-components ───────────────────────────────────────────
 
 function UrlRow({ doc, onSave }: { doc: Document; onSave: (docId: string, url: string) => void }) {
   const isSubmitted = doc.status === 'SUBMITTED' || doc.status === 'APPROVED'
@@ -17,61 +360,42 @@ function UrlRow({ doc, onSave }: { doc: Document; onSave: (docId: string, url: s
   const [url, setUrl] = useState(savedUrl)
 
   return (
-    <div
-      className={`flex flex-col gap-3 p-4 rounded-[10px] border transition-colors ${
-        needsRevision ? 'border-amber-300 bg-amber-50' : isSubmitted ? 'bg-green-50' : 'bg-white'
-      }`}
-      style={
-        isSubmitted && !needsRevision
-          ? { borderColor: 'var(--sb-positive)' }
-          : needsRevision
-            ? {}
-            : { borderColor: 'var(--sb-n200)' }
-      }
-    >
-      <div className="flex items-start gap-3 min-w-0">
-        <div className="flex-shrink-0 mt-0.5">
+    <UrlRowWrap isSubmitted={isSubmitted} needsRevision={needsRevision}>
+      <DocRowTop>
+        <DocIconWrap>
           {isSubmitted ? (
-            <CheckCircle size={18} weight="fill" style={{ color: 'var(--sb-positive)' }} />
+            <CheckCircle size={18} weight="fill" color={colors.positive} />
           ) : needsRevision ? (
-            <Warning size={18} weight="fill" className="text-amber-500" />
+            <Warning size={18} weight="fill" color={amber500} />
           ) : (
-            <Link size={18} style={{ color: 'var(--sb-n400)' }} />
+            <Link size={18} color={colors.n400} />
           )}
-        </div>
-        <div className="min-w-0 flex-1">
-          <p className="text-[14px] font-medium leading-[20px]" style={{ color: 'var(--sb-n800)' }}>
-            {doc.displayName}
-          </p>
+        </DocIconWrap>
+        <DocInfo>
+          <DocName>{doc.displayName}</DocName>
           {doc.isConditional && !doc.isRequired && (
-            <p className="text-[11px] mt-0.5" style={{ color: 'var(--sb-n400)' }}>
-              조건부 제출
-            </p>
+            <DocConditionalLabel>조건부 제출</DocConditionalLabel>
           )}
-        </div>
-      </div>
-      <div className="flex gap-2">
-        <input
+        </DocInfo>
+      </DocRowTop>
+      <UrlInputRow>
+        <UrlInput
           type="url"
           value={url}
           onChange={(e) => setUrl(e.target.value)}
           placeholder="https://example.com"
-          className="flex-1 text-[13px] rounded-[6px] px-3 py-1.5 outline-none border"
-          style={{ borderColor: 'var(--sb-n200)' }}
         />
-        <button
+        <UrlSaveBtn
           type="button"
           onClick={() => {
             if (url.trim()) onSave(doc.id, url.trim())
           }}
           disabled={!url.trim()}
-          className="flex-shrink-0 px-3 py-1.5 rounded-[6px] border text-[13px] font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-          style={{ borderColor: 'var(--sb-brand)', color: 'var(--sb-brand)' }}
         >
           확인
-        </button>
-      </div>
-    </div>
+        </UrlSaveBtn>
+      </UrlInputRow>
+    </UrlRowWrap>
   )
 }
 
@@ -86,98 +410,60 @@ function DocRow({
   const isUploaded = doc.status === 'SUBMITTED' || doc.status === 'APPROVED'
   const needsRevision = doc.status === 'REVISION_REQUIRED'
   const isAdHocPending = doc.isAdHoc && doc.status === 'REQUESTED'
+  const isWarning = !!(needsRevision || isAdHocPending)
   const latestFile = doc.uploadedFiles[doc.uploadedFiles.length - 1]
   const latestRevision = doc.revisionHistory[doc.revisionHistory.length - 1]
 
   return (
-    <div
-      className={`flex items-center justify-between gap-4 p-4 rounded-[10px] border transition-colors ${
-        needsRevision || isAdHocPending
-          ? 'border-amber-300 bg-amber-50'
-          : isUploaded
-            ? 'bg-green-50'
-            : 'bg-white'
-      }`}
-      style={
-        isUploaded && !needsRevision && !isAdHocPending
-          ? { borderColor: 'var(--sb-positive)' }
-          : !needsRevision && !isAdHocPending
-            ? { borderColor: 'var(--sb-n200)' }
-            : {}
-      }
-    >
-      <div className="flex items-start gap-3 min-w-0">
-        <div className="flex-shrink-0 mt-0.5">
+    <DocRowWrap isUploaded={isUploaded && !isWarning} isWarning={isWarning}>
+      <DocRowLeft>
+        <DocIconWrap>
           {isUploaded ? (
-            <CheckCircle size={18} weight="fill" style={{ color: 'var(--sb-positive)' }} />
-          ) : needsRevision || isAdHocPending ? (
-            <Warning size={18} weight="fill" className="text-amber-500" />
+            <CheckCircle size={18} weight="fill" color={colors.positive} />
+          ) : isWarning ? (
+            <Warning size={18} weight="fill" color={amber500} />
           ) : (
-            <div
-              className="w-[18px] h-[18px] rounded-full border-2"
-              style={{ borderColor: 'var(--sb-n300)' }}
-            />
+            <DocCircleIcon />
           )}
-        </div>
-        <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            <p
-              className="text-[14px] font-medium leading-[20px]"
-              style={{ color: 'var(--sb-n800)' }}
-            >
-              {doc.displayName}
-            </p>
-            {isAdHocPending && (
-              <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700">
-                제출 필요
-              </span>
-            )}
-          </div>
+        </DocIconWrap>
+        <div style={{ minWidth: 0 }}>
+          <DocNameRow>
+            <DocName>{doc.displayName}</DocName>
+            {isAdHocPending && <AdHocBadge>제출 필요</AdHocBadge>}
+          </DocNameRow>
           {doc.isConditional && !doc.isRequired && (
-            <p className="text-[11px] mt-0.5" style={{ color: 'var(--sb-n400)' }}>
-              조건부 제출
-            </p>
+            <DocConditionalLabel>조건부 제출</DocConditionalLabel>
           )}
           {isUploaded && latestFile && (
-            <p className="text-[11px] mt-0.5 truncate" style={{ color: 'var(--sb-positive)' }}>
-              {latestFile.fileName} 업로드됨
-            </p>
+            <DocUploadedLabel>{latestFile.fileName} 업로드됨</DocUploadedLabel>
           )}
-          {(needsRevision || isAdHocPending) && latestRevision && (
-            <p className="text-[11px] text-amber-600 mt-0.5">{latestRevision.reason}</p>
+          {isWarning && latestRevision && (
+            <DocRevisionReason>{latestRevision.reason}</DocRevisionReason>
           )}
         </div>
-      </div>
+      </DocRowLeft>
 
-      <div className="flex-shrink-0">
-        <input
+      <div>
+        <HiddenInput
           ref={inputRef}
           type="file"
           accept=".pdf,.jpg,.jpeg,.png"
-          className="hidden"
           onChange={(e) => {
             const file = e.target.files?.[0]
             if (file) onUpload(doc.id, file)
             e.target.value = ''
           }}
         />
-        <button
-          type="button"
-          onClick={() => inputRef.current?.click()}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-[6px] border text-[13px] font-medium transition-colors"
-          style={
-            isUploaded
-              ? { borderColor: 'var(--sb-n200)', color: 'var(--sb-n500)' }
-              : { borderColor: 'var(--sb-brand)', color: 'var(--sb-brand)' }
-          }
-        >
+        <UploadBtn type="button" uploaded={isUploaded} onClick={() => inputRef.current?.click()}>
           <CloudArrowUp size={14} />
           {isUploaded ? '재업로드' : '업로드'}
-        </button>
+        </UploadBtn>
       </div>
-    </div>
+    </DocRowWrap>
   )
 }
+
+// ── PageContent ───────────────────────────────────────────────
 
 function PageContent() {
   const searchParams = useSearchParams()
@@ -190,38 +476,27 @@ function PageContent() {
 
   if (!c || !id) {
     return (
-      <div
-        className="min-h-screen flex items-center justify-center"
-        style={{ background: 'var(--sb-n50)' }}
-      >
-        <p style={{ color: 'var(--sb-n500)' }}>케이스를 찾을 수 없습니다.</p>
-      </div>
+      <SuccessWrap>
+        <p style={{ color: colors.n500 }}>케이스를 찾을 수 없습니다.</p>
+      </SuccessWrap>
     )
   }
 
   if (submitted) {
     return (
-      <div
-        className="min-h-screen flex flex-col items-center justify-center px-4"
-        style={{ background: 'var(--sb-n50)' }}
-      >
-        <div
-          className="w-full max-w-[480px] bg-white rounded-[20px] p-10 flex flex-col items-center gap-4 text-center"
-          style={{ boxShadow: 'var(--shadow-200)' }}
-        >
-          <CheckCircle size={52} weight="fill" style={{ color: 'var(--sb-positive)' }} />
+      <SuccessWrap>
+        <SuccessCard>
+          <CheckCircle size={52} weight="fill" color={colors.positive} />
           <div>
-            <p className="text-[18px] font-bold mb-2" style={{ color: 'var(--sb-n900)' }}>
-              서류가 제출되었습니다
-            </p>
-            <p className="text-[14px] leading-relaxed" style={{ color: 'var(--sb-n600)' }}>
+            <SuccessTitle>서류가 제출되었습니다</SuccessTitle>
+            <SuccessDesc>
               담당팀에서 검토 후 연락드리겠습니다.
               <br />
-              잠시 후 상태 & 이력으로 이동합니다.
-            </p>
+              잠시 후 상태 &amp; 이력으로 이동합니다.
+            </SuccessDesc>
           </div>
-        </div>
-      </div>
+        </SuccessCard>
+      </SuccessWrap>
     )
   }
 
@@ -301,44 +576,44 @@ function PageContent() {
     }
   }
 
+  const uploadedCount = requiredDocs.filter(
+    (d) => d.status === 'SUBMITTED' || d.status === 'APPROVED'
+  ).length
+  const uploadPct = requiredDocs.length ? (uploadedCount / requiredDocs.length) * 100 : 0
+
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: 'var(--sb-n50)' }}>
+    <PageWrap>
       <TabBar caseId={id} active="documents" />
-      <div className="flex flex-col items-center px-4 py-8">
-        <div className="w-full max-w-[640px] flex flex-col gap-4">
+      <PageBody>
+        <Inner>
           {/* Revision banner */}
           {isRevision && (
-            <div className="flex items-start gap-3 bg-amber-50 border border-amber-300 rounded-[12px] p-4">
-              <Warning size={20} weight="fill" className="text-amber-500 flex-shrink-0 mt-0.5" />
+            <RevisionBanner>
+              <BannerIcon>
+                <Warning size={20} weight="fill" />
+              </BannerIcon>
               <div>
-                <p className="text-[14px] font-semibold mb-0.5" style={{ color: 'var(--sb-n800)' }}>
-                  서류 보완이 요청되었습니다
-                </p>
-                <p className="text-[13px]" style={{ color: 'var(--sb-n600)' }}>
+                <BannerTitle>서류 보완이 요청되었습니다</BannerTitle>
+                <BannerDesc>
                   담당팀에서 서류 보완 또는 추가 제출을 요청했습니다. 아래 표시된 서류를 업로드한 후
                   재제출해주세요.
-                </p>
+                </BannerDesc>
               </div>
-            </div>
+            </RevisionBanner>
           )}
 
           {/* Document list */}
-          <div
-            className="bg-white rounded-[16px] p-6 flex flex-col gap-5"
-            style={{ boxShadow: 'var(--shadow-200)' }}
-          >
+          <DocCard>
             <div>
-              <p className="text-[16px] font-bold mb-1" style={{ color: 'var(--sb-n900)' }}>
-                {isRevision ? '보완 서류 재제출' : '서류 제출'}
-              </p>
-              <p className="text-[13px]" style={{ color: 'var(--sb-n500)' }}>
+              <DocCardTitle>{isRevision ? '보완 서류 재제출' : '서류 제출'}</DocCardTitle>
+              <DocCardSubtitle>
                 {isRevision
                   ? '보완 요청된 서류를 업로드한 후 재제출해주세요.'
                   : `필수 서류 ${requiredDocs.length}개를 모두 업로드해주세요.`}
-              </p>
+              </DocCardSubtitle>
             </div>
 
-            <div className="flex flex-col gap-3">
+            <DocList>
               {displayDocs.map((doc) =>
                 doc.type === 'website_url' ? (
                   <UrlRow key={doc.id} doc={doc} onSave={handleUrlSave} />
@@ -346,69 +621,42 @@ function PageContent() {
                   <DocRow key={doc.id} doc={doc} onUpload={handleUpload} />
                 )
               )}
-            </div>
-          </div>
+            </DocList>
+          </DocCard>
 
           {/* Progress indicator */}
           {!isRevision && (
-            <div
-              className="bg-white rounded-[16px] px-6 py-4"
-              style={{ boxShadow: 'var(--shadow-200)' }}
-            >
-              <div className="flex items-center justify-between text-[13px] mb-2">
-                <span style={{ color: 'var(--sb-n600)' }}>업로드 진행</span>
-                <span className="font-medium" style={{ color: 'var(--sb-n800)' }}>
-                  {
-                    requiredDocs.filter((d) => d.status === 'SUBMITTED' || d.status === 'APPROVED')
-                      .length
-                  }{' '}
-                  / {requiredDocs.length}
+            <ProgressCard>
+              <ProgressHeader>
+                <span style={{ color: colors.n600 }}>업로드 진행</span>
+                <span style={{ fontWeight: 500, color: colors.n800 }}>
+                  {uploadedCount} / {requiredDocs.length}
                 </span>
-              </div>
-              <div
-                className="w-full h-1.5 rounded-full overflow-hidden"
-                style={{ background: 'var(--sb-n100)' }}
-              >
-                <div
-                  className="h-full rounded-full transition-all duration-300"
-                  style={{
-                    background: 'var(--sb-brand)',
-                    width: `${
-                      requiredDocs.length
-                        ? (requiredDocs.filter(
-                            (d) => d.status === 'SUBMITTED' || d.status === 'APPROVED'
-                          ).length /
-                            requiredDocs.length) *
-                          100
-                        : 0
-                    }%`,
-                  }}
-                />
-              </div>
-            </div>
+              </ProgressHeader>
+              <ProgressTrack>
+                <ProgressFill pct={uploadPct} />
+              </ProgressTrack>
+            </ProgressCard>
           )}
 
           {/* Submit */}
-          <div className="bg-white rounded-[16px] p-6" style={{ boxShadow: 'var(--shadow-200)' }}>
+          <SubmitCard>
             {!canSubmit && (
-              <p
-                className="flex items-center gap-2 text-[13px] mb-4"
-                style={{ color: 'var(--sb-n500)' }}
-              >
+              <SubmitHint>
                 <Clock size={14} />
                 {isRevision
                   ? '보완 요청된 서류를 모두 업로드하면 재제출할 수 있습니다.'
                   : '필수 서류를 모두 업로드하면 제출할 수 있습니다.'}
-              </p>
+              </SubmitHint>
             )}
             <Button onClick={handleSubmit} disabled={!canSubmit} fullWidth>
               {isRevision ? '재제출하기' : '제출하기'}
               <ArrowRight size={16} />
             </Button>
-          </div>
-        </div>
-      </div>
-    </div>
+          </SubmitCard>
+        </Inner>
+      </PageBody>
+    </PageWrap>
   )
 }
 
