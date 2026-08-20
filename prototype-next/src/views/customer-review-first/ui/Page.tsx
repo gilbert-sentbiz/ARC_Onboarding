@@ -1,9 +1,11 @@
 'use client'
+import styled from '@emotion/styled'
 import { ArrowLeft, ArrowRight } from '@phosphor-icons/react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Suspense } from 'react'
 
 import { useCaseStore } from '@/src/entities/case/model/caseStore'
+import { colors } from '@/src/shared/const/tokens'
 import Button from '@/src/shared/ui/Button'
 import { getCountryName } from '@/src/shared/util/countryNames'
 
@@ -26,35 +28,157 @@ const REFERRAL_LABELS: Record<string, string> = {
   other: '기타',
 }
 
+const PageWrap = styled.div`
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 32px 16px;
+  background: ${colors.n50};
+`
+
+const HeaderWrap = styled.div`
+  width: 100%;
+  max-width: 640px;
+  margin-bottom: 24px;
+`
+
+const HeaderRow = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+`
+
+const BackBtn = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: ${colors.n500};
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: color 120ms;
+  &:hover {
+    color: ${colors.n700};
+  }
+`
+
+const StepLabel = styled.span`
+  font-size: 13px;
+  font-weight: 500;
+  color: ${colors.n500};
+`
+
+const ProgressBar = styled.div`
+  width: 100%;
+  height: 4px;
+  border-radius: 9999px;
+  background: ${colors.brand};
+`
+
+const Card = styled.div`
+  width: 100%;
+  max-width: 640px;
+  background: ${colors.white};
+  border-radius: 16px;
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  box-shadow: var(--shadow-200);
+`
+
+const CardTitle = styled.h2`
+  font-size: 20px;
+  line-height: 30px;
+  font-weight: 700;
+  color: ${colors.n900};
+  margin: 0 0 4px;
+`
+
+const CardSubtitle = styled.p`
+  font-size: 14px;
+  line-height: 20px;
+  color: ${colors.n500};
+  margin: 0;
+`
+
+const Section = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+`
+
+const SectionLabelEl = styled.p`
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: ${colors.brand};
+  margin: 0;
+`
+
+const Grid2 = styled.div`
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+`
+
+const SpanFull = styled.div`
+  grid-column: span 2;
+`
+
+const Divider = styled.div`
+  height: 1px;
+  background: ${colors.n100};
+`
+
+const FieldWrap = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+`
+
+const FieldLabelEl = styled.p`
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: ${colors.n400};
+  margin: 0;
+`
+
+const FieldValue = styled.p`
+  font-size: 14px;
+  color: ${colors.n800};
+  margin: 0;
+`
+
+const NavRow = styled.div`
+  display: flex;
+  gap: 12px;
+  padding-top: 8px;
+`
+
+const FlexBtn = styled.div`
+  flex: 1;
+`
+
 type FieldProps = { label: string; value: string }
 
 function Field({ label, value }: FieldProps) {
   return (
-    <div className="flex flex-col gap-0.5">
-      <p
-        className="text-[11px] font-semibold uppercase tracking-[0.5px]"
-        style={{ color: 'var(--sb-n400)' }}
-      >
-        {label}
-      </p>
-      <p className="text-[14px]" style={{ color: 'var(--sb-n800)' }}>
-        {value || '—'}
-      </p>
-    </div>
+    <FieldWrap>
+      <FieldLabelEl>{label}</FieldLabelEl>
+      <FieldValue>{value || '—'}</FieldValue>
+    </FieldWrap>
   )
 }
 
-type SectionLabelProps = { children: React.ReactNode }
-
-function SectionLabel({ children }: SectionLabelProps) {
-  return (
-    <p
-      className="text-[12px] font-semibold tracking-[1px] uppercase"
-      style={{ color: 'var(--sb-brand)' }}
-    >
-      {children}
-    </p>
-  )
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return <SectionLabelEl>{children}</SectionLabelEl>
 }
 
 function PageContent() {
@@ -66,12 +190,9 @@ function PageContent() {
 
   if (!c || !id) {
     return (
-      <div
-        className="min-h-screen flex items-center justify-center"
-        style={{ background: 'var(--sb-n50)' }}
-      >
-        <p style={{ color: 'var(--sb-n500)' }}>케이스를 찾을 수 없습니다.</p>
-      </div>
+      <PageWrap style={{ justifyContent: 'center' }}>
+        <p style={{ color: colors.n500 }}>케이스를 찾을 수 없습니다.</p>
+      </PageWrap>
     )
   }
 
@@ -89,61 +210,42 @@ function PageContent() {
   }
 
   return (
-    <div
-      className="min-h-screen flex flex-col items-center px-4 py-8"
-      style={{ background: 'var(--sb-n50)' }}
-    >
-      {/* Header */}
-      <div className="w-full max-w-[640px] mb-6">
-        <div className="flex items-center justify-between mb-5">
-          <button
-            type="button"
-            onClick={() => router.push('/customer/onboarding')}
-            className="flex items-center gap-1.5 text-[13px] transition-colors"
-            style={{ color: 'var(--sb-n500)' }}
-          >
+    <PageWrap>
+      <HeaderWrap>
+        <HeaderRow>
+          <BackBtn type="button" onClick={() => router.push('/customer/onboarding')}>
             <ArrowLeft size={16} />
             수정하기
-          </button>
-          <span className="text-[13px] font-medium" style={{ color: 'var(--sb-n500)' }}>
-            1차 정보 확인
-          </span>
-        </div>
-        <div className="w-full h-1 rounded-full" style={{ background: 'var(--sb-brand)' }} />
-      </div>
+          </BackBtn>
+          <StepLabel>1차 정보 확인</StepLabel>
+        </HeaderRow>
+        <ProgressBar />
+      </HeaderWrap>
 
-      {/* Card */}
-      <div
-        className="w-full max-w-[640px] bg-white rounded-[16px] p-8 flex flex-col gap-6"
-        style={{ boxShadow: 'var(--shadow-200)' }}
-      >
-        <div className="flex flex-col gap-1">
-          <h2 className="text-[20px] leading-[30px] font-bold" style={{ color: 'var(--sb-n900)' }}>
-            입력하신 내용을 확인해주세요
-          </h2>
-          <p className="text-[14px] leading-[20px]" style={{ color: 'var(--sb-n500)' }}>
-            수정이 필요하시면 '수정하기'로 돌아가 변경할 수 있습니다.
-          </p>
+      <Card>
+        <div>
+          <CardTitle>입력하신 내용을 확인해주세요</CardTitle>
+          <CardSubtitle>수정이 필요하시면 '수정하기'로 돌아가 변경할 수 있습니다.</CardSubtitle>
         </div>
 
         {/* 담당자 정보 */}
-        <div className="flex flex-col gap-3">
+        <Section>
           <SectionLabel>담당자 정보</SectionLabel>
-          <div className="grid grid-cols-2 gap-4">
+          <Grid2>
             <Field label="회사명" value={str('companyName')} />
             <Field label="담당자 이름" value={str('contactName')} />
             <Field label="직함" value={str('contactTitle')} />
             <Field label="연락처" value={str('phone')} />
-            <div className="col-span-2">
+            <SpanFull>
               <Field label="이메일" value={str('email')} />
-            </div>
-          </div>
-        </div>
+            </SpanFull>
+          </Grid2>
+        </Section>
 
-        <div className="h-px" style={{ background: 'var(--sb-n100)' }} />
+        <Divider />
 
         {/* 서비스 */}
-        <div className="flex flex-col gap-3">
+        <Section>
           <SectionLabel>서비스</SectionLabel>
           <Field
             label="신청 서비스"
@@ -161,7 +263,7 @@ function PageContent() {
             />
           )}
           {services.includes('remittance') && (
-            <div className="grid grid-cols-2 gap-4">
+            <Grid2>
               <Field label="송금 출발 국가" value={getCountryName(str('remittanceFrom'))} />
               <Field
                 label="송금 도착 국가"
@@ -171,30 +273,30 @@ function PageContent() {
                   .map(getCountryName)
                   .join(', ')}
               />
-            </div>
+            </Grid2>
           )}
-        </div>
+        </Section>
 
-        <div className="h-px" style={{ background: 'var(--sb-n100)' }} />
+        <Divider />
 
         {/* 사업자 정보 */}
-        <div className="flex flex-col gap-3">
+        <Section>
           <SectionLabel>사업자 정보</SectionLabel>
-          <div className="grid grid-cols-2 gap-4">
+          <Grid2>
             <Field
               label="사업자 유형"
               value={BUSINESS_TYPE_LABELS[str('businessType')] ?? str('businessType')}
             />
             <Field label="설립 국가" value={getCountryName(str('foundingCountry'))} />
-          </div>
-        </div>
+          </Grid2>
+        </Section>
 
-        <div className="h-px" style={{ background: 'var(--sb-n100)' }} />
+        <Divider />
 
         {/* 거래 규모 */}
-        <div className="flex flex-col gap-3">
+        <Section>
           <SectionLabel>거래 규모</SectionLabel>
-          <div className="grid grid-cols-2 gap-4">
+          <Grid2>
             <Field
               label="예상 월간 거래 규모"
               value={
@@ -207,14 +309,14 @@ function PageContent() {
                   : '—'
               }
             />
-          </div>
-        </div>
+          </Grid2>
+        </Section>
 
         {/* 추가 정보 */}
         {(str('referralSource') || str('additionalNote')) && (
           <>
-            <div className="h-px" style={{ background: 'var(--sb-n100)' }} />
-            <div className="flex flex-col gap-3">
+            <Divider />
+            <Section>
               <SectionLabel>추가 정보</SectionLabel>
               {str('referralSource') && (
                 <Field
@@ -225,27 +327,27 @@ function PageContent() {
               {str('additionalNote') && (
                 <Field label="추가 문의사항" value={str('additionalNote')} />
               )}
-            </div>
+            </Section>
           </>
         )}
 
         {/* Navigation */}
-        <div className="flex gap-3 pt-2">
-          <Button
-            variant="outline"
-            onClick={() => router.push('/customer/onboarding')}
-            className="flex-1"
-          >
-            <ArrowLeft size={16} />
-            수정하기
-          </Button>
-          <Button onClick={handleConfirm} className="flex-1">
-            확인하고 계속하기
-            <ArrowRight size={16} />
-          </Button>
-        </div>
-      </div>
-    </div>
+        <NavRow>
+          <FlexBtn>
+            <Button variant="outline" onClick={() => router.push('/customer/onboarding')} fullWidth>
+              <ArrowLeft size={16} />
+              수정하기
+            </Button>
+          </FlexBtn>
+          <FlexBtn>
+            <Button onClick={handleConfirm} fullWidth>
+              확인하고 계속하기
+              <ArrowRight size={16} />
+            </Button>
+          </FlexBtn>
+        </NavRow>
+      </Card>
+    </PageWrap>
   )
 }
 
