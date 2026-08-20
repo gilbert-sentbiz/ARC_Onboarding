@@ -1,5 +1,6 @@
 'use client'
 
+import styled from '@emotion/styled'
 import {
   ArrowLeft,
   ArrowRight,
@@ -22,6 +23,7 @@ import {
   validateEmail,
   validateAmount,
 } from '@/src/features/case-validation/model/validators'
+import { colors } from '@/src/shared/const/tokens'
 import Button from '@/src/shared/ui/Button'
 import Input from '@/src/shared/ui/Input'
 import Select from '@/src/shared/ui/Select'
@@ -91,7 +93,6 @@ const INITIAL: FormData = {
 }
 
 function formatPhone(raw: string): string {
-  // Allow digits, +, -, space — strip all other chars
   return raw.replace(/[^0-9+\-\s()]/g, '')
 }
 
@@ -118,17 +119,342 @@ const CURRENCY_OPTIONS = [
   { value: 'OTHER', label: '기타' },
 ]
 
+// ── Styled components ──────────────────────────────────────────────────────
+
+const Page = styled.div`
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 32px 16px;
+  background: ${colors.n50};
+`
+
+const PageInner = styled.div`
+  width: 100%;
+  max-width: 640px;
+  margin-bottom: 24px;
+`
+
+const HeaderRow = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+`
+
+const NavBackBtn = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: ${colors.n500};
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: color 120ms;
+  &:hover {
+    color: ${colors.n700};
+  }
+`
+
+const HeaderRight = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 16px;
+`
+
+const DraftBtn = styled.button`
+  font-size: 13px;
+  font-weight: 500;
+  color: ${colors.brand};
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: color 120ms;
+`
+
+const StepLabel = styled.span`
+  font-size: 13px;
+  font-weight: 500;
+  color: ${colors.n500};
+`
+
+const ProgressTrack = styled.div`
+  width: 100%;
+  height: 4px;
+  border-radius: 9999px;
+  overflow: hidden;
+  background: ${colors.n200};
+`
+
+const ProgressFill = styled.div<{ pct: number }>`
+  height: 100%;
+  border-radius: 9999px;
+  transition: width 300ms;
+  background: ${colors.brand};
+  width: ${({ pct }) => pct}%;
+`
+
+const Card = styled.div`
+  width: 100%;
+  max-width: 640px;
+  background: ${colors.white};
+  border-radius: 16px;
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  box-shadow: var(--shadow-200);
+`
+
+const CardTitle = styled.h2`
+  font-size: 20px;
+  line-height: 30px;
+  font-weight: 700;
+  color: ${colors.n900};
+  margin: 0;
+`
+
+const CardSubtitle = styled.p`
+  font-size: 14px;
+  line-height: 20px;
+  color: ${colors.n500};
+  margin: 0;
+`
+
+const Section = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+`
+
+const SectionLabelEl = styled.p`
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding-top: 8px;
+  color: ${colors.brand};
+  margin: 0;
+`
+
+const Grid2 = styled.div`
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+`
+
+const ChipRow = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+`
+
+const StyledChip = styled.button<{ selected: boolean }>`
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 16px;
+  height: 40px;
+  border-radius: 6px;
+  border: 1px solid;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 120ms;
+  cursor: pointer;
+  background: ${({ selected }) => (selected ? colors.blue150 : colors.white)};
+  border-color: ${({ selected }) => (selected ? colors.brand : colors.n200)};
+  color: ${({ selected }) => (selected ? colors.brand : colors.n700)};
+`
+
+const OptionCardBtn = styled.button<{ selected: boolean; isDisabled: boolean }>`
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  border-radius: 10px;
+  border: 1px solid;
+  text-align: left;
+  transition: all 120ms;
+  width: 100%;
+  cursor: ${({ isDisabled }) => (isDisabled ? 'not-allowed' : 'pointer')};
+  pointer-events: ${({ isDisabled }) => (isDisabled ? 'none' : 'auto')};
+  opacity: ${({ isDisabled, selected }) => (isDisabled && !selected ? 0.6 : isDisabled ? 0.8 : 1)};
+  background: ${({ selected, isDisabled }) =>
+    isDisabled && selected
+      ? colors.blue100
+      : isDisabled
+        ? colors.n50
+        : selected
+          ? colors.blue100
+          : colors.white};
+  border-color: ${({ selected, isDisabled }) =>
+    selected ? colors.brand : isDisabled ? colors.n100 : colors.n200};
+`
+
+const OptionCardIcon = styled.div<{ selected: boolean; isDisabled: boolean }>`
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 120ms;
+  background: ${({ selected, isDisabled }) =>
+    isDisabled && selected
+      ? colors.brand
+      : isDisabled
+        ? colors.n100
+        : selected
+          ? colors.brand
+          : colors.n100};
+  color: ${({ selected, isDisabled }) =>
+    isDisabled && selected
+      ? colors.white
+      : isDisabled
+        ? colors.n400
+        : selected
+          ? colors.white
+          : colors.n500};
+`
+
+const OptionCardText = styled.p<{ selected: boolean; isDisabled: boolean }>`
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 20px;
+  margin: 0;
+  color: ${({ selected, isDisabled }) =>
+    isDisabled && selected
+      ? colors.brand
+      : isDisabled
+        ? colors.n400
+        : selected
+          ? colors.brand
+          : colors.n800};
+`
+
+const OptionCardDesc = styled.p`
+  font-size: 12px;
+  line-height: 18px;
+  color: ${colors.n500};
+  margin: 0;
+`
+
+const ServiceBox = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 10px;
+  border: 1px solid ${colors.n200};
+  background: ${colors.n50};
+`
+
+const FieldLabel = styled.label`
+  font-size: 14px;
+  color: ${colors.n500};
+`
+
+const ErrorText = styled.p`
+  font-size: 11px;
+  color: ${colors.negative};
+  margin: 0;
+`
+
+const InfoNote = styled.p`
+  font-size: 12px;
+  border-radius: 8px;
+  padding: 8px 12px;
+  border: 1px solid ${colors.n100};
+  color: ${colors.n500};
+  background: ${colors.n50};
+  margin: 0;
+`
+
+const OriginToggleRow = styled.div`
+  display: flex;
+  gap: 8px;
+`
+
+const OriginToggleBtn = styled.button<{ selected: boolean }>`
+  flex: 1;
+  padding: 10px 0;
+  border-radius: 8px;
+  border: 1px solid;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 120ms;
+  cursor: pointer;
+  background: ${({ selected }) => (selected ? colors.blue100 : colors.white)};
+  border-color: ${({ selected }) => (selected ? colors.brand : colors.n200)};
+  color: ${({ selected }) => (selected ? colors.brand : colors.n500)};
+`
+
+const VolumeRow = styled.div`
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+`
+
+const FlexInputWrap = styled.div`
+  flex: 1;
+`
+
+const FixedSelectWrap = styled.div`
+  width: 112px;
+`
+
+const CheckboxLabel = styled.label`
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  cursor: pointer;
+`
+
+const CheckboxBox = styled.div<{ checked: boolean; hasError: boolean }>`
+  margin-top: 2px;
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  border: 1px solid;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 120ms;
+  background: ${({ checked, hasError }) =>
+    checked ? colors.brand : hasError ? colors.negativeLight : colors.white};
+  border-color: ${({ checked, hasError }) =>
+    checked ? colors.brand : hasError ? colors.negative : colors.n300};
+`
+
+const CheckboxText = styled.span<{ hasError: boolean }>`
+  font-size: 13px;
+  line-height: 20px;
+  color: ${({ hasError }) => (hasError ? colors.negative : colors.n600)};
+`
+
+const Separator = styled.div`
+  height: 1px;
+  background: ${colors.n100};
+`
+
+const NavRow = styled.div`
+  display: flex;
+  gap: 12px;
+  padding-top: 8px;
+`
+
+const FlexBtn = styled.div`
+  flex: 1;
+`
+
 // ── Sub-components ────────────────────────────────────────────────────────
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <p
-      className="text-[12px] font-semibold tracking-[1px] uppercase pt-2"
-      style={{ color: 'var(--sb-brand)' }}
-    >
-      {children}
-    </p>
-  )
+  return <SectionLabelEl>{children}</SectionLabelEl>
 }
 
 function ToggleChip({
@@ -141,23 +467,10 @@ function ToggleChip({
   onClick: () => void
 }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="inline-flex items-center gap-1.5 px-4 h-10 rounded-[6px] border text-[14px] font-medium transition-all duration-[120ms]"
-      style={
-        selected
-          ? {
-              background: 'var(--sb-blue-150)',
-              borderColor: 'var(--sb-brand)',
-              color: 'var(--sb-brand)',
-            }
-          : { background: 'white', borderColor: 'var(--sb-n200)', color: 'var(--sb-n700)' }
-      }
-    >
+    <StyledChip type="button" selected={selected} onClick={onClick}>
       {selected && <Check size={14} weight="bold" />}
       {label}
-    </button>
+    </StyledChip>
   )
 }
 
@@ -177,68 +490,23 @@ function OptionCard({
   disabled?: boolean
 }) {
   return (
-    <button
+    <OptionCardBtn
       type="button"
+      selected={selected}
+      isDisabled={!!disabled}
       onClick={disabled ? undefined : onClick}
       aria-disabled={disabled || undefined}
-      className="flex items-center gap-4 p-4 rounded-[10px] border text-left transition-all duration-[120ms]"
-      style={
-        disabled && selected
-          ? {
-              background: 'var(--sb-blue-100)',
-              borderColor: 'var(--sb-brand)',
-              cursor: 'not-allowed',
-              opacity: 0.8,
-              pointerEvents: 'none',
-            }
-          : disabled
-            ? {
-                background: 'var(--sb-n50)',
-                borderColor: 'var(--sb-n100)',
-                cursor: 'not-allowed',
-                opacity: 0.6,
-                pointerEvents: 'none',
-              }
-            : selected
-              ? { background: 'var(--sb-blue-100)', borderColor: 'var(--sb-brand)' }
-              : { background: 'white', borderColor: 'var(--sb-n200)' }
-      }
     >
-      <div
-        className="flex-shrink-0 w-10 h-10 rounded-[8px] flex items-center justify-center transition-colors duration-[120ms]"
-        style={
-          disabled && selected
-            ? { background: 'var(--sb-brand)', color: 'white' }
-            : disabled
-              ? { background: 'var(--sb-n100)', color: 'var(--sb-n400)' }
-              : selected
-                ? { background: 'var(--sb-brand)', color: 'white' }
-                : { background: 'var(--sb-n100)', color: 'var(--sb-n500)' }
-        }
-      >
+      <OptionCardIcon selected={selected} isDisabled={!!disabled}>
         {icon}
-      </div>
-      <div className="flex flex-col gap-0.5">
-        <p
-          className="text-[14px] font-semibold leading-[20px]"
-          style={{
-            color:
-              disabled && selected
-                ? 'var(--sb-brand)'
-                : disabled
-                  ? 'var(--sb-n400)'
-                  : selected
-                    ? 'var(--sb-brand)'
-                    : 'var(--sb-n800)',
-          }}
-        >
+      </OptionCardIcon>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <OptionCardText selected={selected} isDisabled={!!disabled}>
           {label}
-        </p>
-        <p className="text-[12px] leading-[18px]" style={{ color: 'var(--sb-n500)' }}>
-          {desc}
-        </p>
+        </OptionCardText>
+        <OptionCardDesc>{desc}</OptionCardDesc>
       </div>
-    </button>
+    </OptionCardBtn>
   )
 }
 
@@ -399,67 +667,41 @@ export default function CustomerOnboardingPage() {
   }
 
   return (
-    <div
-      className="min-h-screen flex flex-col items-center px-4 py-8"
-      style={{ background: 'var(--sb-n50)' }}
-    >
-      {/* Header */}
-      <div className="w-full max-w-[640px] mb-6">
-        <div className="flex items-center justify-between mb-5">
-          <button
-            type="button"
-            onClick={() => (step === 0 ? router.push('/') : setStep(0))}
-            className="flex items-center gap-1.5 text-[13px] transition-colors"
-            style={{ color: 'var(--sb-n500)' }}
-          >
+    <Page>
+      <PageInner>
+        <HeaderRow>
+          <NavBackBtn type="button" onClick={() => (step === 0 ? router.push('/') : setStep(0))}>
             <ArrowLeft size={16} />
             {step === 0 ? '처음으로' : '이전'}
-          </button>
-          <div className="flex items-center gap-4">
-            <button
-              type="button"
-              onClick={handleDraftSave}
-              className="text-[13px] transition-colors font-medium"
-              style={{ color: 'var(--sb-brand)' }}
-            >
+          </NavBackBtn>
+          <HeaderRight>
+            <DraftBtn type="button" onClick={handleDraftSave}>
               {draftSaved ? '저장됨 ✓' : '임시저장'}
-            </button>
-            <span className="text-[13px] font-medium" style={{ color: 'var(--sb-n500)' }}>
-              {step + 1} / 2
-            </span>
-          </div>
-        </div>
-        <div
-          className="w-full h-1 rounded-full overflow-hidden"
-          style={{ background: 'var(--sb-n200)' }}
-        >
-          <div
-            className="h-full rounded-full transition-all duration-300"
-            style={{ width: step === 0 ? '50%' : '100%', background: 'var(--sb-brand)' }}
-          />
-        </div>
-      </div>
+            </DraftBtn>
+            <StepLabel>{step + 1} / 2</StepLabel>
+          </HeaderRight>
+        </HeaderRow>
+        <ProgressTrack>
+          <ProgressFill pct={step === 0 ? 50 : 100} />
+        </ProgressTrack>
+      </PageInner>
 
-      {/* Card */}
-      <div
-        className="w-full max-w-[640px] bg-white rounded-[16px] p-8 flex flex-col gap-7"
-        style={{ boxShadow: 'var(--shadow-200)' }}
-      >
-        <div className="flex flex-col gap-1">
-          <h2 className="text-[20px] leading-[30px] font-bold" style={{ color: 'var(--sb-n900)' }}>
+      <Card>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <CardTitle>
             {step === 0 ? '기본 정보를 입력해주세요' : '사업자 정보를 입력해주세요'}
-          </h2>
-          <p className="text-[14px] leading-[20px]" style={{ color: 'var(--sb-n500)' }}>
+          </CardTitle>
+          <CardSubtitle>
             {step === 0
               ? '담당자 정보와 이용하실 서비스를 선택해주세요.'
               : '사업자 정보와 거래 규모를 입력해주세요.'}
-          </p>
+          </CardSubtitle>
         </div>
 
         {/* ── Step 0 ── */}
         {step === 0 && (
-          <div className="flex flex-col gap-6">
-            <div className="flex flex-col gap-4">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+            <Section>
               <SectionLabel>담당자 정보</SectionLabel>
               <Input
                 label="회사명"
@@ -469,7 +711,7 @@ export default function CustomerOnboardingPage() {
                 onChange={(e) => set('companyName', e.target.value)}
                 error={errors.companyName}
               />
-              <div className="grid grid-cols-2 gap-4">
+              <Grid2>
                 <Input
                   label="담당자 이름"
                   required
@@ -486,8 +728,8 @@ export default function CustomerOnboardingPage() {
                   onChange={(e) => set('contactTitle', e.target.value)}
                   error={errors.contactTitle}
                 />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
+              </Grid2>
+              <Grid2>
                 <Input
                   label="연락처"
                   required
@@ -512,19 +754,17 @@ export default function CustomerOnboardingPage() {
                   onChange={(e) => set('email', e.target.value)}
                   error={errors.email}
                 />
-              </div>
-            </div>
+              </Grid2>
+            </Section>
 
-            <div className="h-px" style={{ background: 'var(--sb-n100)' }} />
+            <Separator />
 
-            <div className="flex flex-col gap-4">
-              <div className="flex items-baseline gap-2">
+            <Section>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
                 <SectionLabel>서비스 선택</SectionLabel>
-                <span className="text-[12px]" style={{ color: 'var(--sb-n400)' }}>
-                  (중복 선택 가능)
-                </span>
+                <span style={{ fontSize: 12, color: colors.n400 }}>(중복 선택 가능)</span>
               </div>
-              <div className="flex flex-col gap-3">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 <OptionCard
                   icon={<PaperPlaneRight size={20} weight="fill" />}
                   label="해외 송금"
@@ -540,25 +780,17 @@ export default function CustomerOnboardingPage() {
                   onClick={() => toggleService('collection')}
                 />
               </div>
-              {errors.services && (
-                <p className="text-[11px]" style={{ color: 'var(--sb-negative)' }}>
-                  {errors.services}
-                </p>
-              )}
+              {errors.services && <ErrorText>{errors.services}</ErrorText>}
 
-              {/* 수금 국가 */}
               {data.services.includes('collection') && (
-                <div
-                  className="flex flex-col gap-3 p-4 rounded-[10px] border"
-                  style={{ background: 'var(--sb-n50)', borderColor: 'var(--sb-n200)' }}
-                >
-                  <p className="text-[13px] font-medium" style={{ color: 'var(--sb-n700)' }}>
-                    수금 국가 <span style={{ color: 'var(--sb-negative)' }}>*</span>
-                    <span className="font-normal ml-1" style={{ color: 'var(--sb-n400)' }}>
+                <ServiceBox>
+                  <p style={{ fontSize: 13, fontWeight: 500, color: colors.n700, margin: 0 }}>
+                    수금 국가 <span style={{ color: colors.negative }}>*</span>
+                    <span style={{ fontWeight: 400, marginLeft: 4, color: colors.n400 }}>
                       (중복 선택 가능)
                     </span>
                   </p>
-                  <div className="flex flex-wrap gap-2">
+                  <ChipRow>
                     {(() => {
                       const rs = getRuleSet()
                       const COUNTRY_NAME: Record<string, string> = { KR: '한국', VN: '베트남' }
@@ -584,7 +816,7 @@ export default function CustomerOnboardingPage() {
                         />
                       ))
                     })()}
-                  </div>
+                  </ChipRow>
                   {data.collectionCountries.includes('OTHER') && (
                     <Input
                       placeholder="수금 국가를 직접 입력해주세요"
@@ -593,25 +825,18 @@ export default function CustomerOnboardingPage() {
                     />
                   )}
                   {errors.collectionCountries && (
-                    <p className="text-[11px]" style={{ color: 'var(--sb-negative)' }}>
-                      {errors.collectionCountries}
-                    </p>
+                    <ErrorText>{errors.collectionCountries}</ErrorText>
                   )}
-                </div>
+                </ServiceBox>
               )}
 
-              {/* 송금 국가 */}
               {data.services.includes('remittance') && (
-                <div
-                  className="flex flex-col gap-4 p-4 rounded-[10px] border"
-                  style={{ background: 'var(--sb-n50)', borderColor: 'var(--sb-n200)' }}
-                >
-                  {/* 출발 국가 — single select */}
-                  <div className="flex flex-col gap-2">
-                    <p className="text-[13px] font-medium" style={{ color: 'var(--sb-n700)' }}>
-                      송금 출발 국가 <span style={{ color: 'var(--sb-negative)' }}>*</span>
+                <ServiceBox>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    <p style={{ fontSize: 13, fontWeight: 500, color: colors.n700, margin: 0 }}>
+                      송금 출발 국가 <span style={{ color: colors.negative }}>*</span>
                     </p>
-                    <div className="flex flex-wrap gap-2">
+                    <ChipRow>
                       {REMITTANCE_COUNTRIES.map((c) => (
                         <ToggleChip
                           key={c.value}
@@ -628,7 +853,7 @@ export default function CustomerOnboardingPage() {
                         selected={data.remittanceFrom === '__OTHER__'}
                         onClick={() => set('remittanceFrom', '__OTHER__')}
                       />
-                    </div>
+                    </ChipRow>
                     {data.remittanceFrom === '__OTHER__' && (
                       <Input
                         placeholder="출발 국가를 직접 입력해주세요"
@@ -636,22 +861,17 @@ export default function CustomerOnboardingPage() {
                         onChange={(e) => set('remittanceFromOther', e.target.value)}
                       />
                     )}
-                    {errors.remittanceFrom && (
-                      <p className="text-[11px]" style={{ color: 'var(--sb-negative)' }}>
-                        {errors.remittanceFrom}
-                      </p>
-                    )}
+                    {errors.remittanceFrom && <ErrorText>{errors.remittanceFrom}</ErrorText>}
                   </div>
 
-                  {/* 도착 국가 — multi select */}
-                  <div className="flex flex-col gap-2">
-                    <p className="text-[13px] font-medium" style={{ color: 'var(--sb-n700)' }}>
-                      송금 도착 국가 <span style={{ color: 'var(--sb-negative)' }}>*</span>
-                      <span className="font-normal ml-1" style={{ color: 'var(--sb-n400)' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    <p style={{ fontSize: 13, fontWeight: 500, color: colors.n700, margin: 0 }}>
+                      송금 도착 국가 <span style={{ color: colors.negative }}>*</span>
+                      <span style={{ fontWeight: 400, marginLeft: 4, color: colors.n400 }}>
                         (중복 선택 가능)
                       </span>
                     </p>
-                    <div className="flex flex-wrap gap-2">
+                    <ChipRow>
                       {REMITTANCE_COUNTRIES.map((c) => (
                         <ToggleChip
                           key={c.value}
@@ -680,7 +900,7 @@ export default function CustomerOnboardingPage() {
                           if (data.remittanceTo.includes('__OTHER__')) set('remittanceToOther', '')
                         }}
                       />
-                    </div>
+                    </ChipRow>
                     {data.remittanceTo.includes('__OTHER__') && (
                       <Input
                         placeholder="도착 국가를 직접 입력해주세요"
@@ -689,40 +909,27 @@ export default function CustomerOnboardingPage() {
                         error={errors.remittanceToOther}
                       />
                     )}
-                    {errors.remittanceTo && (
-                      <p className="text-[11px]" style={{ color: 'var(--sb-negative)' }}>
-                        {errors.remittanceTo}
-                      </p>
-                    )}
+                    {errors.remittanceTo && <ErrorText>{errors.remittanceTo}</ErrorText>}
                   </div>
-                </div>
+                </ServiceBox>
               )}
-            </div>
+            </Section>
           </div>
         )}
 
         {/* ── Step 1 ── */}
         {step === 1 && (
-          <div className="flex flex-col gap-6">
-            <div className="flex flex-col gap-4">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+            <Section>
               <SectionLabel>사업자 정보</SectionLabel>
               {data.services.includes('collection') && (
-                <p
-                  className="text-[12px] rounded-[8px] px-3 py-2 border"
-                  style={{
-                    color: 'var(--sb-n500)',
-                    background: 'var(--sb-n50)',
-                    borderColor: 'var(--sb-n100)',
-                  }}
-                >
+                <InfoNote>
                   수금 서비스 이용 시 사업자 유형이{' '}
-                  <span className="font-medium" style={{ color: 'var(--sb-n800)' }}>
-                    금융기관(PG사·PSP·MSB 등)
-                  </span>
+                  <strong style={{ color: colors.n800 }}>금융기관(PG사·PSP·MSB 등)</strong>
                   으로 자동 설정됩니다.
-                </p>
+                </InfoNote>
               )}
-              <div className="flex flex-col gap-3">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 <OptionCard
                   icon={<Buildings size={20} weight="fill" />}
                   label="법인 사업자"
@@ -748,21 +955,18 @@ export default function CustomerOnboardingPage() {
                   disabled={data.services.includes('collection')}
                 />
               </div>
-              {errors.businessType && (
-                <p className="text-[11px]" style={{ color: 'var(--sb-negative)' }}>
-                  {errors.businessType}
-                </p>
-              )}
+              {errors.businessType && <ErrorText>{errors.businessType}</ErrorText>}
 
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[14px]" style={{ color: 'var(--sb-n500)' }}>
-                  법인·사업자 설립 국가 <span style={{ color: 'var(--sb-negative)' }}>*</span>
-                </label>
-                <div className="flex gap-2">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <FieldLabel>
+                  법인·사업자 설립 국가 <span style={{ color: colors.negative }}>*</span>
+                </FieldLabel>
+                <OriginToggleRow>
                   {(['korean', 'foreign'] as const).map((type) => (
-                    <button
+                    <OriginToggleBtn
                       key={type}
                       type="button"
+                      selected={fcType === type}
                       onClick={() => {
                         setFcType(type)
                         if (type === 'korean') {
@@ -771,25 +975,11 @@ export default function CustomerOnboardingPage() {
                           set('foundingCountry', foreignCountryText)
                         }
                       }}
-                      className="flex-1 py-2.5 rounded-[8px] border text-[14px] font-medium transition-all duration-[120ms]"
-                      style={
-                        fcType === type
-                          ? {
-                              background: 'var(--sb-blue-100)',
-                              borderColor: 'var(--sb-brand)',
-                              color: 'var(--sb-brand)',
-                            }
-                          : {
-                              background: 'white',
-                              borderColor: 'var(--sb-n200)',
-                              color: 'var(--sb-n500)',
-                            }
-                      }
                     >
                       {type === 'korean' ? '한국' : '해외'}
-                    </button>
+                    </OriginToggleBtn>
                   ))}
-                </div>
+                </OriginToggleRow>
                 {fcType === 'foreign' && (
                   <Input
                     placeholder="국가명 입력 (예: 미국)"
@@ -802,40 +992,40 @@ export default function CustomerOnboardingPage() {
                   />
                 )}
                 {fcType !== 'foreign' && errors.foundingCountry && (
-                  <p className="text-[11px]" style={{ color: 'var(--sb-negative)' }}>
-                    {errors.foundingCountry}
-                  </p>
+                  <ErrorText>{errors.foundingCountry}</ErrorText>
                 )}
               </div>
-            </div>
+            </Section>
 
-            <div className="h-px" style={{ background: 'var(--sb-n100)' }} />
+            <Separator />
 
-            <div className="flex flex-col gap-4">
+            <Section>
               <SectionLabel>거래 규모</SectionLabel>
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[14px]" style={{ color: 'var(--sb-n500)' }}>
-                  예상 월간 거래 규모 <span style={{ color: 'var(--sb-negative)' }}>*</span>
-                </label>
-                <div className="flex gap-2">
-                  <Input
-                    className="flex-1"
-                    inputMode="numeric"
-                    placeholder="0"
-                    value={data.monthlyVolume}
-                    onChange={(e) => set('monthlyVolume', formatAmount(e.target.value))}
-                    error={errors.monthlyVolume}
-                  />
-                  <Select
-                    className="w-28"
-                    options={CURRENCY_OPTIONS}
-                    value={data.monthlyVolumeCurrency}
-                    onChange={(e) => {
-                      set('monthlyVolumeCurrency', e.target.value)
-                      if (e.target.value !== 'OTHER') set('monthlyVolumeCurrencyOther', '')
-                    }}
-                  />
-                </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <FieldLabel>
+                  예상 월간 거래 규모 <span style={{ color: colors.negative }}>*</span>
+                </FieldLabel>
+                <VolumeRow>
+                  <FlexInputWrap>
+                    <Input
+                      inputMode="numeric"
+                      placeholder="0"
+                      value={data.monthlyVolume}
+                      onChange={(e) => set('monthlyVolume', formatAmount(e.target.value))}
+                      error={errors.monthlyVolume}
+                    />
+                  </FlexInputWrap>
+                  <FixedSelectWrap>
+                    <Select
+                      options={CURRENCY_OPTIONS}
+                      value={data.monthlyVolumeCurrency}
+                      onChange={(e) => {
+                        set('monthlyVolumeCurrency', e.target.value)
+                        if (e.target.value !== 'OTHER') set('monthlyVolumeCurrencyOther', '')
+                      }}
+                    />
+                  </FixedSelectWrap>
+                </VolumeRow>
                 {data.monthlyVolumeCurrency === 'OTHER' && (
                   <Input
                     placeholder="통화를 직접 입력해주세요 (예: SGD)"
@@ -844,11 +1034,11 @@ export default function CustomerOnboardingPage() {
                   />
                 )}
               </div>
-            </div>
+            </Section>
 
-            <div className="h-px" style={{ background: 'var(--sb-n100)' }} />
+            <Separator />
 
-            <div className="flex flex-col gap-4">
+            <Section>
               <SectionLabel>추가 정보</SectionLabel>
               <Select
                 label="센트비를 어떻게 알게 되셨나요?"
@@ -869,69 +1059,59 @@ export default function CustomerOnboardingPage() {
                 onChange={(e) => set('additionalNote', e.target.value)}
                 rows={3}
               />
-            </div>
+            </Section>
 
-            <div className="pt-2 border-t" style={{ borderColor: 'var(--sb-n100)' }}>
-              <label
-                className="flex items-start gap-3 cursor-pointer group"
+            <div
+              style={{
+                paddingTop: 8,
+                borderTop: `1px solid ${colors.n100}`,
+              }}
+            >
+              <CheckboxLabel
                 onClick={() => {
                   set('agreed', !data.agreed)
                   setErrors((prev) => ({ ...prev, agreed: undefined }))
                 }}
               >
-                <div
-                  className="mt-0.5 flex-shrink-0 w-[18px] h-[18px] rounded-[4px] border flex items-center justify-center transition-colors duration-[120ms]"
-                  style={
-                    data.agreed
-                      ? { background: 'var(--sb-brand)', borderColor: 'var(--sb-brand)' }
-                      : errors.agreed
-                        ? {
-                            borderColor: 'var(--sb-negative)',
-                            background: 'var(--sb-negative-light)',
-                          }
-                        : { borderColor: 'var(--sb-n300)', background: 'white' }
-                  }
-                >
-                  {data.agreed && <Check size={12} weight="bold" className="text-white" />}
-                </div>
-                <span
-                  className="text-[13px] leading-[20px]"
-                  style={{ color: errors.agreed ? 'var(--sb-negative)' : 'var(--sb-n600)' }}
-                >
-                  <span className="font-medium">개인정보 수집 및 이용</span>에 동의합니다.{' '}
-                  <span style={{ color: 'var(--sb-negative)' }}>*</span>
-                </span>
-              </label>
+                <CheckboxBox checked={data.agreed} hasError={!!errors.agreed}>
+                  {data.agreed && <Check size={12} weight="bold" color={colors.white} />}
+                </CheckboxBox>
+                <CheckboxText hasError={!!errors.agreed}>
+                  <strong>개인정보 수집 및 이용</strong>에 동의합니다.{' '}
+                  <span style={{ color: colors.negative }}>*</span>
+                </CheckboxText>
+              </CheckboxLabel>
               {errors.agreed && (
-                <p className="mt-1.5 ml-[30px] text-[11px]" style={{ color: 'var(--sb-negative)' }}>
-                  {errors.agreed}
-                </p>
+                <ErrorText style={{ marginTop: 6, marginLeft: 30 }}>{errors.agreed}</ErrorText>
               )}
             </div>
           </div>
         )}
 
-        {/* Navigation */}
-        <div className="flex gap-3 pt-2">
+        <NavRow>
           {step === 1 && (
-            <Button
-              variant="outline"
-              onClick={() => {
-                setStep(0)
-                window.scrollTo({ top: 0, behavior: 'smooth' })
-              }}
-              className="flex-1"
-            >
-              <ArrowLeft size={16} />
-              이전
-            </Button>
+            <FlexBtn>
+              <Button
+                variant="outline"
+                fullWidth
+                onClick={() => {
+                  setStep(0)
+                  window.scrollTo({ top: 0, behavior: 'smooth' })
+                }}
+              >
+                <ArrowLeft size={16} />
+                이전
+              </Button>
+            </FlexBtn>
           )}
-          <Button onClick={handleNext} fullWidth={step === 0} className="flex-1">
-            {step === 1 ? '제출하기' : '다음'}
-            {step === 0 && <ArrowRight size={16} />}
-          </Button>
-        </div>
-      </div>
-    </div>
+          <FlexBtn>
+            <Button onClick={handleNext} fullWidth>
+              {step === 1 ? '제출하기' : '다음'}
+              {step === 0 && <ArrowRight size={16} />}
+            </Button>
+          </FlexBtn>
+        </NavRow>
+      </Card>
+    </Page>
   )
 }

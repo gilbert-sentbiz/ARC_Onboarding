@@ -1,4 +1,6 @@
 'use client'
+
+import styled from '@emotion/styled'
 import { ArrowLeft, ArrowRight, Plus, Trash } from '@phosphor-icons/react'
 import { useState, useEffect } from 'react'
 
@@ -13,6 +15,7 @@ import {
   validateRatio,
   validateCount,
 } from '@/src/features/case-validation/model/validators'
+import { colors } from '@/src/shared/const/tokens'
 import type { QuestionRule } from '@/src/shared/type'
 import DateInput from '@/src/shared/ui/DateInput'
 
@@ -41,6 +44,269 @@ function isDateField(id: string): boolean {
   return DATE_QUESTION_IDS.has(baseId(id))
 }
 
+// ── Styled components ──────────────────────────────────────────────────────
+
+const Container = styled.div`
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 16px;
+  background: ${colors.n50};
+`
+
+const Card = styled.div`
+  width: 100%;
+  max-width: 560px;
+  background: ${colors.white};
+  border-radius: 16px;
+  border: 1px solid ${colors.n100};
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+  padding: 32px;
+`
+
+const ProgressWrap = styled.div`
+  margin-bottom: 20px;
+`
+
+const ProgressHeader = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+`
+
+const ProgressTrack = styled.div`
+  width: 100%;
+  height: 6px;
+  border-radius: 9999px;
+  overflow: hidden;
+  background: ${colors.n100};
+`
+
+const ProgressFill = styled.div<{ pct: number }>`
+  height: 100%;
+  border-radius: 9999px;
+  transition: width 300ms;
+  background: ${colors.brand};
+  width: ${({ pct }) => pct}%;
+`
+
+const CardTitle = styled.h2`
+  font-size: 20px;
+  font-weight: 600;
+  margin: 0 0 24px;
+  color: ${colors.n900};
+`
+
+const QuestionList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+`
+
+const QuestionWrap = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+`
+
+const FieldLabel = styled.label`
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  margin-bottom: 6px;
+  color: ${colors.n700};
+`
+
+const Required = styled.span`
+  margin-left: 2px;
+  color: ${colors.negative};
+`
+
+const StyledInput = styled.input<{ hasError: boolean }>`
+  width: 100%;
+  border: 1px solid ${({ hasError }) => (hasError ? colors.negative : colors.n200)};
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 14px;
+  color: ${colors.n800};
+  outline: none;
+  font-family: inherit;
+  box-sizing: border-box;
+  &:focus {
+    border-color: ${({ hasError }) => (hasError ? colors.negative : colors.brand)};
+  }
+`
+
+const StyledTextarea = styled.textarea<{ hasError: boolean }>`
+  width: 100%;
+  border: 1px solid ${({ hasError }) => (hasError ? colors.negative : colors.n200)};
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 14px;
+  color: ${colors.n800};
+  outline: none;
+  resize: none;
+  font-family: inherit;
+  box-sizing: border-box;
+  &:focus {
+    border-color: ${({ hasError }) => (hasError ? colors.negative : colors.brand)};
+  }
+`
+
+const StyledSelect = styled.select<{ hasError: boolean }>`
+  width: 100%;
+  border: 1px solid ${({ hasError }) => (hasError ? colors.negative : colors.n200)};
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 14px;
+  color: ${colors.n800};
+  outline: none;
+  background: ${colors.white};
+  font-family: inherit;
+  box-sizing: border-box;
+  &:focus {
+    border-color: ${({ hasError }) => (hasError ? colors.negative : colors.brand)};
+  }
+`
+
+const RadioRow = styled.div`
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+`
+
+const RadioLabel = styled.label`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+`
+
+const FieldError = styled.p`
+  font-size: 12px;
+  margin: 4px 0 0;
+  color: ${colors.negative};
+`
+
+const RepeatLabel = styled.span`
+  font-size: 13px;
+  font-weight: 500;
+  color: ${colors.n700};
+`
+
+const RepeatList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+`
+
+const RepeatItem = styled.div`
+  border: 1px solid ${colors.n100};
+  border-radius: 8px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: ${colors.n50};
+`
+
+const RepeatItemHeader = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+`
+
+const RepeatIndex = styled.span`
+  font-size: 12px;
+  font-weight: 500;
+  color: ${colors.n400};
+`
+
+const DeleteBtn = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: ${colors.negative};
+  background: none;
+  border: none;
+  cursor: pointer;
+  &:hover {
+    opacity: 0.8;
+  }
+`
+
+const AddBtn = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  align-self: flex-start;
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid ${colors.brand};
+  color: ${colors.brand};
+  background: none;
+  cursor: pointer;
+  transition: background 120ms;
+  &:hover {
+    background: ${colors.blue50};
+  }
+`
+
+const ChildIndent = styled.div`
+  margin-left: 16px;
+  padding-left: 16px;
+  border-left: 2px solid ${colors.n100};
+`
+
+const NavRow = styled.div`
+  display: flex;
+  justify-content: space-between;
+  margin-top: 32px;
+`
+
+const BackBtn = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  border: 1px solid ${colors.n200};
+  color: ${colors.n600};
+  background: none;
+  cursor: pointer;
+  transition: background 120ms;
+  &:hover {
+    background: ${colors.n50};
+  }
+`
+
+const NextBtn = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  border: none;
+  color: ${colors.white};
+  background: ${colors.brand};
+  cursor: pointer;
+  transition: background 120ms;
+  &:hover {
+    background: ${colors.brandHover};
+  }
+`
+
+// ── Types ──────────────────────────────────────────────────────────────────
+
 type Props = {
   title: string
   questions: QuestionRule[]
@@ -62,95 +328,66 @@ type QuestionFieldProps = {
 function QuestionField({ q, value, error, onChange }: QuestionFieldProps) {
   return (
     <div>
-      <label className="block text-[13px] font-medium mb-1.5" style={{ color: 'var(--sb-n700)' }}>
+      <FieldLabel>
         {q.label}
-        {q.isRequired && (
-          <span className="ml-0.5" style={{ color: 'var(--sb-negative)' }}>
-            *
-          </span>
-        )}
-      </label>
+        {q.isRequired && <Required>*</Required>}
+      </FieldLabel>
 
       {(q.inputType === 'text' || q.inputType === 'number') && isDateField(q.id) && (
         <DateInput value={value} onChange={onChange} error={!!error} />
       )}
 
       {(q.inputType === 'text' || q.inputType === 'number') && !isDateField(q.id) && (
-        <input
+        <StyledInput
           type={q.inputType}
           value={value}
+          hasError={!!error}
           onChange={(e) => onChange(e.target.value)}
           onBlur={() => {
             if (URL_IDS.has(baseId(q.id)) && value) onChange(normalizeUrl(value))
           }}
-          className={`w-full border rounded-[8px] px-3 py-2.5 text-[14px] focus:outline-none`}
-          style={
-            error
-              ? { color: 'var(--sb-n800)', borderColor: 'var(--sb-negative)' }
-              : { color: 'var(--sb-n800)', borderColor: 'var(--sb-n200)' }
-          }
         />
       )}
 
       {q.inputType === 'textarea' && (
-        <textarea
+        <StyledTextarea
           value={value}
+          hasError={!!error}
           onChange={(e) => onChange(e.target.value)}
           rows={3}
-          className="w-full border rounded-[8px] px-3 py-2.5 text-[14px] resize-none focus:outline-none"
-          style={
-            error
-              ? { color: 'var(--sb-n800)', borderColor: 'var(--sb-negative)' }
-              : { color: 'var(--sb-n800)', borderColor: 'var(--sb-n200)' }
-          }
         />
       )}
 
       {q.inputType === 'select' && (
-        <select
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          className="w-full border rounded-[8px] px-3 py-2.5 text-[14px] focus:outline-none bg-white"
-          style={
-            error
-              ? { color: 'var(--sb-n800)', borderColor: 'var(--sb-negative)' }
-              : { color: 'var(--sb-n800)', borderColor: 'var(--sb-n200)' }
-          }
-        >
+        <StyledSelect value={value} hasError={!!error} onChange={(e) => onChange(e.target.value)}>
           <option value="">선택하세요</option>
           {q.options?.map((opt) => (
             <option key={opt.value} value={opt.value}>
               {opt.label}
             </option>
           ))}
-        </select>
+        </StyledSelect>
       )}
 
       {q.inputType === 'radio' && (
-        <div className="flex gap-5 flex-wrap">
+        <RadioRow>
           {q.options?.map((opt) => (
-            <label key={opt.value} className="flex items-center gap-2 cursor-pointer">
+            <RadioLabel key={opt.value}>
               <input
                 type="radio"
                 name={q.id}
                 value={opt.value}
                 checked={value === opt.value}
                 onChange={() => onChange(opt.value)}
-                style={{ accentColor: 'var(--sb-brand)' }}
+                style={{ accentColor: colors.brand }}
               />
-              <span className="text-[14px]" style={{ color: 'var(--sb-n700)' }}>
-                {opt.label}
-              </span>
-            </label>
+              <span style={{ fontSize: 14, color: colors.n700 }}>{opt.label}</span>
+            </RadioLabel>
           ))}
-        </div>
+        </RadioRow>
       )}
 
-      {error && (
-        <p className="text-[12px] mt-1" style={{ color: 'var(--sb-negative)' }}>
-          {error}
-        </p>
-      )}
+      {error && <FieldError>{error}</FieldError>}
     </div>
   )
 }
@@ -278,57 +515,49 @@ export default function DynamicQuestionsSection({
   function renderQuestion(q: QuestionRule) {
     if (!isVisible(q)) return null
     return (
-      <div key={q.id} className="flex flex-col gap-4">
+      <QuestionWrap key={q.id}>
         {q.repeat ? (
-          <div className="flex flex-col gap-3">
-            <span className="text-[13px] font-medium" style={{ color: 'var(--sb-n700)' }}>
-              {q.label}
-            </span>
-            {Array.from({ length: 1 + (repeatCounts[q.id] ?? 0) }, (_, i) => (
-              <div
-                key={i}
-                className="border rounded-[8px] p-4 flex flex-col gap-3"
-                style={{ borderColor: 'var(--sb-n100)', background: 'var(--sb-n50)' }}
-              >
-                <div className="flex items-center justify-between">
-                  <span className="text-[12px] font-medium" style={{ color: 'var(--sb-n400)' }}>
-                    #{i + 1}
-                  </span>
-                  {i > 0 && (
-                    <button
-                      type="button"
-                      onClick={() => setRepeatCounts((c) => ({ ...c, [q.id]: (c[q.id] ?? 0) - 1 }))}
-                      className="flex items-center gap-1 text-[12px] hover:opacity-80"
-                      style={{ color: 'var(--sb-negative)' }}
-                    >
-                      <Trash size={12} />
-                      삭제
-                    </button>
-                  )}
-                </div>
-                {q.children?.map((child) => {
-                  const repeatId = i === 0 ? child.id : `${child.id}_${i}`
-                  return (
-                    <QuestionField
-                      key={repeatId}
-                      q={{ ...child, id: repeatId }}
-                      value={values[repeatId] ?? ''}
-                      error={errors[repeatId]}
-                      onChange={(val) => set(repeatId, val)}
-                    />
-                  )
-                })}
-              </div>
-            ))}
-            <button
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <RepeatLabel>{q.label}</RepeatLabel>
+            <RepeatList>
+              {Array.from({ length: 1 + (repeatCounts[q.id] ?? 0) }, (_, i) => (
+                <RepeatItem key={i}>
+                  <RepeatItemHeader>
+                    <RepeatIndex>#{i + 1}</RepeatIndex>
+                    {i > 0 && (
+                      <DeleteBtn
+                        type="button"
+                        onClick={() =>
+                          setRepeatCounts((c) => ({ ...c, [q.id]: (c[q.id] ?? 0) - 1 }))
+                        }
+                      >
+                        <Trash size={12} />
+                        삭제
+                      </DeleteBtn>
+                    )}
+                  </RepeatItemHeader>
+                  {q.children?.map((child) => {
+                    const repeatId = i === 0 ? child.id : `${child.id}_${i}`
+                    return (
+                      <QuestionField
+                        key={repeatId}
+                        q={{ ...child, id: repeatId }}
+                        value={values[repeatId] ?? ''}
+                        error={errors[repeatId]}
+                        onChange={(val) => set(repeatId, val)}
+                      />
+                    )
+                  })}
+                </RepeatItem>
+              ))}
+            </RepeatList>
+            <AddBtn
               type="button"
               onClick={() => setRepeatCounts((c) => ({ ...c, [q.id]: (c[q.id] ?? 0) + 1 }))}
-              className="flex items-center gap-1.5 text-[13px] font-medium self-start px-3 py-1.5 rounded-[6px] border transition-colors"
-              style={{ color: 'var(--sb-brand)', borderColor: 'var(--sb-brand)' }}
             >
               <Plus size={13} />
               {q.addButtonLabel ?? `${q.label} 추가`}
-            </button>
+            </AddBtn>
           </div>
         ) : (
           <QuestionField
@@ -339,85 +568,54 @@ export default function DynamicQuestionsSection({
           />
         )}
 
-        {/* Conditional children */}
         {!q.repeat &&
           q.children
             ?.filter((c) => isChildVisible(c))
             .map((child) => (
-              <div
-                key={child.id}
-                className="ml-4 pl-4 border-l-2"
-                style={{ borderColor: 'var(--sb-n100)' }}
-              >
+              <ChildIndent key={child.id}>
                 <QuestionField
                   q={child}
                   value={values[child.id] ?? ''}
                   error={errors[child.id]}
                   onChange={(val) => set(child.id, val)}
                 />
-              </div>
+              </ChildIndent>
             ))}
-      </div>
+      </QuestionWrap>
     )
   }
 
   return (
-    <div
-      className="min-h-screen flex items-center justify-center px-4 py-12"
-      style={{ background: 'var(--sb-n50)' }}
-    >
-      <div
-        className="w-full max-w-[560px] bg-white rounded-[16px] border shadow-sm p-8"
-        style={{ borderColor: 'var(--sb-n100)' }}
-      >
+    <Container>
+      <Card>
         {screenInfo && (
-          <div className="mb-5">
-            <div className="flex items-center justify-between mb-1.5">
-              <span className="text-[12px]" style={{ color: 'var(--sb-n500)' }}>
-                {screenInfo.label}
-              </span>
-              <span className="text-[12px]" style={{ color: 'var(--sb-n500)' }}>
+          <ProgressWrap>
+            <ProgressHeader>
+              <span style={{ fontSize: 12, color: colors.n500 }}>{screenInfo.label}</span>
+              <span style={{ fontSize: 12, color: colors.n500 }}>
                 {screenInfo.current} / {screenInfo.total}
               </span>
-            </div>
-            <div
-              className="w-full h-1.5 rounded-full overflow-hidden"
-              style={{ background: 'var(--sb-n100)' }}
-            >
-              <div
-                className="h-full rounded-full transition-all"
-                style={{
-                  width: `${Math.round((screenInfo.current / screenInfo.total) * 100)}%`,
-                  background: 'var(--sb-brand)',
-                }}
-              />
-            </div>
-          </div>
+            </ProgressHeader>
+            <ProgressTrack>
+              <ProgressFill pct={Math.round((screenInfo.current / screenInfo.total) * 100)} />
+            </ProgressTrack>
+          </ProgressWrap>
         )}
-        <h2 className="text-[20px] font-semibold mb-6" style={{ color: 'var(--sb-n900)' }}>
-          {title}
-        </h2>
-        <div className="flex flex-col gap-6">{questions.map((q) => renderQuestion(q))}</div>
 
-        <div className="flex justify-between mt-8">
-          <button
-            onClick={onBack}
-            className="flex items-center gap-1.5 px-4 py-2.5 rounded-[8px] text-[14px] font-medium border"
-            style={{ color: 'var(--sb-n600)', borderColor: 'var(--sb-n200)' }}
-          >
+        <CardTitle>{title}</CardTitle>
+        <QuestionList>{questions.map((q) => renderQuestion(q))}</QuestionList>
+
+        <NavRow>
+          <BackBtn onClick={onBack}>
             <ArrowLeft size={15} />
             이전
-          </button>
-          <button
-            onClick={handleSubmit}
-            className="flex items-center gap-1.5 px-5 py-2.5 rounded-[8px] text-[14px] font-medium text-white"
-            style={{ background: 'var(--sb-brand)' }}
-          >
+          </BackBtn>
+          <NextBtn onClick={handleSubmit}>
             다음
             <ArrowRight size={15} />
-          </button>
-        </div>
-      </div>
-    </div>
+          </NextBtn>
+        </NavRow>
+      </Card>
+    </Container>
   )
 }

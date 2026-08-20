@@ -1,7 +1,11 @@
 'use client'
+
+import styled from '@emotion/styled'
 import { ArrowLeft } from '@phosphor-icons/react'
 import { useState } from 'react'
 import type { ReactNode } from 'react'
+
+import { colors } from '@/src/shared/const/tokens'
 
 type Props = {
   step: number
@@ -11,6 +15,108 @@ type Props = {
   onDraftSave?: () => void
   children: ReactNode
 }
+
+const Page = styled.div`
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 32px 16px;
+  background: ${colors.n50};
+`
+
+const Inner = styled.div`
+  width: 100%;
+  max-width: 680px;
+  margin-bottom: 24px;
+`
+
+const HeaderRow = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+`
+
+const BackBtn = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: ${colors.n500};
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: color 120ms;
+  &:hover {
+    color: ${colors.n700};
+  }
+`
+
+const HeaderRight = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 16px;
+`
+
+const DraftBtn = styled.button`
+  font-size: 13px;
+  font-weight: 500;
+  color: ${colors.brand};
+  background: none;
+  border: none;
+  cursor: pointer;
+`
+
+const StepLabel = styled.span`
+  font-size: 13px;
+  font-weight: 500;
+  color: ${colors.n500};
+`
+
+const ProgressTrack = styled.div`
+  width: 100%;
+  height: 4px;
+  border-radius: 9999px;
+  overflow: hidden;
+  background: ${colors.n200};
+`
+
+const ProgressFill = styled.div<{ pct: number }>`
+  height: 100%;
+  border-radius: 9999px;
+  transition: width 300ms;
+  background: ${colors.brand};
+  width: ${({ pct }) => pct}%;
+`
+
+const Card = styled.div`
+  width: 100%;
+  max-width: 680px;
+  background: ${colors.white};
+  border-radius: 16px;
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  box-shadow: var(--shadow-200);
+`
+
+const SectionTag = styled.p`
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin: 0 0 4px;
+  color: ${colors.brand};
+`
+
+const CardTitle = styled.h2`
+  font-size: 20px;
+  font-weight: 700;
+  margin: 0;
+  color: ${colors.n900};
+`
 
 export default function FormShell({
   step,
@@ -29,65 +135,36 @@ export default function FormShell({
   }
 
   return (
-    <div
-      className="min-h-screen flex flex-col items-center px-4 py-8"
-      style={{ background: 'var(--sb-n50)' }}
-    >
-      <div className="w-full max-w-[680px] mb-6">
-        <div className="flex items-center justify-between mb-5">
-          <button
-            type="button"
-            onClick={onBack}
-            className="flex items-center gap-1.5 text-[13px] transition-colors"
-            style={{ color: 'var(--sb-n500)' }}
-          >
+    <Page>
+      <Inner>
+        <HeaderRow>
+          <BackBtn type="button" onClick={onBack}>
             <ArrowLeft size={16} />
             이전
-          </button>
-          <div className="flex items-center gap-4">
+          </BackBtn>
+          <HeaderRight>
             {onDraftSave && (
-              <button
-                type="button"
-                onClick={handleDraftSave}
-                className="text-[13px] font-medium transition-colors"
-                style={{ color: 'var(--sb-brand)' }}
-              >
+              <DraftBtn type="button" onClick={handleDraftSave}>
                 {saved ? '저장됨 ✓' : '임시저장'}
-              </button>
+              </DraftBtn>
             )}
-            <span className="text-[13px] font-medium" style={{ color: 'var(--sb-n500)' }}>
+            <StepLabel>
               {step + 1} / {totalSteps}
-            </span>
-          </div>
-        </div>
-        <div
-          className="w-full h-1 rounded-full overflow-hidden"
-          style={{ background: 'var(--sb-n200)' }}
-        >
-          <div
-            className="h-full rounded-full transition-all duration-300"
-            style={{ width: `${((step + 1) / totalSteps) * 100}%`, background: 'var(--sb-brand)' }}
-          />
-        </div>
-      </div>
+            </StepLabel>
+          </HeaderRight>
+        </HeaderRow>
+        <ProgressTrack>
+          <ProgressFill pct={((step + 1) / totalSteps) * 100} />
+        </ProgressTrack>
+      </Inner>
 
-      <div
-        className="w-full max-w-[680px] bg-white rounded-[16px] p-8 flex flex-col gap-7"
-        style={{ boxShadow: 'var(--shadow-200)' }}
-      >
+      <Card>
         <div>
-          <p
-            className="text-[12px] font-semibold tracking-[1px] uppercase mb-1"
-            style={{ color: 'var(--sb-brand)' }}
-          >
-            2차 정보 입력
-          </p>
-          <h2 className="text-[20px] font-bold" style={{ color: 'var(--sb-n900)' }}>
-            {titles[step]}
-          </h2>
+          <SectionTag>2차 정보 입력</SectionTag>
+          <CardTitle>{titles[step]}</CardTitle>
         </div>
         {children}
-      </div>
-    </div>
+      </Card>
+    </Page>
   )
 }
