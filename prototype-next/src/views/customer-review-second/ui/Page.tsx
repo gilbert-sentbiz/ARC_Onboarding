@@ -1,4 +1,5 @@
 'use client'
+import styled from '@emotion/styled'
 import { ArrowLeft, ArrowRight } from '@phosphor-icons/react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Suspense } from 'react'
@@ -7,6 +8,7 @@ import { useSessionStore } from '@/src/entities/auth/model/sessionStore'
 import { useCaseStore } from '@/src/entities/case/model/caseStore'
 import { getRuleSet } from '@/src/entities/rule/model/ruleStore'
 import { confirmSecondIntake } from '@/src/features/case-actions/api/caseService'
+import { colors } from '@/src/shared/const/tokens'
 import type { QuestionRule } from '@/src/shared/type'
 import Button from '@/src/shared/ui/Button'
 import { getCountryName } from '@/src/shared/util/countryNames'
@@ -52,35 +54,183 @@ function renderValue(val: unknown): string {
   return String(val)
 }
 
+const PageWrap = styled.div`
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 32px 16px;
+  background: ${colors.n50};
+`
+
+const HeaderWrap = styled.div`
+  width: 100%;
+  max-width: 640px;
+  margin-bottom: 24px;
+`
+
+const HeaderRow = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+`
+
+const BackBtn = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: ${colors.n500};
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: color 120ms;
+  &:hover {
+    color: ${colors.n700};
+  }
+`
+
+const StepLabel = styled.span`
+  font-size: 13px;
+  font-weight: 500;
+  color: ${colors.n500};
+`
+
+const ProgressBar = styled.div`
+  width: 100%;
+  height: 4px;
+  border-radius: 9999px;
+  background: ${colors.brand};
+`
+
+const Card = styled.div`
+  width: 100%;
+  max-width: 640px;
+  background: ${colors.white};
+  border-radius: 16px;
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  box-shadow: var(--shadow-200);
+`
+
+const CardTitle = styled.h2`
+  font-size: 20px;
+  line-height: 30px;
+  font-weight: 700;
+  color: ${colors.n900};
+  margin: 0 0 4px;
+`
+
+const CardSubtitle = styled.p`
+  font-size: 14px;
+  line-height: 20px;
+  color: ${colors.n500};
+  margin: 0;
+`
+
+const InfoBlock = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid ${colors.n200};
+  background: ${colors.n50};
+`
+
+const InfoBlockTitle = styled.p`
+  font-size: 13px;
+  font-weight: 600;
+  color: ${colors.n700};
+  margin: 0;
+`
+
+const InnerSections = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+`
+
+const Section = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+`
+
+const SectionLabelEl = styled.p`
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: ${colors.brand};
+  margin: 0;
+`
+
+const Grid2 = styled.div`
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+`
+
+const InnerDivider = styled.div`
+  height: 1px;
+  background: ${colors.n200};
+`
+
+const FieldWrap = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+`
+
+const FieldLabelEl = styled.p`
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: ${colors.n400};
+  margin: 0;
+`
+
+const FieldValue = styled.p`
+  font-size: 14px;
+  word-break: break-word;
+  color: ${colors.n800};
+  margin: 0;
+`
+
+const EmptyText = styled.p`
+  font-size: 13px;
+  color: ${colors.n400};
+  margin: 0;
+`
+
+const NavRow = styled.div`
+  display: flex;
+  gap: 12px;
+  padding-top: 8px;
+`
+
+const FlexBtn = styled.div`
+  flex: 1;
+`
+
 type FieldProps = { label: string; value: string }
 
 function Field({ label, value }: FieldProps) {
   return (
-    <div className="flex flex-col gap-0.5">
-      <p
-        className="text-[11px] font-semibold uppercase tracking-[0.5px]"
-        style={{ color: 'var(--sb-n400)' }}
-      >
-        {label}
-      </p>
-      <p className="text-[14px] break-words" style={{ color: 'var(--sb-n800)' }}>
-        {value || '—'}
-      </p>
-    </div>
+    <FieldWrap>
+      <FieldLabelEl>{label}</FieldLabelEl>
+      <FieldValue>{value || '—'}</FieldValue>
+    </FieldWrap>
   )
 }
 
-type SectionLabelProps = { children: React.ReactNode }
-
-function SectionLabel({ children }: SectionLabelProps) {
-  return (
-    <p
-      className="text-[12px] font-semibold tracking-[1px] uppercase"
-      style={{ color: 'var(--sb-brand)' }}
-    >
-      {children}
-    </p>
-  )
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return <SectionLabelEl>{children}</SectionLabelEl>
 }
 
 type DataBlockProps = { data: Record<string, unknown>; labelMap: Record<string, string> }
@@ -92,18 +242,13 @@ function DataBlock({ data, labelMap }: DataBlockProps) {
     if (getLabel(key, labelMap) === key) return false
     return true
   })
-  if (entries.length === 0)
-    return (
-      <p className="text-[13px]" style={{ color: 'var(--sb-n400)' }}>
-        입력된 정보가 없습니다.
-      </p>
-    )
+  if (entries.length === 0) return <EmptyText>입력된 정보가 없습니다.</EmptyText>
   return (
-    <div className="grid grid-cols-2 gap-4">
+    <Grid2>
       {entries.map(([key, val]) => (
         <Field key={key} label={getLabel(key, labelMap)} value={renderValue(val)} />
       ))}
-    </div>
+    </Grid2>
   )
 }
 
@@ -116,12 +261,9 @@ function PageContent() {
 
   if (!c || !id) {
     return (
-      <div
-        className="min-h-screen flex items-center justify-center"
-        style={{ background: 'var(--sb-n50)' }}
-      >
-        <p style={{ color: 'var(--sb-n500)' }}>케이스를 찾을 수 없습니다.</p>
-      </div>
+      <PageWrap style={{ justifyContent: 'center' }}>
+        <p style={{ color: colors.n500 }}>케이스를 찾을 수 없습니다.</p>
+      </PageWrap>
     )
   }
 
@@ -147,66 +289,42 @@ function PageContent() {
   }
 
   return (
-    <div
-      className="min-h-screen flex flex-col items-center px-4 py-8"
-      style={{ background: 'var(--sb-n50)' }}
-    >
-      {/* Header */}
-      <div className="w-full max-w-[640px] mb-6">
-        <div className="flex items-center justify-between mb-5">
-          <button
-            type="button"
-            onClick={() => router.push(`/customer/case/information?id=${id}`)}
-            className="flex items-center gap-1.5 text-[13px] transition-colors"
-            style={{ color: 'var(--sb-n500)' }}
-          >
+    <PageWrap>
+      <HeaderWrap>
+        <HeaderRow>
+          <BackBtn type="button" onClick={() => router.push(`/customer/case/information?id=${id}`)}>
             <ArrowLeft size={16} />
             수정하기
-          </button>
-          <span className="text-[13px] font-medium" style={{ color: 'var(--sb-n500)' }}>
-            2차 정보 확인
-          </span>
-        </div>
-        <div className="w-full h-1 rounded-full" style={{ background: 'var(--sb-brand)' }} />
-      </div>
+          </BackBtn>
+          <StepLabel>2차 정보 확인</StepLabel>
+        </HeaderRow>
+        <ProgressBar />
+      </HeaderWrap>
 
-      {/* Card */}
-      <div
-        className="w-full max-w-[640px] bg-white rounded-[16px] p-8 flex flex-col gap-6"
-        style={{ boxShadow: 'var(--shadow-200)' }}
-      >
-        <div className="flex flex-col gap-1">
-          <h2 className="text-[20px] leading-[30px] font-bold" style={{ color: 'var(--sb-n900)' }}>
-            전체 입력 내용을 확인해주세요
-          </h2>
-          <p className="text-[14px] leading-[20px]" style={{ color: 'var(--sb-n500)' }}>
-            제출 후에는 수정이 어렵습니다. 내용을 꼼꼼히 확인해주세요.
-          </p>
+      <Card>
+        <div>
+          <CardTitle>전체 입력 내용을 확인해주세요</CardTitle>
+          <CardSubtitle>제출 후에는 수정이 어렵습니다. 내용을 꼼꼼히 확인해주세요.</CardSubtitle>
         </div>
 
         {/* ── 1차 정보 ── */}
-        <div
-          className="flex flex-col gap-3 p-4 rounded-[12px] border"
-          style={{ background: 'var(--sb-n50)', borderColor: 'var(--sb-n200)' }}
-        >
-          <p className="text-[13px] font-semibold" style={{ color: 'var(--sb-n700)' }}>
-            1차 정보
-          </p>
+        <InfoBlock>
+          <InfoBlockTitle>1차 정보</InfoBlockTitle>
 
-          <div className="flex flex-col gap-4">
-            <div className="flex flex-col gap-3">
+          <InnerSections>
+            <Section>
               <SectionLabel>담당자 정보</SectionLabel>
-              <div className="grid grid-cols-2 gap-4">
+              <Grid2>
                 <Field label="회사명" value={str1('companyName')} />
                 <Field label="담당자 이름" value={str1('contactName')} />
                 <Field label="직함" value={str1('contactTitle')} />
                 <Field label="연락처" value={str1('phone')} />
-              </div>
-            </div>
+              </Grid2>
+            </Section>
 
-            <div className="h-px" style={{ background: 'var(--sb-n200)' }} />
+            <InnerDivider />
 
-            <div className="flex flex-col gap-3">
+            <Section>
               <SectionLabel>서비스</SectionLabel>
               <Field
                 label="신청 서비스"
@@ -223,21 +341,21 @@ function PageContent() {
                 />
               )}
               {services.includes('remittance') && (
-                <div className="grid grid-cols-2 gap-4">
+                <Grid2>
                   <Field label="송금 출발 국가" value={getCountryName(str1('remittanceFrom'))} />
                   <Field
                     label="송금 도착 국가"
                     value={str1('remittanceTo').split(', ').map(getCountryName).join(', ')}
                   />
-                </div>
+                </Grid2>
               )}
-            </div>
+            </Section>
 
-            <div className="h-px" style={{ background: 'var(--sb-n200)' }} />
+            <InnerDivider />
 
-            <div className="flex flex-col gap-3">
+            <Section>
               <SectionLabel>사업자 정보</SectionLabel>
-              <div className="grid grid-cols-2 gap-4">
+              <Grid2>
                 <Field
                   label="사업자 유형"
                   value={BUSINESS_TYPE_LABELS[str1('businessType')] ?? str1('businessType')}
@@ -251,78 +369,75 @@ function PageContent() {
                       : '—'
                   }
                 />
-              </div>
-            </div>
+              </Grid2>
+            </Section>
 
             {str1('additionalNote') && (
               <>
-                <div className="h-px" style={{ background: 'var(--sb-n200)' }} />
+                <InnerDivider />
                 <Field label="추가 문의사항" value={str1('additionalNote')} />
               </>
             )}
-          </div>
-        </div>
+          </InnerSections>
+        </InfoBlock>
 
         {/* ── 2차 정보 ── */}
-        <div
-          className="flex flex-col gap-3 p-4 rounded-[12px] border"
-          style={{ background: 'var(--sb-n50)', borderColor: 'var(--sb-n200)' }}
-        >
-          <p className="text-[13px] font-semibold" style={{ color: 'var(--sb-n700)' }}>
-            2차 정보
-          </p>
+        <InfoBlock>
+          <InfoBlockTitle>2차 정보</InfoBlockTitle>
 
           {d2.entity && (
-            <div className="flex flex-col gap-3">
+            <Section>
               <SectionLabel>기업 정보</SectionLabel>
               <DataBlock data={d2.entity} labelMap={labelMap} />
-            </div>
+            </Section>
           )}
 
           {d2.krwCollection && (
             <>
-              <div className="h-px" style={{ background: 'var(--sb-n200)' }} />
-              <div className="flex flex-col gap-3">
+              <InnerDivider />
+              <Section>
                 <SectionLabel>KRW 수금 정보</SectionLabel>
                 <DataBlock data={d2.krwCollection} labelMap={labelMap} />
-              </div>
+              </Section>
             </>
           )}
 
           {d2.vndCollection && (
             <>
-              <div className="h-px" style={{ background: 'var(--sb-n200)' }} />
-              <div className="flex flex-col gap-3">
+              <InnerDivider />
+              <Section>
                 <SectionLabel>VND 수금 정보</SectionLabel>
                 <DataBlock data={d2.vndCollection} labelMap={labelMap} />
-              </div>
+              </Section>
             </>
           )}
 
           {!d2.entity && !d2.krwCollection && !d2.vndCollection && (
-            <p className="text-[13px]" style={{ color: 'var(--sb-n400)' }}>
-              입력된 2차 정보가 없습니다.
-            </p>
+            <EmptyText>입력된 2차 정보가 없습니다.</EmptyText>
           )}
-        </div>
+        </InfoBlock>
 
         {/* Navigation */}
-        <div className="flex gap-3 pt-2">
-          <Button
-            variant="outline"
-            onClick={() => router.push(`/customer/case/information?id=${id}`)}
-            className="flex-1"
-          >
-            <ArrowLeft size={16} />
-            수정하기
-          </Button>
-          <Button onClick={handleConfirm} className="flex-1">
-            제출하기
-            <ArrowRight size={16} />
-          </Button>
-        </div>
-      </div>
-    </div>
+        <NavRow>
+          <FlexBtn>
+            <Button
+              variant="outline"
+              onClick={() => router.push(`/customer/case/information?id=${id}`)}
+              fullWidth
+            >
+              <ArrowLeft size={16} />
+              수정하기
+            </Button>
+          </FlexBtn>
+          <FlexBtn>
+            <Button onClick={handleConfirm} fullWidth>
+              제출하기
+              <ArrowRight size={16} />
+            </Button>
+          </FlexBtn>
+        </NavRow>
+      </Card>
+    </PageWrap>
   )
 }
 
