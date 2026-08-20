@@ -76,7 +76,7 @@ REDIS_HOST=localhost REDIS_PORT=6379 \
 S3_ENDPOINT=http://localhost:9000 \
 S3_BUCKET=arc-documents \
 SPRING_PROFILES_ACTIVE=local \
-java -jar build/libs/arc-backend-0.0.1-SNAPSHOT.jar
+java -jar build/libs/ark-backend-0.0.1-SNAPSHOT.jar
 ```
 
 > `S3_ACCESS_KEY` / `S3_SECRET_KEY`는 생략 — `application.yml` 기본값 `minioadmin:minioadmin`이 docker-compose MinIO 기본값과 일치하기 때문이다. 환경변수로 덮어쓰면 불일치 → 403이 발생한다.

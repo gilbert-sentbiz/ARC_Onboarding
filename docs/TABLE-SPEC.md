@@ -1,4 +1,4 @@
-# ARC - 테이블 정의서 (MVP 11개)
+# ARK - 테이블 정의서 (MVP 11개)
 
 > **정본: 이 GitHub 문서.** [Confluence 페이지](https://sentbe-product.atlassian.net/wiki/spaces/NSBS/pages/4158980234)는 열람용 미러. 실행 가능한 DDL은 `server-spec/schema.sql`(server-spec 브랜치)이 짝 원본.
 > 최종 동기화: 2026-08-13 (Confluence v4 기준)

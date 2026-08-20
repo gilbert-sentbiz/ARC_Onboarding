@@ -1,4 +1,4 @@
-# ARC - API 설계서 (프론트 ↔ 서버 계약)
+# ARK - API 설계서 (프론트 ↔ 서버 계약)
 
 > **정본: 이 GitHub 문서.** 프론트↔서버 데이터 계약의 단일 원천. 백엔드 표준([SERVER-STANDARD.md](SERVER-STANDARD.md))을 따른다 — 각 엔드포인트는 헥사고날 `adapter/in` 컨트롤러 + **타입드 요청/응답 DTO**(Map 금지), Springdoc OpenAPI + Spring REST Docs 스니펫 산출. 프론트는 생성된 OpenAPI를 계약으로 삼아 연동한다.
 > 최종: 2026-08-15. **MVP 대상 = 18개**(+ `/health` 제외). **임시저장 PUT 2개(C3·C5)는 MVP 제외 — Full Spec**(2026-08-15 확정).

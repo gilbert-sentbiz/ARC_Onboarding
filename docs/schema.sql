@@ -1,6 +1,6 @@
 -- ============================================================
--- ARC 온보딩 플랫폼 — MVP 스키마 (테이블 11개)
--- 원본: Confluence "ARC - 테이블 정의서 (MVP 11개)" v2 (2026-08-05)
+-- ARK 온보딩 플랫폼 — MVP 스키마 (테이블 11개)
+-- 원본: Confluence "ARK - 테이블 정의서 (MVP 11개)" v2 (2026-08-05)
 --   https://sentbe-product.atlassian.net/wiki/spaces/NSBS/pages/4158980234
 -- 원칙: PK uuid / 시각 timestamptz / 상태·코드는 varchar + CHECK (enum 금지)
 --       룰 테이블 삭제는 소프트 삭제(deactivated_at) / question은 불변(트리거 강제)

@@ -1,4 +1,4 @@
-# ARC 온보딩 플랫폼 — 문서 허브
+# ARK 온보딩 플랫폼 — 문서 허브
 
 **이 폴더가 기획 문서의 정본(source of truth)이다.** Confluence는 이해관계자(업무·컴플) 열람용 미러다 — 내용 수정은 여기(GitHub)에서 하고 Confluence 미러에 반영한다.
 
@@ -20,13 +20,13 @@
 | [LOCAL_DEV.md](LOCAL_DEV.md) | 로컬 도커 환경 규격 (compose, 이관 지점) |
 | [schema.sql](schema.sql) | Postgres DDL 원본 (Liquibase changelog의 짝) |
 
-> **AI 컨텍스트용**: `SERVER-STANDARD.md`는 백엔드 레포(`arc-backend`) 루트에 `CLAUDE.md`로도 복사해 둬야 코딩 AI가 자동 로드한다(docs/는 참조 정본, arc-backend 루트는 실행 컨텍스트). — arc-backend 루트에 CLAUDE.md 부재, 추가 필요.
+> **AI 컨텍스트용**: `SERVER-STANDARD.md`는 백엔드 레포(`ark-backend`) 루트에 `CLAUDE.md`로도 복사해 둬야 코딩 AI가 자동 로드한다(docs/는 참조 정본, ark-backend 루트는 실행 컨텍스트). — ark-backend 루트에 CLAUDE.md 부재, 추가 필요.
 
 ## 코드 (다른 위치)
 
 | 자산 | 위치 |
 | --- | --- |
-| 서버 백엔드 코드 | `gilbert-sentbiz/arc-backend` 레포 (Kotlin/Spring) |
+| 서버 백엔드 코드 | `gilbert-sentbiz/ark-backend` 레포 (Kotlin/Spring) |
 | 프론트 프로토타입 | 이 레포 `prototype-next/` (mvp 브랜치 배포) |
 | 질문 문구·옵션 원천 | [설문 시트](https://docs.google.com/spreadsheets/d/1b7ZMAWl6QIgLT-fnRnrt3r2fdmLUKc785VzyRk1J3pQ/edit) |
 

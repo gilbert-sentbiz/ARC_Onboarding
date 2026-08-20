@@ -1,11 +1,11 @@
-# ARC - 서버 데이터 모델 (ERD)
+# ARK - 서버 데이터 모델 (ERD)
 
 > **정본: 이 GitHub 문서.** [Confluence 페이지](https://sentbe-product.atlassian.net/wiki/spaces/NSBS/pages/4148920321)는 열람용 미러. 컬럼 상세는 [TABLE-SPEC.md](TABLE-SPEC.md), DDL은 `server-spec/schema.sql`(server-spec 브랜치)이 원본.
 > 최종 동기화: 2026-08-13 (Confluence v6 기준)
 
 ---
 
-[PRD](PRD.md)와 프로토타입 코드(`gilbert-sentbiz/ARC_Onboarding`, `prototype-next`)를 기준으로 설계한 서버 데이터 모델이다. **2026-08-05 개정**: 룰셋 JSONB 버전 스냅샷(구 rule_set 테이블)을 버리고, **불변 질문 + 케이스 고정** 모델로 재설계 — 룰 패널 CRUD와 Collection 국가 확장이 행 단위로 자연스러워진다. 컬럼 상세는 [TABLE-SPEC.md](TABLE-SPEC.md) 참조.
+[PRD](PRD.md)와 프로토타입 코드(`gilbert-sentbiz/ARK_Onboarding`, `prototype-next`)를 기준으로 설계한 서버 데이터 모델이다. **2026-08-05 개정**: 룰셋 JSONB 버전 스냅샷(구 rule_set 테이블)을 버리고, **불변 질문 + 케이스 고정** 모델로 재설계 — 룰 패널 CRUD와 Collection 국가 확장이 행 단위로 자연스러워진다. 컬럼 상세는 [TABLE-SPEC.md](TABLE-SPEC.md) 참조.
 
 ## 1. 설계 원칙
 

@@ -1,4 +1,4 @@
-# ARC 온보딩 플랫폼 — 서버
+# ARK 온보딩 플랫폼 — 서버
 
 SentBe(센트비)의 B2B 고객 온보딩 플랫폼 서버. 고객이 설문에 답하고 서류를 올리면, 내부 3역할(영업 → 운영 → 컴플라이언스 → 운영)이 순서대로 심사해서 계정을 개설한다. MVP는 **송금 전용** — 한국 법인(CORP)과 한국 개인사업자(INDIV)만 온보딩한다.
 
@@ -11,18 +11,18 @@ SentBe(센트비)의 B2B 고객 온보딩 플랫폼 서버. 고객이 설문에 
 - **db: PostgreSQL** · **cache: Redis**(OTP 코드 등 단기 TTL) · **storage: AWS S3(SDK v2)** — 로컬은 MinIO(S3 호환).
 - 로컬은 **도커 compose**로 db/redis/storage/backend/frontend 기동 → 검증 후 회사 환경 이관. 규격 `LOCAL_DEV.md`. 로컬↔회사 차이는 **환경변수로만** 흡수(엔드포인트 하드코딩 금지).
 
-> ⚠️ 현재 `server/`의 코드(arc-dev 참조 구현, PI-128~132)는 이 표준 확정 이전에 작성돼 **비준수**다(Spring Boot 3.4 / JPA / Flyway / 평면 레이어 / Kotlin 1.9 / JDK 21). 동작하는 **참조 구현**으로만 쓰고, 실제 백엔드는 아래 표준 위에서 재구성(re-scaffold)한다 — PI-133.
+> ⚠️ 현재 `server/`의 코드(ark-dev 참조 구현, PI-128~132)는 이 표준 확정 이전에 작성돼 **비준수**다(Spring Boot 3.4 / JPA / Flyway / 평면 레이어 / Kotlin 1.9 / JDK 21). 동작하는 **참조 구현**으로만 쓰고, 실제 백엔드는 아래 표준 위에서 재구성(re-scaffold)한다 — PI-133.
 
 ## 회사 백엔드 표준 (상위 규범, BINDING)
 
-출처: [백엔드 테크 스펙 (BizPlatform 기준)](https://sentbe-product.atlassian.net/wiki/spaces/S2/pages/4173660292). 아키텍처·컨벤션·버전은 이 문서가 최종이다. ARC는 *무엇을 만드나*(도메인)를 제공하고, *어떻게 만드나*는 전부 여기 따른다.
+출처: [백엔드 테크 스펙 (BizPlatform 기준)](https://sentbe-product.atlassian.net/wiki/spaces/S2/pages/4173660292). 아키텍처·컨벤션·버전은 이 문서가 최종이다. ARK는 *무엇을 만드나*(도메인)를 제공하고, *어떻게 만드나*는 전부 여기 따른다.
 
 ### 아키텍처 — 헥사고날 (Ports & Adapters)
 
-ARC는 **bizplatform 안의 모듈로 편입**한다. 패키지 루트 `com.sentbe.bizplatform.arc.{도메인}` (모듈명 `arc`는 **잠정** — 백엔드팀 컨벤션 확정 시 리네임, 패키지 경로 찾아바꾸기라 기계적 작업). 도메인마다 동일 계층:
+ARK는 **bizplatform 안의 모듈로 편입**한다. 패키지 루트 `com.sentbe.bizplatform.ark.{도메인}` (모듈명 `arc`는 **잠정** — 백엔드팀 컨벤션 확정 시 리네임, 패키지 경로 찾아바꾸기라 기계적 작업). 도메인마다 동일 계층:
 
 ```
-com.sentbe.bizplatform.arc.{도메인}/
+com.sentbe.bizplatform.ark.{도메인}/
 ├── adapter/
 │   ├── in/          # REST 컨트롤러, 요청·응답 DTO
 │   └── out/         # JDBC 리포지토리, S3·외부 API 클라이언트
@@ -37,7 +37,7 @@ com.sentbe.bizplatform.arc.{도메인}/
 
 비즈니스 로직(`application`)은 `port` 인터페이스에만 의존하고, DB·S3 등 구체 기술은 `adapter`에 격리한다.
 
-### ARC 도메인 분할
+### ARK 도메인 분할
 
 | 도메인 | 테이블 | 핵심 유스케이스 |
 | --- | --- | --- |

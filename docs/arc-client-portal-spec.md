@@ -1,7 +1,7 @@
 > ⚠️ **DEPRECATED (2026년 5월 초기 스펙).** 현재 정본 PRD는 [PRD.md](PRD.md)다. 이 문서는 참고용으로만 보존.
 
   
-**ARC**
+**ARK**
 
 **Client Portal Specification**
 

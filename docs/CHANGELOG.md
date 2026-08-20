@@ -23,18 +23,18 @@
 
 > 기획 문서가 Confluence·로컬 Obsidian·낡은 GitHub 사본으로 흩어져 있던 것을 GitHub 정본으로 통일. Confluence는 열람용 미러로 전환.
 
-- **정본 = GitHub `ARC_Onboarding/docs/` (main 브랜치)**: PRD.md, ERD.md, TABLE-SPEC.md, CHANGELOG.md, README(문서 허브) 신규. Confluence 3개 문서(4134994324/4148920321/4158980234)는 미러. 각 문서 상단에 정본/미러 헤더.
+- **정본 = GitHub `ARK_Onboarding/docs/` (main 브랜치)**: PRD.md, ERD.md, TABLE-SPEC.md, CHANGELOG.md, README(문서 허브) 신규. Confluence 3개 문서(4134994324/4148920321/4158980234)는 미러. 각 문서 상단에 정본/미러 헤더.
 - 로컬 Obsidian PRD·CHANGELOG는 이관 배너 후 참고용. 낡은 `docs/arc-client-portal-spec.md`(5월 초기 스펙)는 DEPRECATED.
-- 수정 방향 전환: **GitHub 마크다운 편집 → Confluence 미러 반영 → CHANGELOG**. arc-pm·arc-qa 스킬 지침에 반영.
+- 수정 방향 전환: **GitHub 마크다운 편집 → Confluence 미러 반영 → CHANGELOG**. ark-pm·ark-qa 스킬 지침에 반영.
 - **서버 문서도 docs/로 이관** (완전 통일): `docs/SERVER-STANDARD.md`(구 server-spec/CLAUDE.md 규범), `docs/LOCAL_DEV.md`, `docs/schema.sql`. server-spec 브랜치 `server-spec/`는 이제 구 위치.
-  - 단, `SERVER-STANDARD.md`는 AI 자동 로드를 위해 `arc-backend` 레포 루트에 `CLAUDE.md`로도 복사 필요(현재 부재) — 후속.
-  - 서버 코드: `gilbert-sentbiz/arc-backend` 레포 (Kotlin/Spring, 회사 백엔드 표준).
+  - 단, `SERVER-STANDARD.md`는 AI 자동 로드를 위해 `ark-backend` 레포 루트에 `CLAUDE.md`로도 복사 필요(현재 부재) — 후속.
+  - 서버 코드: `gilbert-sentbiz/ark-backend` 레포 (Kotlin/Spring, 회사 백엔드 표준).
   - 서버 데이터 모델은 docs/ERD.md·TABLE-SPEC.md(정본).
   - 서버 QA 적대 리뷰 결과(상태머신 설계 위반 PI-142·143 등)는 아래 2026-08-12 항목 참조 — 아직 미수정(To Do).
 
 ## 2026-08-12 — 서버 코드 QA 적대 리뷰: 상태머신 설계 위반 발견 (PI-142~145)
 
-> arc-dev가 재정렬(PI-133) 백엔드 구현 완료(arc-backend 레포). QA 적대 리뷰 결과 빌드/스택/스키마/소급차단은 표준 부합, 워크플로우 상태전이에서 설계 위반 4건.
+> ark-dev가 재정렬(PI-133) 백엔드 구현 완료(ark-backend 레포). QA 적대 리뷰 결과 빌드/스택/스키마/소급차단은 표준 부합, 워크플로우 상태전이에서 설계 위반 4건.
 
 - **PI-142** 🔴 케이스 상태머신 재구성 — `CaseService.advanceStatus`가 DOCUMENT_SCREENING_REQUIRED(운영 서류 스크리닝) 단계를 건너뛰고 영업(SALES) 전이가 전무. 4단계(영업→운영→컴플→운영)가 3단계로 축소됨. 고객 주도 전이가 스태프 advance로 모델링.
 - **PI-143** 🔴 보완 루프 완결 — 재제출 복귀 미구현(revisionRequestedFrom 저장만, resubmit 부재 → REVISION_REQUESTED에 갇힘), case/document requestRevision 미조율, 영업 제외.
@@ -45,19 +45,19 @@
 
 ## 2026-08-11 — 회사 백엔드 표준 반영 + 서버 재정렬/레포 분리 (PI-133, PI-134)
 
-> 회사 백엔드팀 공식 표준(BizPlatform, Confluence S2/4173660292) 확정. 구현은 우리(arc-dev)가 전부, 회사 백엔드는 인프라 지원만. 표준을 서버·프론트 설계에 강하게 반영.
+> 회사 백엔드팀 공식 표준(BizPlatform, Confluence S2/4173660292) 확정. 구현은 우리(ark-dev)가 전부, 회사 백엔드는 인프라 지원만. 표준을 서버·프론트 설계에 강하게 반영.
 
 - **표준 핵심**: Kotlin 2.3.20 + Spring Boot 4.1.0 + JDK 25 / **Spring Data JDBC(JPA 금지)** / **Liquibase**(Flyway 아님) / **헥사고날(Ports & Adapters)** / ktlint 1.8.0 강제 / Kotest+Testcontainers / Log4j2 / Redis / AWS SDK v2 / 사내 Nexus / 4프로필(local·dev·stg·prd).
-- **ARC 편입**: bizplatform 안 모듈, 패키지 `com.sentbe.bizplatform.onboarding.{도메인}`(모듈명 확정은 백엔드팀). 도메인 분할 case/intake/document/rule/customer/staff/global.
-- **arc-dev가 이미 개발한 server/ 코드(PI-128~132)는 표준 이전 작성 → 비준수**(Spring Boot 3.4/JPA/Flyway/평면). 동작하는 참조 구현으로 유지, 표준 위에서 재구성.
+- **ARK 편입**: bizplatform 안 모듈, 패키지 `com.sentbe.bizplatform.onboarding.{도메인}`(모듈명 확정은 백엔드팀). 도메인 분할 case/intake/document/rule/customer/staff/global.
+- **ark-dev가 이미 개발한 server/ 코드(PI-128~132)는 표준 이전 작성 → 비준수**(Spring Boot 3.4/JPA/Flyway/평면). 동작하는 참조 구현으로 유지, 표준 위에서 재구성.
 - **문서**: server-spec/CLAUDE.md에 "회사 백엔드 표준(BINDING)" 섹션 정밀 반영 + LOCAL_DEV.md 스택 갱신 (`97f7df1`).
-- **티켓**: PI-133(표준 재정렬 — 우산)을 **요소별 서브태스크 7개로 분할**(arc-dev 과신 금지, 한 입 크기): PI-135 스켈레톤·빌드규범 / PI-136 Liquibase 스키마·시드 / PI-137 영속성 인프라(JDBC 컨버터) / PI-138 rule 도메인 / PI-139 case+intake / PI-140 document+파일 / PI-141 customer·staff 인증. 순서 135→136→137→138→139→140, 141은 137 뒤. 각 서브태스크가 대응 참조 구현(PI-128~132)을 가리킴.
-- **PI-134**(회사 깃헙 이전)는 발급 후 대기(parked)로 축소 — 레포 생성은 PI-135에 흡수. 패키지 모듈명은 잠정 `arc`(`com.sentbe.bizplatform.arc.*`), 백엔드팀 확정 시 리네임.
+- **티켓**: PI-133(표준 재정렬 — 우산)을 **요소별 서브태스크 7개로 분할**(ark-dev 과신 금지, 한 입 크기): PI-135 스켈레톤·빌드규범 / PI-136 Liquibase 스키마·시드 / PI-137 영속성 인프라(JDBC 컨버터) / PI-138 rule 도메인 / PI-139 case+intake / PI-140 document+파일 / PI-141 customer·staff 인증. 순서 135→136→137→138→139→140, 141은 137 뒤. 각 서브태스크가 대응 참조 구현(PI-128~132)을 가리킴.
+- **PI-134**(회사 깃헙 이전)는 발급 후 대기(parked)로 축소 — 레포 생성은 PI-135에 흡수. 패키지 모듈명은 잠정 `arc`(`com.sentbe.bizplatform.ark.*`), 백엔드팀 확정 시 리네임.
 - **프론트**: 전용 회사 표준 없음 → 백엔드 API 계약·4프로필·인증(OTP/SSO)에 맞춤.
 
 ## 2026-08-07 — 서버 백엔드 착수 티켓 (PI-128~132, 마일스톤 5개)
 
-> Spring Boot(Kotlin) 참조 구현으로 서버 착수. 실제 코딩은 arc-dev, PM은 티켓까지. 도커 로컬 → 회사 환경 이관.
+> Spring Boot(Kotlin) 참조 구현으로 서버 착수. 실제 코딩은 ark-dev, PM은 티켓까지. 도커 로컬 → 회사 환경 이관.
 
 - **PI-128** M1 로컬 도커 기동 (compose: Postgres+MinIO+backend+frontend)
 - **PI-129** M2 스키마+시드 (Flyway = server-spec/schema.sql 11테이블 + 룰 시드 CORP/INDIV·송금)
@@ -91,7 +91,7 @@
 > 인프라 이유로 서버 구현은 사내 개발팀이 진행. AI 협업 초보 팀 기준의 "초보 버전"으로 축소 (파일 3개, 프로세스 최소). Gilbert 지시로 리포에 직접 푸시 (server-spec 브랜치 — 배포 트리거 없음).
 
 - **server-spec 브랜치** (`6a30e86`, origin/mvp 기반): `server-spec/` 폴더 — README(협업 규칙 3개 + 자산 링크), CLAUDE.md(AI용 올인원: 불변식 7개, 상태 전이표, API 후보 12개, 데이터 반입 금지), schema.sql(정의서 v2 기준 DDL 11테이블 + question 불변 트리거 + 가짜 시드). ※ 로컬 Postgres 없어 DDL 실행 검증 미완 — 개발팀 첫 실행 시 확인 필요.
-- **킥오프 가이드**: [ARC 서버 킥오프 — 공유 세션 가이드](https://sentbe-product.atlassian.net/wiki/spaces/NSBS/pages/4159078576) — 아젠다(시연 우선), 시연 시나리오, 개발팀에 묻는 결정 4개(인프라 망분리, SSO, 파일 정책, 리포/보드), 마일스톤 초안 4단계.
+- **킥오프 가이드**: [ARK 서버 킥오프 — 공유 세션 가이드](https://sentbe-product.atlassian.net/wiki/spaces/NSBS/pages/4159078576) — 아젠다(시연 우선), 시연 시나리오, 개발팀에 묻는 결정 4개(인프라 망분리, SSO, 파일 정책, 리포/보드), 마일스톤 초안 4단계.
 - 참고: mvp 브랜치에 PI-121~126 전부 반영 확인 (`e66ac98`, Dev 완료).
 
 ## 2026-08-05 — ERD 재설계: 불변 질문 + 케이스 고정 모델 (ERD v4, 정의서 신규)
@@ -145,7 +145,7 @@
 - **mvp 브랜치 신설** — GitHub Pages 배포는 mvp 푸시에서만 트리거. 사이트 URL 변화 없음.
 - **main** — Full Spec 개발 라인 (PI-115~120 진행). 자동 배포 중단(수동 workflow_dispatch만 가능).
 - 플로우: PI-120까지 main에서 개발 → main을 mvp로 머지 → mvp에서 축소 → 완료 시점에 `archive/full-spec-v1.1` 브랜치로 Full Spec 최종본 보존.
-- 개발(arc-dev) 유의: 커밋·푸시해도 사이트에 반영 안 됨. 셀프테스트는 로컬 dev server 기준.
+- 개발(ark-dev) 유의: 커밋·푸시해도 사이트에 반영 안 됨. 셀프테스트는 로컬 dev server 기준.
 
 ## 2026-08-04 — 스콥 축소 시작 (MVP 이하) + Full Spec 보존
 
@@ -182,7 +182,7 @@
 
 ## 2026-07-27~08-01 — PRD 단일 원천 이전 + 재편 (기록 보강)
 
-> 이 기간 변경이 로그에 누락되어 소급 기록. **PRD 단일 원천은 Confluence "ARC - 온보딩 플랫폼 PRD"(NSBS 4134994324)로 이전** — 이 로컬 PRD 파일은 구버전.
+> 이 기간 변경이 로그에 누락되어 소급 기록. **PRD 단일 원천은 Confluence "ARK - 온보딩 플랫폼 PRD"(NSBS 4134994324)로 이전** — 이 로컬 PRD 파일은 구버전.
 
 - 개발자용 PRD 신설(원본 축약 + MVP 비교 통합), 넘버링 1~5장.
 - 워크플로우 변경: **영업(1차 스크리닝) → 운영(서류 스크리닝) → 컴플라이언스(심사) → 운영(계정 개설)**. 상태를 액션 기반으로 재명명(`INITIAL_SCREENING`, `DOCUMENT_SCREENING_REQUIRED`, `APPROVAL_REVIEW_REQUIRED`, `ACCOUNT_SETUP_REQUIRED`).
@@ -633,7 +633,7 @@ PRD 원본: `온보딩 플랫폼 - PRD (Prototype).md`
 
 > ✅ 코드 반영 완료 (2026-06-19) — P0-1, P0-2, P2-4 수정. commit 021e205
 > 상세/재현 경로는 `QA.md` 2026-06-19 섹션 참조.
-> 분석 기준: github.com/gilbert-sentbiz/ARC_Onboarding origin/main = **4c9fa5d** (배포본).
+> 분석 기준: github.com/gilbert-sentbiz/ARK_Onboarding origin/main = **4c9fa5d** (배포본).
 > ✅ 배포본에서 이미 수정 확인 (재지시 불필요): 자금원천 8개 / 탭 바 / 케이스 상태 전환 시점 / 내부 화면 4개.
 
 ### 코드 수정 지시 — 아직 라이브인 버그만

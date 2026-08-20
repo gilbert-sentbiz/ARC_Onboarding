@@ -1,4 +1,4 @@
-# ARC - 온보딩 플랫폼 PRD
+# ARK - 온보딩 플랫폼 PRD
 
 > **정본(source of truth): 이 GitHub 문서.** [Confluence 페이지](https://sentbe-product.atlassian.net/wiki/spaces/NSBS/pages/4134994324)는 이해관계자(업무·컴플) 열람용 **미러**다. 내용 수정은 여기(GitHub)에서 하고 Confluence 미러에 반영한다.
 > 최종 동기화: 2026-08-13 (Confluence v31 기준)
@@ -345,7 +345,7 @@ MVP 차이는 각 섹션(2장 화면, 3장 상태값, 4장 분류·질문·서�
 ## 참고
 
 * 원본 PRD(초기): https://sentbe-product.atlassian.net/wiki/spaces/NSBS/pages/4113727492
-* 질문 전문(문구, 옵션) 단일 원천 — 설문 시트 "ARC 고객 유형별 설문": https://docs.google.com/spreadsheets/d/1b7ZMAWl6QIgLT-fnRnrt3r2fdmLUKc785VzyRk1J3pQ/edit
+* 질문 전문(문구, 옵션) 단일 원천 — 설문 시트 "ARK 고객 유형별 설문": https://docs.google.com/spreadsheets/d/1b7ZMAWl6QIgLT-fnRnrt3r2fdmLUKc785VzyRk1J3pQ/edit
 * SentBiz Rule 검토(v1.0.5): https://sentbe-product.atlassian.net/wiki/spaces/BO/pages/4143349976 — 반영 티켓 PI-114~120
 * Full Spec 보관본: https://sentbe-product.atlassian.net/wiki/spaces/NSBS/pages/4155506735 / 코드 브랜치 `archive/full-spec-v1.0.5`, 배포는 `mvp` 브랜치 전용
 * 서버 설계: [ERD.md](ERD.md), [TABLE-SPEC.md](TABLE-SPEC.md), 서버 규범 `server-spec/CLAUDE.md`(server-spec 브랜치)
