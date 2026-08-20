@@ -1,26 +1,43 @@
 {
-  "name": "arc-onboarding-next",
+  "name": "ark-onboarding-next",
   "version": "0.1.0",
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "prepare": "git -C .. config core.hooksPath prototype-next/.husky || true",
+    "commit": "cz"
   },
   "dependencies": {
+    "@phosphor-icons/react": "^2.1.7",
+    "jszip": "^3.10.1",
     "next": "16.2.4",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
-    "zustand": "^5.0.2",
-    "@phosphor-icons/react": "^2.1.7",
-    "jszip": "^3.10.1"
+    "zustand": "^5.0.2"
   },
   "devDependencies": {
-    "typescript": "^5",
+    "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@typescript-eslint/eslint-plugin": "^8.67.0",
+    "@typescript-eslint/parser": "^8.67.0",
+    "commitizen": "^4.3.2",
+    "cz-conventional-changelog": "^3.3.0",
+    "eslint": "^9.39.5",
+    "eslint-import-resolver-typescript": "^4.4.5",
+    "eslint-plugin-import": "^2.32.0",
+    "eslint-plugin-promise": "^7.3.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.3.0",
+    "prettier": "^3.9.6",
     "tailwindcss": "^4",
-    "@tailwindcss/postcss": "^4"
+    "typescript": "^5"
   }
 }

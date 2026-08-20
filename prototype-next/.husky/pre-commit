@@ -1,0 +1,1 @@
+cd prototype-next && npx lint-staged
