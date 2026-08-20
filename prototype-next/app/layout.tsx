@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 
 import { GlobalStyles } from '@/src/shared/ui/GlobalStyles'
+import { Providers } from '@/src/shared/ui/Providers'
 
 export const metadata: Metadata = {
   title: 'ARK Onboarding',
@@ -11,7 +12,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="ko">
       <body>
         <GlobalStyles />
-        {children}
+        <Providers>{children}</Providers>
       </body>
     </html>
   )
