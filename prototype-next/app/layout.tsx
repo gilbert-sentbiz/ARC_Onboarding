@@ -1,14 +1,18 @@
 import type { Metadata } from 'next'
-import './globals.css'
+
+import { GlobalStyles } from '@/src/shared/ui/GlobalStyles'
 
 export const metadata: Metadata = {
-  title: 'ARC Onboarding',
+  title: 'ARK Onboarding',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="ko">
-      <body>{children}</body>
+      <body>
+        <GlobalStyles />
+        {children}
+      </body>
     </html>
   )
 }

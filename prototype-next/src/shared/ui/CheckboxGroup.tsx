@@ -1,6 +1,9 @@
 'use client'
 
+import styled from '@emotion/styled'
 import { Check } from '@phosphor-icons/react'
+
+import { colors, duration, radius } from '@/src/shared/const/tokens'
 
 type Option = { value: string; label: string }
 
@@ -17,6 +20,80 @@ type Props = {
   onOtherChange?: (v: string) => void
   otherPlaceholder?: string
 }
+
+const Wrapper = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+`
+
+const FieldLabel = styled.p`
+  font-size: 14px;
+  line-height: 20px;
+  color: ${colors.n500};
+`
+
+const Required = styled.span`
+  margin-left: 2px;
+  color: ${colors.negative};
+`
+
+const OptionsRow = styled.div<{ layout: 'row' | 'col' }>`
+  display: flex;
+  flex-direction: ${({ layout }) => (layout === 'col' ? 'column' : 'row')};
+  flex-wrap: ${({ layout }) => (layout === 'col' ? 'nowrap' : 'wrap')};
+  gap: ${({ layout }) => (layout === 'col' ? '8px' : '12px')};
+`
+
+const OptionLabel = styled.label`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+`
+
+const Checkbox = styled.div<{ checked: boolean }>`
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  border-radius: ${radius[4]};
+  border: 1px solid ${({ checked }) => (checked ? colors.brand : colors.n300)};
+  background: ${({ checked }) => (checked ? colors.brand : 'transparent')};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all ${duration.fast};
+`
+
+const OptionText = styled.span`
+  font-size: 14px;
+  color: ${colors.n800};
+`
+
+const OtherInput = styled.input`
+  margin-top: 4px;
+  height: 40px;
+  padding: 0 16px;
+  border-radius: ${radius[6]};
+  border: 1px solid ${colors.n200};
+  outline: none;
+  font-size: 14px;
+  font-family: inherit;
+  color: ${colors.n900};
+  background: ${colors.white};
+
+  &::placeholder {
+    color: ${colors.n400};
+  }
+  &:focus {
+    border-color: ${colors.brand};
+  }
+`
+
+const ErrorText = styled.p`
+  font-size: 11px;
+  color: ${colors.negative};
+`
 
 export default function CheckboxGroup({
   label,
@@ -36,76 +113,39 @@ export default function CheckboxGroup({
   }
 
   return (
-    <div className="flex flex-col gap-1.5">
+    <Wrapper>
       {label && (
-        <p className="text-[14px] leading-[20px]" style={{ color: 'var(--sb-n500)' }}>
+        <FieldLabel>
           {label}
-          {required && (
-            <span className="ml-0.5" style={{ color: 'var(--sb-negative)' }}>
-              *
-            </span>
-          )}
-        </p>
+          {required && <Required>*</Required>}
+        </FieldLabel>
       )}
-      <div className={`flex ${layout === 'col' ? 'flex-col gap-2' : 'flex-wrap gap-3'}`}>
+      <OptionsRow layout={layout}>
         {options.map((o) => (
-          <label
-            key={o.value}
-            className="flex items-center gap-2 cursor-pointer"
-            onClick={() => toggle(o.value)}
-          >
-            <div
-              className="flex-shrink-0 w-[18px] h-[18px] rounded-[4px] border flex items-center justify-center transition-colors duration-[120ms]"
-              style={
-                values.includes(o.value)
-                  ? { background: 'var(--sb-brand)', borderColor: 'var(--sb-brand)' }
-                  : { borderColor: 'var(--sb-n300)' }
-              }
-            >
-              {values.includes(o.value) && <Check size={12} weight="bold" className="text-white" />}
-            </div>
-            <span className="text-[14px]" style={{ color: 'var(--sb-n800)' }}>
-              {o.label}
-            </span>
-          </label>
+          <OptionLabel key={o.value} onClick={() => toggle(o.value)}>
+            <Checkbox checked={values.includes(o.value)}>
+              {values.includes(o.value) && <Check size={12} weight="bold" color={colors.white} />}
+            </Checkbox>
+            <OptionText>{o.label}</OptionText>
+          </OptionLabel>
         ))}
         {otherKey && (
-          <label
-            className="flex items-center gap-2 cursor-pointer"
-            onClick={() => toggle(otherKey)}
-          >
-            <div
-              className="flex-shrink-0 w-[18px] h-[18px] rounded-[4px] border flex items-center justify-center transition-colors duration-[120ms]"
-              style={
-                values.includes(otherKey)
-                  ? { background: 'var(--sb-brand)', borderColor: 'var(--sb-brand)' }
-                  : { borderColor: 'var(--sb-n300)' }
-              }
-            >
-              {values.includes(otherKey) && (
-                <Check size={12} weight="bold" className="text-white" />
-              )}
-            </div>
-            <span className="text-[14px]" style={{ color: 'var(--sb-n800)' }}>
-              기타
-            </span>
-          </label>
+          <OptionLabel onClick={() => toggle(otherKey)}>
+            <Checkbox checked={values.includes(otherKey)}>
+              {values.includes(otherKey) && <Check size={12} weight="bold" color={colors.white} />}
+            </Checkbox>
+            <OptionText>기타</OptionText>
+          </OptionLabel>
         )}
-      </div>
+      </OptionsRow>
       {otherKey && values.includes(otherKey) && onOtherChange && (
-        <input
-          className="mt-1 h-10 px-4 rounded-[6px] border outline-none text-[14px]"
-          style={{ borderColor: 'var(--sb-n200)', color: 'var(--sb-n900)' }}
+        <OtherInput
           placeholder={otherPlaceholder ?? '직접 입력'}
           value={otherValue ?? ''}
           onChange={(e) => onOtherChange(e.target.value)}
         />
       )}
-      {error && (
-        <p className="text-[11px]" style={{ color: 'var(--sb-negative)' }}>
-          {error}
-        </p>
-      )}
-    </div>
+      {error && <ErrorText>{error}</ErrorText>}
+    </Wrapper>
   )
 }

@@ -1,7 +1,10 @@
 'use client'
 
+import styled from '@emotion/styled'
 import { CaretDown } from '@phosphor-icons/react'
 import { type SelectHTMLAttributes } from 'react'
+
+import { colors, duration, radius } from '@/src/shared/const/tokens'
 
 type Props = SelectHTMLAttributes<HTMLSelectElement> & {
   label?: string
@@ -11,61 +14,90 @@ type Props = SelectHTMLAttributes<HTMLSelectElement> & {
   placeholder?: string
 }
 
-export default function Select({
-  label,
-  required,
-  error,
-  options,
-  placeholder,
-  className = '',
-  ...rest
-}: Props) {
-  const wrapperBorderStyle: React.CSSProperties = error
-    ? { borderColor: 'var(--sb-negative)' }
-    : { borderColor: 'var(--sb-n200)' }
+const Wrapper = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+`
 
+const Label = styled.label`
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 400;
+  color: ${colors.n500};
+`
+
+const Required = styled.span`
+  margin-left: 2px;
+  color: ${colors.negative};
+`
+
+const SelectWrapper = styled.div<{ hasError: boolean }>`
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 40px;
+  border-radius: ${radius[6]};
+  border: 1px solid ${({ hasError }) => (hasError ? colors.negative : colors.n200)};
+  background: ${colors.white};
+  transition: border-color ${duration.fast};
+
+  &:focus-within {
+    border-color: ${({ hasError }) => (hasError ? colors.negative : colors.brand)};
+  }
+`
+
+const StyledSelect = styled.select`
+  width: 100%;
+  height: 100%;
+  padding: 0 40px 0 16px;
+  appearance: none;
+  background: transparent;
+  outline: none;
+  font-size: 14px;
+  line-height: 20px;
+  color: ${colors.n900};
+  font-family: inherit;
+  cursor: pointer;
+`
+
+const CaretIcon = styled.span`
+  position: absolute;
+  right: 12px;
+  pointer-events: none;
+  display: flex;
+  color: ${colors.n400};
+`
+
+const ErrorText = styled.p`
+  font-size: 11px;
+  line-height: 16px;
+  color: ${colors.negative};
+`
+
+export default function Select({ label, required, error, options, placeholder, ...rest }: Props) {
   return (
-    <div className={`flex flex-col gap-1.5 ${className}`}>
+    <Wrapper>
       {label && (
-        <label
-          className="text-[14px] leading-[20px] font-normal"
-          style={{ color: 'var(--sb-n500)' }}
-        >
+        <Label>
           {label}
-          {required && (
-            <span className="ml-0.5" style={{ color: 'var(--sb-negative)' }}>
-              *
-            </span>
-          )}
-        </label>
+          {required && <Required>*</Required>}
+        </Label>
       )}
-      <div
-        className="relative flex items-center h-10 rounded-[6px] border bg-white transition-colors duration-[120ms]"
-        style={wrapperBorderStyle}
-      >
-        <select
-          className="w-full h-full px-4 pr-10 appearance-none bg-transparent outline-none text-[14px] leading-[20px] cursor-pointer"
-          style={{ color: 'var(--sb-n900)' }}
-          {...rest}
-        >
+      <SelectWrapper hasError={!!error}>
+        <StyledSelect {...rest}>
           {placeholder && <option value="">{placeholder}</option>}
           {options.map((o) => (
             <option key={o.value} value={o.value}>
               {o.label}
             </option>
           ))}
-        </select>
-        <CaretDown
-          size={16}
-          className="absolute right-3 pointer-events-none"
-          style={{ color: 'var(--sb-n400)' }}
-        />
-      </div>
-      {error && (
-        <p className="text-[11px] leading-[16px]" style={{ color: 'var(--sb-negative)' }}>
-          {error}
-        </p>
-      )}
-    </div>
+        </StyledSelect>
+        <CaretIcon>
+          <CaretDown size={16} />
+        </CaretIcon>
+      </SelectWrapper>
+      {error && <ErrorText>{error}</ErrorText>}
+    </Wrapper>
   )
 }

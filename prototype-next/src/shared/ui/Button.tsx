@@ -1,6 +1,9 @@
 'use client'
 
+import styled from '@emotion/styled'
 import { type ButtonHTMLAttributes, type ReactNode } from 'react'
+
+import { colors, duration, radius } from '@/src/shared/const/tokens'
 
 type Variant = 'primary' | 'secondary' | 'outline' | 'ghost'
 type Size = 'lg' | 'md' | 'sm'
@@ -12,65 +15,72 @@ type Props = ButtonHTMLAttributes<HTMLButtonElement> & {
   children: ReactNode
 }
 
-const base =
-  'inline-flex items-center justify-center gap-1.5 font-semibold transition-all duration-[120ms] cursor-pointer select-none whitespace-nowrap rounded-[6px] disabled:cursor-not-allowed'
-
-// sb-* color tokens are moved to inline styles per variant; structure/sizing stays in className
-const variantBase: Record<Variant, string> = {
-  primary: 'disabled:cursor-not-allowed',
-  secondary: 'disabled:cursor-not-allowed',
-  outline: 'bg-white border disabled:cursor-not-allowed',
-  ghost: 'bg-transparent disabled:cursor-not-allowed',
+const sizeStyles: Record<Size, string> = {
+  lg: `height: 48px; padding: 0 20px; font-size: 14px; line-height: 16px; letter-spacing: 0.175px;`,
+  md: `height: 40px; padding: 0 16px; font-size: 14px; line-height: 16px; letter-spacing: 0.175px;`,
+  sm: `height: 36px; padding: 0 14px; font-size: 12px; line-height: 14px;`,
 }
 
-const sizes: Record<Size, string> = {
-  lg: 'h-12 px-5 text-[14px] leading-[16px] tracking-[0.175px]',
-  md: 'h-10 px-4 text-[14px] leading-[16px] tracking-[0.175px]',
-  sm: 'h-9 px-3.5 text-[12px] leading-[14px]',
+const variantStyles: Record<Variant, string> = {
+  primary: `
+    background: ${colors.brand};
+    color: ${colors.white};
+    &:hover:not(:disabled) { background: ${colors.brandHover}; }
+    &:active:not(:disabled) { background: ${colors.brandHeavy}; }
+    &:disabled { background: ${colors.n150}; color: ${colors.n300}; }
+  `,
+  secondary: `
+    background: ${colors.n150};
+    color: ${colors.brand};
+    &:hover:not(:disabled) { background: ${colors.n200}; }
+    &:disabled { background: ${colors.n150}; color: ${colors.n300}; }
+  `,
+  outline: `
+    background: ${colors.white};
+    color: ${colors.n700};
+    border: 1px solid ${colors.n200};
+    &:hover:not(:disabled) { background: ${colors.n50}; }
+    &:disabled { background: ${colors.n150}; border-color: ${colors.n200}; color: ${colors.n300}; }
+  `,
+  ghost: `
+    background: transparent;
+    color: ${colors.n500};
+    &:hover:not(:disabled) { background: ${colors.n100}; }
+    &:disabled { color: ${colors.n300}; }
+  `,
 }
 
-// Inline style maps per variant (applied via style prop; disabled state handled via CSS vars fallback)
-function variantStyle(variant: Variant, disabled?: boolean): React.CSSProperties {
-  if (disabled) {
-    const disabledStyles: Record<Variant, React.CSSProperties> = {
-      primary: { background: 'var(--sb-n150)', color: 'var(--sb-n300)' },
-      secondary: { background: 'var(--sb-n150)', color: 'var(--sb-n300)' },
-      outline: {
-        background: 'var(--sb-n150)',
-        borderColor: 'var(--sb-n200)',
-        color: 'var(--sb-n300)',
-      },
-      ghost: { color: 'var(--sb-n300)' },
-    }
-    return disabledStyles[variant]
+const StyledButton = styled.button<{ variant: Variant; size: Size; fullWidth: boolean }>`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-weight: 600;
+  font-family: inherit;
+  transition: all ${duration.fast};
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+  border-radius: ${radius[6]};
+  border: none;
+  width: ${({ fullWidth }) => (fullWidth ? '100%' : 'auto')};
+  &:disabled {
+    cursor: not-allowed;
   }
-  const styles: Record<Variant, React.CSSProperties> = {
-    primary: { background: 'var(--sb-brand)', color: '#fff' },
-    secondary: { background: 'var(--sb-n150)', color: 'var(--sb-brand)' },
-    outline: { borderColor: 'var(--sb-n200)', color: 'var(--sb-n700)' },
-    ghost: { color: 'var(--sb-n500)' },
-  }
-  return styles[variant]
-}
+  ${({ size }) => sizeStyles[size]}
+  ${({ variant }) => variantStyles[variant]}
+`
 
 export default function Button({
   variant = 'primary',
   size = 'md',
   fullWidth = false,
-  className = '',
-  style,
   children,
-  disabled,
   ...rest
 }: Props) {
   return (
-    <button
-      disabled={disabled}
-      className={`${base} ${variantBase[variant]} ${sizes[size]} ${fullWidth ? 'w-full' : ''} ${className}`}
-      style={{ ...variantStyle(variant, disabled), ...style }}
-      {...rest}
-    >
+    <StyledButton variant={variant} size={size} fullWidth={fullWidth} {...rest}>
       {children}
-    </button>
+    </StyledButton>
   )
 }

@@ -1,6 +1,10 @@
 'use client'
 
+import { css } from '@emotion/react'
+import styled from '@emotion/styled'
 import { type InputHTMLAttributes, type ReactNode } from 'react'
+
+import { colors, duration, radius } from '@/src/shared/const/tokens'
 
 type Props = InputHTMLAttributes<HTMLInputElement> & {
   label?: string
@@ -11,6 +15,76 @@ type Props = InputHTMLAttributes<HTMLInputElement> & {
   iconRight?: ReactNode
 }
 
+const Wrapper = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+`
+
+const Label = styled.label`
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 400;
+  letter-spacing: 0.07px;
+  color: ${colors.n500};
+`
+
+const Required = styled.span`
+  margin-left: 2px;
+  color: ${colors.negative};
+`
+
+const InputWrapper = styled.div<{ hasError: boolean; isDisabled: boolean }>`
+  display: flex;
+  align-items: center;
+  height: 40px;
+  padding: 0 16px;
+  gap: 8px;
+  border-radius: ${radius[6]};
+  border: 1px solid ${({ hasError }) => (hasError ? colors.negative : colors.n200)};
+  background: ${({ isDisabled }) => (isDisabled ? colors.n150 : colors.white)};
+  transition: border-color ${duration.fast};
+  cursor: ${({ isDisabled }) => (isDisabled ? 'not-allowed' : 'text')};
+
+  &:focus-within {
+    border-color: ${({ hasError }) => (hasError ? colors.negative : colors.brand)};
+  }
+`
+
+const IconSlot = styled.span`
+  flex-shrink: 0;
+  display: flex;
+  color: ${colors.n400};
+`
+
+const StyledInput = styled.input`
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 400;
+  letter-spacing: 0.07px;
+  color: ${colors.n900};
+  font-family: inherit;
+
+  &::placeholder {
+    color: ${colors.n400};
+  }
+  &:disabled {
+    cursor: not-allowed;
+  }
+`
+
+const HelperText = styled.p<{ isError?: boolean }>`
+  font-size: 11px;
+  line-height: 16px;
+  letter-spacing: 0.055px;
+  color: ${({ isError }) => (isError ? colors.negative : colors.n500)};
+`
+
 export default function Input({
   label,
   required,
@@ -18,68 +92,23 @@ export default function Input({
   helper,
   iconLeft,
   iconRight,
-  className = '',
   ...rest
 }: Props) {
-  const wrapperBorderStyle: React.CSSProperties = error
-    ? { borderColor: 'var(--sb-negative)' }
-    : { borderColor: 'var(--sb-n200)' }
-
-  const disabledWrapperStyle: React.CSSProperties = rest.disabled
-    ? { background: 'var(--sb-n150)', borderColor: 'var(--sb-n300)' }
-    : {}
-
   return (
-    <div className={`flex flex-col gap-1.5 ${className}`}>
+    <Wrapper>
       {label && (
-        <label
-          className="text-[14px] leading-[20px] font-normal tracking-[0.07px]"
-          style={{ color: 'var(--sb-n500)' }}
-        >
+        <Label>
           {label}
-          {required && (
-            <span className="ml-0.5" style={{ color: 'var(--sb-negative)' }}>
-              *
-            </span>
-          )}
-        </label>
+          {required && <Required>*</Required>}
+        </Label>
       )}
-      <div
-        className={`flex items-center h-10 px-4 gap-2 rounded-[6px] border bg-white transition-colors duration-[120ms] ${rest.disabled ? 'cursor-not-allowed' : ''}`}
-        style={{ ...wrapperBorderStyle, ...disabledWrapperStyle }}
-      >
-        {iconLeft && (
-          <span className="flex-shrink-0" style={{ color: 'var(--sb-n400)' }}>
-            {iconLeft}
-          </span>
-        )}
-        <input
-          className="flex-1 min-w-0 border-0 outline-none bg-transparent text-[14px] leading-[20px] font-normal tracking-[0.07px] disabled:cursor-not-allowed"
-          style={{ color: 'var(--sb-n900)' } as React.CSSProperties}
-          {...rest}
-        />
-        {iconRight && (
-          <span className="flex-shrink-0" style={{ color: 'var(--sb-n400)' }}>
-            {iconRight}
-          </span>
-        )}
-      </div>
-      {error && (
-        <p
-          className="text-[11px] leading-[16px] tracking-[0.055px]"
-          style={{ color: 'var(--sb-negative)' }}
-        >
-          {error}
-        </p>
-      )}
-      {!error && helper && (
-        <p
-          className="text-[11px] leading-[16px] tracking-[0.055px]"
-          style={{ color: 'var(--sb-n500)' }}
-        >
-          {helper}
-        </p>
-      )}
-    </div>
+      <InputWrapper hasError={!!error} isDisabled={!!rest.disabled}>
+        {iconLeft && <IconSlot>{iconLeft}</IconSlot>}
+        <StyledInput {...rest} />
+        {iconRight && <IconSlot>{iconRight}</IconSlot>}
+      </InputWrapper>
+      {error && <HelperText isError>{error}</HelperText>}
+      {!error && helper && <HelperText>{helper}</HelperText>}
+    </Wrapper>
   )
 }

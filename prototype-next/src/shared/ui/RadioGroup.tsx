@@ -1,5 +1,9 @@
 'use client'
 
+import styled from '@emotion/styled'
+
+import { colors, duration } from '@/src/shared/const/tokens'
+
 type Option = { value: string; label: string }
 
 type Props = {
@@ -12,6 +16,66 @@ type Props = {
   layout?: 'row' | 'col'
 }
 
+const Wrapper = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+`
+
+const FieldLabel = styled.p`
+  font-size: 14px;
+  line-height: 20px;
+  color: ${colors.n500};
+`
+
+const Required = styled.span`
+  margin-left: 2px;
+  color: ${colors.negative};
+`
+
+const OptionsRow = styled.div<{ layout: 'row' | 'col' }>`
+  display: flex;
+  flex-direction: ${({ layout }) => (layout === 'col' ? 'column' : 'row')};
+  flex-wrap: ${({ layout }) => (layout === 'col' ? 'nowrap' : 'wrap')};
+  gap: ${({ layout }) => (layout === 'col' ? '8px' : '12px')};
+`
+
+const OptionLabel = styled.label`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+`
+
+const RadioDot = styled.div<{ checked: boolean }>`
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  border: 2px solid ${({ checked }) => (checked ? colors.brand : colors.n300)};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color ${duration.fast};
+`
+
+const Dot = styled.div`
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: ${colors.brand};
+`
+
+const OptionText = styled.span`
+  font-size: 14px;
+  color: ${colors.n800};
+`
+
+const ErrorText = styled.p`
+  font-size: 11px;
+  color: ${colors.negative};
+`
+
 export default function RadioGroup({
   label,
   required,
@@ -22,47 +86,22 @@ export default function RadioGroup({
   layout = 'row',
 }: Props) {
   return (
-    <div className="flex flex-col gap-1.5">
+    <Wrapper>
       {label && (
-        <p className="text-[14px] leading-[20px]" style={{ color: 'var(--sb-n500)' }}>
+        <FieldLabel>
           {label}
-          {required && (
-            <span className="ml-0.5" style={{ color: 'var(--sb-negative)' }}>
-              *
-            </span>
-          )}
-        </p>
+          {required && <Required>*</Required>}
+        </FieldLabel>
       )}
-      <div className={`flex ${layout === 'col' ? 'flex-col gap-2' : 'flex-wrap gap-3'}`}>
+      <OptionsRow layout={layout}>
         {options.map((o) => (
-          <label key={o.value} className="flex items-center gap-2 cursor-pointer">
-            <div
-              onClick={() => onChange(o.value)}
-              className="w-[18px] h-[18px] rounded-full border-2 flex items-center justify-center transition-colors duration-[120ms] flex-shrink-0"
-              style={{ borderColor: value === o.value ? 'var(--sb-brand)' : 'var(--sb-n300)' }}
-            >
-              {value === o.value && (
-                <div
-                  className="w-[8px] h-[8px] rounded-full"
-                  style={{ background: 'var(--sb-brand)' }}
-                />
-              )}
-            </div>
-            <span
-              className="text-[14px]"
-              style={{ color: 'var(--sb-n800)' }}
-              onClick={() => onChange(o.value)}
-            >
-              {o.label}
-            </span>
-          </label>
+          <OptionLabel key={o.value} onClick={() => onChange(o.value)}>
+            <RadioDot checked={value === o.value}>{value === o.value && <Dot />}</RadioDot>
+            <OptionText>{o.label}</OptionText>
+          </OptionLabel>
         ))}
-      </div>
-      {error && (
-        <p className="text-[11px]" style={{ color: 'var(--sb-negative)' }}>
-          {error}
-        </p>
-      )}
-    </div>
+      </OptionsRow>
+      {error && <ErrorText>{error}</ErrorText>}
+    </Wrapper>
   )
 }
