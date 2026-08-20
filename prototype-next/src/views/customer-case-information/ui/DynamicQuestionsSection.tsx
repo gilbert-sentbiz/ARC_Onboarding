@@ -4,17 +4,8 @@ import styled from '@emotion/styled'
 import { ArrowLeft, ArrowRight, Plus, Trash } from '@phosphor-icons/react'
 import { useState, useEffect } from 'react'
 
-import {
-  validateKrBizRegNo,
-  validateKrCorpRegNo,
-  validateDate,
-  validatePhone,
-  validateEmail,
-  validateUrl,
-  normalizeUrl,
-  validateRatio,
-  validateCount,
-} from '@/src/features/case-validation/model/validators'
+import { createSecondIntakeSchema } from '@/src/features/case-validation/model/schemas'
+import { normalizeUrl } from '@/src/features/case-validation/model/validators'
 import { colors } from '@/src/shared/const/tokens'
 import type { QuestionRule } from '@/src/shared/type'
 import DateInput from '@/src/shared/ui/DateInput'
@@ -30,11 +21,7 @@ const DATE_QUESTION_IDS = new Set([
   'qe_fi_ubo_dob',
 ])
 
-const PHONE_IDS = new Set(['qe_corp_phone', 'qe_indiv_phone', 'qs_vnd_contact_phone'])
-const EMAIL_IDS = new Set(['qs_vnd_contact_email'])
 const URL_IDS = new Set(['qe_fi_website', 'qs_vnd_website'])
-const RATIO_IDS = new Set(['qe_fi_ubo_share'])
-const COUNT_IDS = new Set(['qe_corp_rep_count', 'qe_corp_bo_count'])
 
 function baseId(id: string): string {
   return id.replace(/_\d+$/, '')
@@ -454,57 +441,20 @@ export default function DynamicQuestionsSection({
     return values[q.showWhen.parentId] === q.showWhen.value
   }
 
-  function getFormatError(id: string, val: string): string | null {
-    if (!val) return null
-    const b = baseId(id)
-    if (isDateField(id)) return validateDate(val)
-    if (PHONE_IDS.has(b)) return validatePhone(val)
-    if (EMAIL_IDS.has(b)) return validateEmail(val)
-    if (URL_IDS.has(b)) return validateUrl(val)
-    if (RATIO_IDS.has(b)) return validateRatio(val)
-    if (COUNT_IDS.has(b)) return validateCount(val, 1)
-    if (isKR) {
-      if (b === 'qc_biz_reg_no') return validateKrBizRegNo(val)
-      if (b === 'qe_corp_reg_no') return validateKrCorpRegNo(val)
+  function validate(): boolean {
+    const schema = createSecondIntakeSchema(questions, isKR ?? false, repeatCounts)
+    const result = schema.safeParse(values)
+    if (result.success) {
+      setErrors({})
+      return true
     }
-    return null
-  }
-
-  function validate() {
     const errs: Record<string, string> = {}
-    function check(qs: QuestionRule[]) {
-      for (const q of qs) {
-        if (!isVisible(q)) continue
-        if (q.repeat) {
-          const instanceCount = 1 + (repeatCounts[q.id] ?? 0)
-          for (let i = 0; i < instanceCount; i++) {
-            for (const child of q.children ?? []) {
-              const repeatId = i === 0 ? child.id : `${child.id}_${i}`
-              if (child.isRequired && !values[repeatId]) {
-                errs[repeatId] = '필수 항목입니다'
-              } else {
-                const fmt = getFormatError(repeatId, values[repeatId] ?? '')
-                if (fmt) errs[repeatId] = fmt
-              }
-            }
-          }
-        } else {
-          if (q.isRequired && !values[q.id]) {
-            errs[q.id] = '필수 항목입니다'
-          } else {
-            const fmt = getFormatError(q.id, values[q.id] ?? '')
-            if (fmt) errs[q.id] = fmt
-          }
-          if (q.children?.length) {
-            const visible = q.children.filter((c) => isChildVisible(c))
-            check(visible)
-          }
-        }
-      }
+    for (const issue of result.error.issues) {
+      const key = issue.path[0] as string | undefined
+      if (key && !errs[key]) errs[key] = issue.message
     }
-    check(questions)
     setErrors(errs)
-    return Object.keys(errs).length === 0
+    return false
   }
 
   function handleSubmit() {

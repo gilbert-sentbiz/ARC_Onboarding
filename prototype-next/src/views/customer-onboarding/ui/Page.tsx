@@ -1,6 +1,7 @@
 'use client'
 
 import styled from '@emotion/styled'
+import { zodResolver } from '@hookform/resolvers/zod'
 import {
   ArrowLeft,
   ArrowRight,
@@ -13,48 +14,30 @@ import {
 } from '@phosphor-icons/react'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
+import { useForm, Controller } from 'react-hook-form'
 
 import { useSessionStore } from '@/src/entities/auth/model/sessionStore'
 import { useCaseStore } from '@/src/entities/case/model/caseStore'
 import { getRuleSet } from '@/src/entities/rule/model/ruleStore'
 import { saveFirstIntakeDraft } from '@/src/features/case-actions/api/caseService'
 import {
-  validatePhone,
-  validateEmail,
-  validateAmount,
-} from '@/src/features/case-validation/model/validators'
+  createFirstIntakeSchema,
+  type FirstIntakeData,
+} from '@/src/features/case-validation/model/schemas'
 import { colors } from '@/src/shared/const/tokens'
 import Button from '@/src/shared/ui/Button'
 import Input from '@/src/shared/ui/Input'
 import Select from '@/src/shared/ui/Select'
 import Textarea from '@/src/shared/ui/Textarea'
 
-type FormData = {
-  companyName: string
-  contactName: string
-  contactTitle: string
-  phone: string
-  email: string
-  services: string[]
-  collectionCountries: string[]
-  collectionOtherCountry: string
-  remittanceFrom: string
-  remittanceFromOther: string
-  remittanceTo: string[]
-  remittanceToOther: string
-  businessType: string
-  foundingCountry: string
-  monthlyVolume: string
-  monthlyVolumeCurrency: string
-  monthlyVolumeCurrencyOther: string
-  referralSource: string
-  additionalNote: string
-  agreed: boolean
+function formatPhone(raw: string): string {
+  return raw.replace(/[^0-9+\-\s()]/g, '')
 }
 
-type Errors = Partial<
-  Record<keyof FormData | 'services' | 'collectionCountries' | 'remittanceTo', string>
->
+function formatAmount(raw: string): string {
+  const digits = raw.replace(/,/g, '').replace(/\D/g, '')
+  return digits.replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+}
 
 const REMITTANCE_COUNTRIES = [
   { value: 'KR', label: '한국' },
@@ -69,7 +52,27 @@ const REMITTANCE_COUNTRIES = [
   { value: 'ID', label: '인도네시아' },
 ]
 
-const INITIAL: FormData = {
+const REFERRAL_OPTIONS = [
+  { value: 'search', label: '검색 (네이버·구글 등)' },
+  { value: 'referral', label: '지인 추천' },
+  { value: 'sns', label: 'SNS' },
+  { value: 'news', label: '뉴스 기사' },
+  { value: 'other', label: '기타' },
+]
+
+const CURRENCY_OPTIONS = [
+  { value: 'USD', label: 'USD' },
+  { value: 'EUR', label: 'EUR' },
+  { value: 'KRW', label: 'KRW' },
+  { value: 'CNY', label: 'CNY' },
+  { value: 'JPY', label: 'JPY' },
+  { value: 'VND', label: 'VND' },
+  { value: 'OTHER', label: '기타' },
+]
+
+const COUNTRY_NAME: Record<string, string> = { KR: '한국', VN: '베트남' }
+
+const INITIAL: FirstIntakeData = {
   companyName: '',
   contactName: '',
   contactTitle: '',
@@ -91,33 +94,6 @@ const INITIAL: FormData = {
   additionalNote: '',
   agreed: false,
 }
-
-function formatPhone(raw: string): string {
-  return raw.replace(/[^0-9+\-\s()]/g, '')
-}
-
-function formatAmount(raw: string): string {
-  const digits = raw.replace(/,/g, '').replace(/\D/g, '')
-  return digits.replace(/\B(?=(\d{3})+(?!\d))/g, ',')
-}
-
-const REFERRAL_OPTIONS = [
-  { value: 'search', label: '검색 (네이버·구글 등)' },
-  { value: 'referral', label: '지인 추천' },
-  { value: 'sns', label: 'SNS' },
-  { value: 'news', label: '뉴스 기사' },
-  { value: 'other', label: '기타' },
-]
-
-const CURRENCY_OPTIONS = [
-  { value: 'USD', label: 'USD' },
-  { value: 'EUR', label: 'EUR' },
-  { value: 'KRW', label: 'KRW' },
-  { value: 'CNY', label: 'CNY' },
-  { value: 'JPY', label: 'JPY' },
-  { value: 'VND', label: 'VND' },
-  { value: 'OTHER', label: '기타' },
-]
 
 // ── Styled components ──────────────────────────────────────────────────────
 
@@ -522,18 +498,11 @@ export default function CustomerOnboardingPage() {
   })
   const draftData =
     existingCase?.firstIntake?.status === 'draft'
-      ? (existingCase.firstIntake.data as Partial<FormData>)
+      ? (existingCase.firstIntake.data as Partial<FirstIntakeData>)
       : null
 
   const [step, setStep] = useState(0)
-  const [data, setData] = useState<FormData>(() =>
-    draftData
-      ? { ...INITIAL, ...draftData, agreed: false }
-      : { ...INITIAL, email: session?.email ?? '' }
-  )
-  const [errors, setErrors] = useState<Errors>({})
   const [draftSaved, setDraftSaved] = useState(false)
-
   const [fcType, setFcType] = useState<'korean' | 'foreign' | ''>(
     draftData?.foundingCountry === 'KR' ? 'korean' : draftData?.foundingCountry ? 'foreign' : ''
   )
@@ -543,104 +512,34 @@ export default function CustomerOnboardingPage() {
       : ''
   )
 
-  function set<K extends keyof FormData>(key: K, value: FormData[K]) {
-    setData((prev) => ({ ...prev, [key]: value }))
-    setErrors((prev) => ({ ...prev, [key]: undefined }))
-  }
+  const { control, trigger, handleSubmit, setValue, watch, getValues } = useForm<FirstIntakeData>({
+    defaultValues: draftData
+      ? { ...INITIAL, ...draftData, agreed: false }
+      : { ...INITIAL, email: session?.email ?? '' },
+    resolver: zodResolver(createFirstIntakeSchema()),
+    mode: 'onSubmit',
+  })
 
-  function toggleService(value: string) {
-    setData((prev) => {
-      const nextServices = prev.services.includes(value)
-        ? prev.services.filter((s) => s !== value)
-        : [...prev.services, value]
-      const collectionOn = nextServices.includes('collection')
-      return {
-        ...prev,
-        services: nextServices,
-        collectionCountries:
-          value === 'collection' && prev.services.includes('collection')
-            ? []
-            : prev.collectionCountries,
-        ...(collectionOn ? { businessType: 'financial' } : {}),
-      }
-    })
-    setErrors((prev) => ({ ...prev, services: undefined }))
-  }
+  const services = watch('services')
+  const collectionCountries = watch('collectionCountries')
+  const remittanceTo = watch('remittanceTo')
+  const remittanceFrom = watch('remittanceFrom')
+  const monthlyVolumeCurrency = watch('monthlyVolumeCurrency')
 
-  function toggleCollectionCountry(value: string) {
-    setData((prev) => ({
-      ...prev,
-      collectionCountries: prev.collectionCountries.includes(value)
-        ? prev.collectionCountries.filter((c) => c !== value)
-        : [...prev.collectionCountries, value],
-    }))
-    setErrors((prev) => ({ ...prev, collectionCountries: undefined }))
-  }
-
-  function validateStep(): boolean {
-    const next: Errors = {}
-
-    if (step === 0) {
-      if (!data.companyName.trim()) next.companyName = '필수 항목입니다.'
-      if (!data.contactName.trim()) next.contactName = '필수 항목입니다.'
-      if (!data.contactTitle.trim()) next.contactTitle = '필수 항목입니다.'
-      if (!data.phone.trim()) next.phone = '필수 항목입니다.'
-      else {
-        const e = validatePhone(data.phone)
-        if (e) next.phone = e
-      }
-      if (!data.email.trim()) next.email = '필수 항목입니다.'
-      else {
-        const e = validateEmail(data.email)
-        if (e) next.email = e
-      }
-      if (data.services.length === 0) next.services = '서비스를 하나 이상 선택해주세요.'
-      if (data.services.includes('collection') && data.collectionCountries.length === 0)
-        next.collectionCountries = '수금 국가를 하나 이상 선택해주세요.'
-      if (data.collectionCountries.includes('OTHER') && !data.collectionOtherCountry.trim())
-        next.collectionOtherCountry = '수금 국가를 직접 입력해주세요.'
-      if (data.services.includes('remittance')) {
-        const fromVal =
-          data.remittanceFrom === '__OTHER__' ? data.remittanceFromOther : data.remittanceFrom
-        if (!fromVal.trim()) next.remittanceFrom = '필수 항목입니다.'
-        if (data.remittanceTo.length === 0)
-          next.remittanceTo = '도착 국가를 하나 이상 선택해주세요.'
-        if (data.remittanceTo.includes('__OTHER__') && !data.remittanceToOther.trim())
-          next.remittanceToOther = '도착 국가를 직접 입력해주세요.'
-      }
+  function handleServiceToggle(currentServices: string[], value: string): string[] {
+    const next = currentServices.includes(value)
+      ? currentServices.filter((s) => s !== value)
+      : [...currentServices, value]
+    if (value === 'collection' && currentServices.includes('collection')) {
+      setValue('collectionCountries', [])
     }
-
-    if (step === 1) {
-      if (!data.businessType) next.businessType = '사업자 유형을 선택해주세요.'
-      if (!data.foundingCountry.trim())
-        next.foundingCountry =
-          fcType === 'foreign' ? '국가명을 입력해주세요.' : '설립 국가를 선택해주세요.'
-      if (!data.monthlyVolume.trim()) next.monthlyVolume = '필수 항목입니다.'
-      else {
-        const e = validateAmount(data.monthlyVolume)
-        if (e) next.monthlyVolume = e
-      }
-      if (data.monthlyVolumeCurrency === 'OTHER' && !data.monthlyVolumeCurrencyOther.trim())
-        next.monthlyVolumeCurrencyOther = '통화를 직접 입력해주세요.'
-      if (!data.referralSource) next.referralSource = '선택해주세요.'
-      if (!data.agreed) next.agreed = '동의가 필요합니다.'
+    if (!currentServices.includes('collection') && next.includes('collection')) {
+      setValue('businessType', 'financial')
     }
-
-    setErrors(next)
-    return Object.keys(next).length === 0
+    return next
   }
 
-  function handleNext() {
-    if (!validateStep()) return
-    if (step === 0) {
-      setStep(1)
-      window.scrollTo({ top: 0, behavior: 'smooth' })
-    } else {
-      handleSubmit()
-    }
-  }
-
-  function toSaveData() {
+  function toSavePayload(data: FirstIntakeData) {
     const fromVal =
       data.remittanceFrom === '__OTHER__' ? data.remittanceFromOther : data.remittanceFrom
     const toArr = [
@@ -654,16 +553,40 @@ export default function CustomerOnboardingPage() {
 
   function handleDraftSave() {
     if (!session) return
-    saveFirstIntakeDraft(toSaveData(), session)
+    saveFirstIntakeDraft(toSavePayload(getValues()), session)
     setDraftSaved(true)
     setTimeout(() => setDraftSaved(false), 2000)
   }
 
-  function handleSubmit() {
+  function onSubmit(data: FirstIntakeData) {
     if (!session) return
-    const savedCase = saveFirstIntakeDraft(toSaveData(), session)
+    const savedCase = saveFirstIntakeDraft(toSavePayload(data), session)
     useSessionStore.getState().setSession({ ...session, name: data.contactName })
     router.push(`/customer/case/review/first?id=${savedCase.id}`)
+  }
+
+  async function handleNext() {
+    if (step === 0) {
+      const valid = await trigger([
+        'companyName',
+        'contactName',
+        'contactTitle',
+        'phone',
+        'email',
+        'services',
+        'collectionCountries',
+        'collectionOtherCountry',
+        'remittanceFrom',
+        'remittanceFromOther',
+        'remittanceTo',
+        'remittanceToOther',
+      ])
+      if (!valid) return
+      setStep(1)
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    } else {
+      handleSubmit(onSubmit)()
+    }
   }
 
   return (
@@ -703,56 +626,85 @@ export default function CustomerOnboardingPage() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
             <Section>
               <SectionLabel>담당자 정보</SectionLabel>
-              <Input
-                label="회사명"
-                required
-                placeholder="예: 주식회사 센트비"
-                value={data.companyName}
-                onChange={(e) => set('companyName', e.target.value)}
-                error={errors.companyName}
+              <Controller
+                control={control}
+                name="companyName"
+                render={({ field, fieldState }) => (
+                  <Input
+                    label="회사명"
+                    required
+                    placeholder="예: 주식회사 센트비"
+                    value={field.value}
+                    onChange={(e) => field.onChange(e.target.value)}
+                    onBlur={field.onBlur}
+                    error={fieldState.error?.message}
+                  />
+                )}
               />
               <Grid2>
-                <Input
-                  label="담당자 이름"
-                  required
-                  placeholder="홍길동"
-                  value={data.contactName}
-                  onChange={(e) => set('contactName', e.target.value)}
-                  error={errors.contactName}
+                <Controller
+                  control={control}
+                  name="contactName"
+                  render={({ field, fieldState }) => (
+                    <Input
+                      label="담당자 이름"
+                      required
+                      placeholder="홍길동"
+                      value={field.value}
+                      onChange={(e) => field.onChange(e.target.value)}
+                      onBlur={field.onBlur}
+                      error={fieldState.error?.message}
+                    />
+                  )}
                 />
-                <Input
-                  label="직함"
-                  required
-                  placeholder="대리, 과장 등"
-                  value={data.contactTitle}
-                  onChange={(e) => set('contactTitle', e.target.value)}
-                  error={errors.contactTitle}
+                <Controller
+                  control={control}
+                  name="contactTitle"
+                  render={({ field, fieldState }) => (
+                    <Input
+                      label="직함"
+                      required
+                      placeholder="대리, 과장 등"
+                      value={field.value}
+                      onChange={(e) => field.onChange(e.target.value)}
+                      onBlur={field.onBlur}
+                      error={fieldState.error?.message}
+                    />
+                  )}
                 />
               </Grid2>
               <Grid2>
-                <Input
-                  label="연락처"
-                  required
-                  type="tel"
-                  placeholder="+82-10-0000-0000"
-                  value={data.phone}
-                  onChange={(e) => set('phone', formatPhone(e.target.value))}
-                  onBlur={() => {
-                    if (data.phone) {
-                      const e = validatePhone(data.phone)
-                      if (e) setErrors((prev) => ({ ...prev, phone: e }))
-                    }
-                  }}
-                  error={errors.phone}
+                <Controller
+                  control={control}
+                  name="phone"
+                  render={({ field, fieldState }) => (
+                    <Input
+                      label="연락처"
+                      required
+                      type="tel"
+                      placeholder="+82-10-0000-0000"
+                      value={field.value}
+                      onChange={(e) => field.onChange(formatPhone(e.target.value))}
+                      onBlur={field.onBlur}
+                      error={fieldState.error?.message}
+                    />
+                  )}
                 />
-                <Input
-                  label="이메일"
-                  required
-                  type="email"
-                  placeholder="example@company.com"
-                  value={data.email}
-                  onChange={(e) => set('email', e.target.value)}
-                  error={errors.email}
+                <Controller
+                  control={control}
+                  name="email"
+                  render={({ field, fieldState }) => (
+                    <Input
+                      label="이메일"
+                      required
+                      type="email"
+                      placeholder="example@company.com"
+                      value={field.value}
+                      onChange={(e) => field.onChange(e.target.value)}
+                      onBlur={field.onBlur}
+                      error={fieldState.error?.message}
+                    />
+                  )}
                 />
               </Grid2>
             </Section>
@@ -764,25 +716,32 @@ export default function CustomerOnboardingPage() {
                 <SectionLabel>서비스 선택</SectionLabel>
                 <span style={{ fontSize: 12, color: colors.n400 }}>(중복 선택 가능)</span>
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                <OptionCard
-                  icon={<PaperPlaneRight size={20} weight="fill" />}
-                  label="해외 송금"
-                  desc="해외 거래처로 외화를 송금합니다"
-                  selected={data.services.includes('remittance')}
-                  onClick={() => toggleService('remittance')}
-                />
-                <OptionCard
-                  icon={<HandCoins size={20} weight="fill" />}
-                  label="수금"
-                  desc="원화 또는 외화로 대금을 수금합니다"
-                  selected={data.services.includes('collection')}
-                  onClick={() => toggleService('collection')}
-                />
-              </div>
-              {errors.services && <ErrorText>{errors.services}</ErrorText>}
 
-              {data.services.includes('collection') && (
+              <Controller
+                control={control}
+                name="services"
+                render={({ field, fieldState }) => (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                    <OptionCard
+                      icon={<PaperPlaneRight size={20} weight="fill" />}
+                      label="해외 송금"
+                      desc="해외 거래처로 외화를 송금합니다"
+                      selected={field.value.includes('remittance')}
+                      onClick={() => field.onChange(handleServiceToggle(field.value, 'remittance'))}
+                    />
+                    <OptionCard
+                      icon={<HandCoins size={20} weight="fill" />}
+                      label="수금"
+                      desc="원화 또는 외화로 대금을 수금합니다"
+                      selected={field.value.includes('collection')}
+                      onClick={() => field.onChange(handleServiceToggle(field.value, 'collection'))}
+                    />
+                    {fieldState.error && <ErrorText>{fieldState.error.message}</ErrorText>}
+                  </div>
+                )}
+              />
+
+              {services.includes('collection') && (
                 <ServiceBox>
                   <p style={{ fontSize: 13, fontWeight: 500, color: colors.n700, margin: 0 }}>
                     수금 국가 <span style={{ color: colors.negative }}>*</span>
@@ -790,10 +749,11 @@ export default function CustomerOnboardingPage() {
                       (중복 선택 가능)
                     </span>
                   </p>
-                  <ChipRow>
-                    {(() => {
+                  <Controller
+                    control={control}
+                    name="collectionCountries"
+                    render={({ field, fieldState }) => {
                       const rs = getRuleSet()
-                      const COUNTRY_NAME: Record<string, string> = { KR: '한국', VN: '베트남' }
                       const opts = [
                         ...rs.serviceClassificationRules
                           .filter(
@@ -807,61 +767,94 @@ export default function CustomerOnboardingPage() {
                           })),
                         { value: 'OTHER', label: '기타' },
                       ]
-                      return opts.map((c) => (
-                        <ToggleChip
-                          key={c.value}
-                          label={c.label}
-                          selected={data.collectionCountries.includes(c.value)}
-                          onClick={() => toggleCollectionCountry(c.value)}
+                      return (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                          <ChipRow>
+                            {opts.map((c) => (
+                              <ToggleChip
+                                key={c.value}
+                                label={c.label}
+                                selected={field.value.includes(c.value)}
+                                onClick={() => {
+                                  const next = field.value.includes(c.value)
+                                    ? field.value.filter((v) => v !== c.value)
+                                    : [...field.value, c.value]
+                                  field.onChange(next)
+                                }}
+                              />
+                            ))}
+                          </ChipRow>
+                          {fieldState.error && <ErrorText>{fieldState.error.message}</ErrorText>}
+                        </div>
+                      )
+                    }}
+                  />
+                  {collectionCountries.includes('OTHER') && (
+                    <Controller
+                      control={control}
+                      name="collectionOtherCountry"
+                      render={({ field, fieldState }) => (
+                        <Input
+                          placeholder="수금 국가를 직접 입력해주세요"
+                          value={field.value}
+                          onChange={(e) => field.onChange(e.target.value)}
+                          onBlur={field.onBlur}
+                          error={fieldState.error?.message}
                         />
-                      ))
-                    })()}
-                  </ChipRow>
-                  {data.collectionCountries.includes('OTHER') && (
-                    <Input
-                      placeholder="수금 국가를 직접 입력해주세요"
-                      value={data.collectionOtherCountry}
-                      onChange={(e) => set('collectionOtherCountry', e.target.value)}
+                      )}
                     />
-                  )}
-                  {errors.collectionCountries && (
-                    <ErrorText>{errors.collectionCountries}</ErrorText>
                   )}
                 </ServiceBox>
               )}
 
-              {data.services.includes('remittance') && (
+              {services.includes('remittance') && (
                 <ServiceBox>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                     <p style={{ fontSize: 13, fontWeight: 500, color: colors.n700, margin: 0 }}>
                       송금 출발 국가 <span style={{ color: colors.negative }}>*</span>
                     </p>
-                    <ChipRow>
-                      {REMITTANCE_COUNTRIES.map((c) => (
-                        <ToggleChip
-                          key={c.value}
-                          label={c.label}
-                          selected={data.remittanceFrom === c.value}
-                          onClick={() => {
-                            set('remittanceFrom', c.value)
-                            set('remittanceFromOther', '')
-                          }}
-                        />
-                      ))}
-                      <ToggleChip
-                        label="기타"
-                        selected={data.remittanceFrom === '__OTHER__'}
-                        onClick={() => set('remittanceFrom', '__OTHER__')}
-                      />
-                    </ChipRow>
-                    {data.remittanceFrom === '__OTHER__' && (
-                      <Input
-                        placeholder="출발 국가를 직접 입력해주세요"
-                        value={data.remittanceFromOther}
-                        onChange={(e) => set('remittanceFromOther', e.target.value)}
+                    <Controller
+                      control={control}
+                      name="remittanceFrom"
+                      render={({ field, fieldState }) => (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                          <ChipRow>
+                            {REMITTANCE_COUNTRIES.map((c) => (
+                              <ToggleChip
+                                key={c.value}
+                                label={c.label}
+                                selected={field.value === c.value}
+                                onClick={() => {
+                                  field.onChange(c.value)
+                                  setValue('remittanceFromOther', '')
+                                }}
+                              />
+                            ))}
+                            <ToggleChip
+                              label="기타"
+                              selected={field.value === '__OTHER__'}
+                              onClick={() => field.onChange('__OTHER__')}
+                            />
+                          </ChipRow>
+                          {fieldState.error && <ErrorText>{fieldState.error.message}</ErrorText>}
+                        </div>
+                      )}
+                    />
+                    {remittanceFrom === '__OTHER__' && (
+                      <Controller
+                        control={control}
+                        name="remittanceFromOther"
+                        render={({ field, fieldState }) => (
+                          <Input
+                            placeholder="출발 국가를 직접 입력해주세요"
+                            value={field.value}
+                            onChange={(e) => field.onChange(e.target.value)}
+                            onBlur={field.onBlur}
+                            error={fieldState.error?.message}
+                          />
+                        )}
                       />
                     )}
-                    {errors.remittanceFrom && <ErrorText>{errors.remittanceFrom}</ErrorText>}
                   </div>
 
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -871,45 +864,57 @@ export default function CustomerOnboardingPage() {
                         (중복 선택 가능)
                       </span>
                     </p>
-                    <ChipRow>
-                      {REMITTANCE_COUNTRIES.map((c) => (
-                        <ToggleChip
-                          key={c.value}
-                          label={c.label}
-                          selected={data.remittanceTo.includes(c.value)}
-                          onClick={() => {
-                            set(
-                              'remittanceTo',
-                              data.remittanceTo.includes(c.value)
-                                ? data.remittanceTo.filter((v) => v !== c.value)
-                                : [...data.remittanceTo, c.value]
-                            )
-                          }}
-                        />
-                      ))}
-                      <ToggleChip
-                        label="기타"
-                        selected={data.remittanceTo.includes('__OTHER__')}
-                        onClick={() => {
-                          set(
-                            'remittanceTo',
-                            data.remittanceTo.includes('__OTHER__')
-                              ? data.remittanceTo.filter((v) => v !== '__OTHER__')
-                              : [...data.remittanceTo, '__OTHER__']
-                          )
-                          if (data.remittanceTo.includes('__OTHER__')) set('remittanceToOther', '')
-                        }}
-                      />
-                    </ChipRow>
-                    {data.remittanceTo.includes('__OTHER__') && (
-                      <Input
-                        placeholder="도착 국가를 직접 입력해주세요"
-                        value={data.remittanceToOther}
-                        onChange={(e) => set('remittanceToOther', e.target.value)}
-                        error={errors.remittanceToOther}
+                    <Controller
+                      control={control}
+                      name="remittanceTo"
+                      render={({ field, fieldState }) => (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                          <ChipRow>
+                            {REMITTANCE_COUNTRIES.map((c) => (
+                              <ToggleChip
+                                key={c.value}
+                                label={c.label}
+                                selected={field.value.includes(c.value)}
+                                onClick={() => {
+                                  const next = field.value.includes(c.value)
+                                    ? field.value.filter((v) => v !== c.value)
+                                    : [...field.value, c.value]
+                                  field.onChange(next)
+                                }}
+                              />
+                            ))}
+                            <ToggleChip
+                              label="기타"
+                              selected={field.value.includes('__OTHER__')}
+                              onClick={() => {
+                                if (field.value.includes('__OTHER__')) {
+                                  field.onChange(field.value.filter((v) => v !== '__OTHER__'))
+                                  setValue('remittanceToOther', '')
+                                } else {
+                                  field.onChange([...field.value, '__OTHER__'])
+                                }
+                              }}
+                            />
+                          </ChipRow>
+                          {fieldState.error && <ErrorText>{fieldState.error.message}</ErrorText>}
+                        </div>
+                      )}
+                    />
+                    {remittanceTo.includes('__OTHER__') && (
+                      <Controller
+                        control={control}
+                        name="remittanceToOther"
+                        render={({ field, fieldState }) => (
+                          <Input
+                            placeholder="도착 국가를 직접 입력해주세요"
+                            value={field.value}
+                            onChange={(e) => field.onChange(e.target.value)}
+                            onBlur={field.onBlur}
+                            error={fieldState.error?.message}
+                          />
+                        )}
                       />
                     )}
-                    {errors.remittanceTo && <ErrorText>{errors.remittanceTo}</ErrorText>}
                   </div>
                 </ServiceBox>
               )}
@@ -922,79 +927,91 @@ export default function CustomerOnboardingPage() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
             <Section>
               <SectionLabel>사업자 정보</SectionLabel>
-              {data.services.includes('collection') && (
+              {services.includes('collection') && (
                 <InfoNote>
                   수금 서비스 이용 시 사업자 유형이{' '}
                   <strong style={{ color: colors.n800 }}>금융기관(PG사·PSP·MSB 등)</strong>
                   으로 자동 설정됩니다.
                 </InfoNote>
               )}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                <OptionCard
-                  icon={<Buildings size={20} weight="fill" />}
-                  label="법인 사업자"
-                  desc="주식회사, 유한회사 등 법인 형태의 사업자"
-                  selected={data.businessType === 'corporation'}
-                  onClick={() => set('businessType', 'corporation')}
-                  disabled={data.services.includes('collection')}
-                />
-                <OptionCard
-                  icon={<User size={20} weight="fill" />}
-                  label="개인 사업자"
-                  desc="개인 명의로 사업자등록을 한 사업자"
-                  selected={data.businessType === 'individual'}
-                  onClick={() => set('businessType', 'individual')}
-                  disabled={data.services.includes('collection')}
-                />
-                <OptionCard
-                  icon={<Bank size={20} weight="fill" />}
-                  label="금융기관(PG사·PSP·MSB 등)"
-                  desc="은행, 보험, 증권 등 금융 관련 업종"
-                  selected={data.businessType === 'financial'}
-                  onClick={() => set('businessType', 'financial')}
-                  disabled={data.services.includes('collection')}
-                />
-              </div>
-              {errors.businessType && <ErrorText>{errors.businessType}</ErrorText>}
+              <Controller
+                control={control}
+                name="businessType"
+                render={({ field, fieldState }) => (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                    <OptionCard
+                      icon={<Buildings size={20} weight="fill" />}
+                      label="법인 사업자"
+                      desc="주식회사, 유한회사 등 법인 형태의 사업자"
+                      selected={field.value === 'corporation'}
+                      onClick={() => field.onChange('corporation')}
+                      disabled={services.includes('collection')}
+                    />
+                    <OptionCard
+                      icon={<User size={20} weight="fill" />}
+                      label="개인 사업자"
+                      desc="개인 명의로 사업자등록을 한 사업자"
+                      selected={field.value === 'individual'}
+                      onClick={() => field.onChange('individual')}
+                      disabled={services.includes('collection')}
+                    />
+                    <OptionCard
+                      icon={<Bank size={20} weight="fill" />}
+                      label="금융기관(PG사·PSP·MSB 등)"
+                      desc="은행, 보험, 증권 등 금융 관련 업종"
+                      selected={field.value === 'financial'}
+                      onClick={() => field.onChange('financial')}
+                      disabled={services.includes('collection')}
+                    />
+                    {fieldState.error && <ErrorText>{fieldState.error.message}</ErrorText>}
+                  </div>
+                )}
+              />
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                <FieldLabel>
-                  법인·사업자 설립 국가 <span style={{ color: colors.negative }}>*</span>
-                </FieldLabel>
-                <OriginToggleRow>
-                  {(['korean', 'foreign'] as const).map((type) => (
-                    <OriginToggleBtn
-                      key={type}
-                      type="button"
-                      selected={fcType === type}
-                      onClick={() => {
-                        setFcType(type)
-                        if (type === 'korean') {
-                          set('foundingCountry', 'KR')
-                        } else {
-                          set('foundingCountry', foreignCountryText)
-                        }
-                      }}
-                    >
-                      {type === 'korean' ? '한국' : '해외'}
-                    </OriginToggleBtn>
-                  ))}
-                </OriginToggleRow>
-                {fcType === 'foreign' && (
-                  <Input
-                    placeholder="국가명 입력 (예: 미국)"
-                    value={foreignCountryText}
-                    onChange={(e) => {
-                      setForeignCountryText(e.target.value)
-                      set('foundingCountry', e.target.value)
-                    }}
-                    error={errors.foundingCountry}
-                  />
+              <Controller
+                control={control}
+                name="foundingCountry"
+                render={({ field, fieldState }) => (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    <FieldLabel>
+                      법인·사업자 설립 국가 <span style={{ color: colors.negative }}>*</span>
+                    </FieldLabel>
+                    <OriginToggleRow>
+                      {(['korean', 'foreign'] as const).map((type) => (
+                        <OriginToggleBtn
+                          key={type}
+                          type="button"
+                          selected={fcType === type}
+                          onClick={() => {
+                            setFcType(type)
+                            if (type === 'korean') {
+                              field.onChange('KR')
+                            } else {
+                              field.onChange(foreignCountryText)
+                            }
+                          }}
+                        >
+                          {type === 'korean' ? '한국' : '해외'}
+                        </OriginToggleBtn>
+                      ))}
+                    </OriginToggleRow>
+                    {fcType === 'foreign' && (
+                      <Input
+                        placeholder="국가명 입력 (예: 미국)"
+                        value={foreignCountryText}
+                        onChange={(e) => {
+                          setForeignCountryText(e.target.value)
+                          field.onChange(e.target.value)
+                        }}
+                        error={fieldState.error?.message}
+                      />
+                    )}
+                    {fcType !== 'foreign' && fieldState.error && (
+                      <ErrorText>{fieldState.error.message}</ErrorText>
+                    )}
+                  </div>
                 )}
-                {fcType !== 'foreign' && errors.foundingCountry && (
-                  <ErrorText>{errors.foundingCountry}</ErrorText>
-                )}
-              </div>
+              />
             </Section>
 
             <Separator />
@@ -1007,30 +1024,52 @@ export default function CustomerOnboardingPage() {
                 </FieldLabel>
                 <VolumeRow>
                   <FlexInputWrap>
-                    <Input
-                      inputMode="numeric"
-                      placeholder="0"
-                      value={data.monthlyVolume}
-                      onChange={(e) => set('monthlyVolume', formatAmount(e.target.value))}
-                      error={errors.monthlyVolume}
+                    <Controller
+                      control={control}
+                      name="monthlyVolume"
+                      render={({ field, fieldState }) => (
+                        <Input
+                          inputMode="numeric"
+                          placeholder="0"
+                          value={field.value}
+                          onChange={(e) => field.onChange(formatAmount(e.target.value))}
+                          onBlur={field.onBlur}
+                          error={fieldState.error?.message}
+                        />
+                      )}
                     />
                   </FlexInputWrap>
                   <FixedSelectWrap>
-                    <Select
-                      options={CURRENCY_OPTIONS}
-                      value={data.monthlyVolumeCurrency}
-                      onChange={(e) => {
-                        set('monthlyVolumeCurrency', e.target.value)
-                        if (e.target.value !== 'OTHER') set('monthlyVolumeCurrencyOther', '')
-                      }}
+                    <Controller
+                      control={control}
+                      name="monthlyVolumeCurrency"
+                      render={({ field }) => (
+                        <Select
+                          options={CURRENCY_OPTIONS}
+                          value={field.value}
+                          onChange={(e) => {
+                            field.onChange(e.target.value)
+                            if (e.target.value !== 'OTHER')
+                              setValue('monthlyVolumeCurrencyOther', '')
+                          }}
+                        />
+                      )}
                     />
                   </FixedSelectWrap>
                 </VolumeRow>
-                {data.monthlyVolumeCurrency === 'OTHER' && (
-                  <Input
-                    placeholder="통화를 직접 입력해주세요 (예: SGD)"
-                    value={data.monthlyVolumeCurrencyOther}
-                    onChange={(e) => set('monthlyVolumeCurrencyOther', e.target.value)}
+                {monthlyVolumeCurrency === 'OTHER' && (
+                  <Controller
+                    control={control}
+                    name="monthlyVolumeCurrencyOther"
+                    render={({ field, fieldState }) => (
+                      <Input
+                        placeholder="통화를 직접 입력해주세요 (예: SGD)"
+                        value={field.value}
+                        onChange={(e) => field.onChange(e.target.value)}
+                        onBlur={field.onBlur}
+                        error={fieldState.error?.message}
+                      />
+                    )}
                   />
                 )}
               </div>
@@ -1040,24 +1079,33 @@ export default function CustomerOnboardingPage() {
 
             <Section>
               <SectionLabel>추가 정보</SectionLabel>
-              <Select
-                label="센트비를 어떻게 알게 되셨나요?"
-                required
-                options={REFERRAL_OPTIONS}
-                placeholder="선택해주세요"
-                value={data.referralSource}
-                onChange={(e) => {
-                  set('referralSource', e.target.value)
-                  setErrors((prev) => ({ ...prev, referralSource: undefined }))
-                }}
-                error={errors.referralSource}
+              <Controller
+                control={control}
+                name="referralSource"
+                render={({ field, fieldState }) => (
+                  <Select
+                    label="센트비를 어떻게 알게 되셨나요?"
+                    required
+                    options={REFERRAL_OPTIONS}
+                    placeholder="선택해주세요"
+                    value={field.value}
+                    onChange={(e) => field.onChange(e.target.value)}
+                    error={fieldState.error?.message}
+                  />
+                )}
               />
-              <Textarea
-                label="추가 문의사항 (선택)"
-                placeholder="궁금하신 내용이 있으면 자유롭게 입력해주세요."
-                value={data.additionalNote}
-                onChange={(e) => set('additionalNote', e.target.value)}
-                rows={3}
+              <Controller
+                control={control}
+                name="additionalNote"
+                render={({ field }) => (
+                  <Textarea
+                    label="추가 문의사항 (선택)"
+                    placeholder="궁금하신 내용이 있으면 자유롭게 입력해주세요."
+                    value={field.value}
+                    onChange={(e) => field.onChange(e.target.value)}
+                    rows={3}
+                  />
+                )}
               />
             </Section>
 
@@ -1067,23 +1115,28 @@ export default function CustomerOnboardingPage() {
                 borderTop: `1px solid ${colors.n100}`,
               }}
             >
-              <CheckboxLabel
-                onClick={() => {
-                  set('agreed', !data.agreed)
-                  setErrors((prev) => ({ ...prev, agreed: undefined }))
-                }}
-              >
-                <CheckboxBox checked={data.agreed} hasError={!!errors.agreed}>
-                  {data.agreed && <Check size={12} weight="bold" color={colors.white} />}
-                </CheckboxBox>
-                <CheckboxText hasError={!!errors.agreed}>
-                  <strong>개인정보 수집 및 이용</strong>에 동의합니다.{' '}
-                  <span style={{ color: colors.negative }}>*</span>
-                </CheckboxText>
-              </CheckboxLabel>
-              {errors.agreed && (
-                <ErrorText style={{ marginTop: 6, marginLeft: 30 }}>{errors.agreed}</ErrorText>
-              )}
+              <Controller
+                control={control}
+                name="agreed"
+                render={({ field, fieldState }) => (
+                  <>
+                    <CheckboxLabel onClick={() => field.onChange(!field.value)}>
+                      <CheckboxBox checked={field.value} hasError={!!fieldState.error}>
+                        {field.value && <Check size={12} weight="bold" color={colors.white} />}
+                      </CheckboxBox>
+                      <CheckboxText hasError={!!fieldState.error}>
+                        <strong>개인정보 수집 및 이용</strong>에 동의합니다.{' '}
+                        <span style={{ color: colors.negative }}>*</span>
+                      </CheckboxText>
+                    </CheckboxLabel>
+                    {fieldState.error && (
+                      <ErrorText style={{ marginTop: 6, marginLeft: 30 }}>
+                        {fieldState.error.message}
+                      </ErrorText>
+                    )}
+                  </>
+                )}
+              />
             </div>
           </div>
         )}
