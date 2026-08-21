@@ -32,13 +32,13 @@ services:
 
 ```env
 # ── 데이터베이스 ──────────────────────────────────
-DB_URL=jdbc:postgresql://db:5432/arc_db
-DB_USERNAME=arc_user
-DB_PASSWORD=arc_pass
+DB_URL=jdbc:postgresql://db:5432/ark_db
+DB_USERNAME=ark_user
+DB_PASSWORD=ark_pass
 
 # ── 스토리지 (MinIO / S3) ─────────────────────────
 S3_ENDPOINT=http://storage:9000
-S3_BUCKET=arc-documents
+S3_BUCKET=ark-documents
 S3_ACCESS_KEY=minioadmin
 S3_SECRET_KEY=minioadmin
 
@@ -70,11 +70,11 @@ db / redis / storage 컨테이너는 docker-compose로 유지하고 백엔드만
 
 ```bash
 JAVA_HOME=/opt/homebrew/opt/openjdk \
-DB_URL=jdbc:postgresql://localhost:5432/arc \
-DB_USERNAME=arc DB_PASSWORD=arc \
+DB_URL=jdbc:postgresql://localhost:5432/ark \
+DB_USERNAME=ark DB_PASSWORD=ark \
 REDIS_HOST=localhost REDIS_PORT=6379 \
 S3_ENDPOINT=http://localhost:9000 \
-S3_BUCKET=arc-documents \
+S3_BUCKET=ark-documents \
 SPRING_PROFILES_ACTIVE=local \
 java -jar build/libs/ark-backend-0.0.1-SNAPSHOT.jar
 ```
