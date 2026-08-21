@@ -1,4 +1,5 @@
 'use client'
+import styled from '@emotion/styled'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useState, Suspense } from 'react'
 
@@ -146,6 +147,14 @@ function applyOptionFilter(
   )
 }
 
+const NotFoundScreen = styled.div`
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--sb-n50);
+`
+
 function PageContent() {
   const searchParams = useSearchParams()
   const id = searchParams.get('id') ?? ''
@@ -184,12 +193,9 @@ function PageContent() {
 
   if (!c) {
     return (
-      <div
-        className="min-h-screen flex items-center justify-center"
-        style={{ background: 'var(--sb-n50)' }}
-      >
+      <NotFoundScreen>
         <p style={{ color: 'var(--sb-n500)' }}>케이스를 찾을 수 없습니다.</p>
-      </div>
+      </NotFoundScreen>
     )
   }
 
