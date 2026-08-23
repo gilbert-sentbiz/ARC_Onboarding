@@ -3,11 +3,12 @@
 import styled from '@emotion/styled'
 import { SignOut, Buildings } from '@phosphor-icons/react'
 import { useRouter } from 'next/navigation'
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 
 import { useSessionStore } from '@/src/entities/auth/model/sessionStore'
 import { useCaseStore } from '@/src/entities/case/model/caseStore'
 import { STATUS_LABELS, canView } from '@/src/features/case-state/model/stateMachine'
+import { listCases } from '@/src/shared/api/casesApi'
 import { colors } from '@/src/shared/const/tokens'
 import type { CaseStatus, UserRole, Case } from '@/src/shared/type'
 import NotificationBell from '@/src/widgets/notification-bell/ui/NotificationBell'
@@ -317,11 +318,26 @@ export default function InternalDashboardPage() {
   const session = useSessionStore((s) => s.session)
   const clearSession = useSessionStore((s) => s.clearSession)
   const casesMap = useCaseStore((s) => s.cases)
+  const addCase = useCaseStore((s) => s.addCase)
+  const updateCase = useCaseStore((s) => s.updateCase)
   const cases = useMemo(() => Object.values(casesMap), [casesMap])
 
   const role = session?.role as UserRole
   const defaultFilter = ROLE_DEFAULT_FILTER[role] ?? 'SALES_REVIEW_REQUIRED'
   const [filter, setFilter] = useState<CaseStatus | 'ALL'>(defaultFilter)
+
+  useEffect(() => {
+    if (!session) return
+    void listCases(session.userId).then((apiCases) => {
+      if (!apiCases) return null
+      const current = useCaseStore.getState().cases
+      for (const c of apiCases) {
+        if (current[c.id]) updateCase(c.id, c)
+        else addCase(c)
+      }
+      return null
+    })
+  }, [session, addCase, updateCase])
 
   const viewable = ROLE_VIEWABLE_STATUSES[role] ?? []
 
