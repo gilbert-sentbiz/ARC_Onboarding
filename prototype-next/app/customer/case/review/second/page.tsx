@@ -6,6 +6,7 @@ import { useCaseStore } from '@/store/caseStore'
 import { useSessionStore } from '@/store/sessionStore'
 import { useIntakeResponseStore } from '@/store/intakeResponseStore'
 import { confirmSecondIntake } from '@/services/caseService'
+import { submitSecondIntake } from '@/services/api/cases'
 import { getRuleSet } from '@/store/ruleStore'
 import type { QuestionRule } from '@/types'
 import Button from '@/components/ui/Button'
@@ -122,12 +123,22 @@ function PageContent() {
     vndCollection?: Record<string, unknown>
   }
 
-  function handleConfirm() {
+  async function handleConfirm() {
     if (!id) return
     const result = confirmSecondIntake(id, session?.name || session?.email || '고객')
-    if (result.ok) {
-      router.push(`/customer/case/documents?id=${id}`)
+    if (!result.ok) return
+    // PI-226 ③: 백엔드 2차 제출(C6) — 실 caseId(backendId)+토큰 있을 때. 실패 시 로컬 진행.
+    const caseObj = useCaseStore.getState().cases[id]
+    const token = useSessionStore.getState().token
+    if (token && caseObj?.backendId) {
+      const answers = (useIntakeResponseStore.getState().getByCase(id, 'second')?.answers ?? {}) as Record<string, unknown>
+      try {
+        await submitSecondIntake(caseObj.backendId, { answers }, token)
+      } catch {
+        /* 백엔드 미연결 — 로컬 진행 */
+      }
     }
+    router.push(`/customer/case/documents?id=${id}`)
   }
 
   return (
