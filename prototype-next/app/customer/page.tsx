@@ -2,13 +2,12 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowRight, Envelope, Lock, Eye, EyeSlash, CheckCircle, FileText, Buildings, ArrowsLeftRight } from '@phosphor-icons/react'
+import { ArrowRight, Envelope, LockKey, CheckCircle, FileText, Buildings, ArrowsLeftRight } from '@phosphor-icons/react'
 import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
 import { useSessionStore } from '@/store/sessionStore'
-import { useCaseStore } from '@/store/caseStore'
-import { useIntakeResponseStore } from '@/store/intakeResponseStore'
-import { useAccountStore } from '@/store/accountStore'
+import { requestOtp, verifyOtp } from '@/services/api/auth'
+import { ApiError } from '@/services/apiClient'
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
@@ -31,69 +30,57 @@ const FEATURES = [
 ]
 
 export default function LandingPage() {
+  const [step, setStep] = useState<'email' | 'code'>('email')
   const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [showPassword, setShowPassword] = useState(false)
+  const [code, setCode] = useState('')
   const [agreed, setAgreed] = useState(false)
-  const [errors, setErrors] = useState<{ email?: string; password?: string; agreed?: string }>({})
+  const [errors, setErrors] = useState<{ email?: string; code?: string; agreed?: string }>({})
+  const [loading, setLoading] = useState(false)
 
   const router = useRouter()
   const setSession = useSessionStore((s) => s.setSession)
-  const findByEmail = useCaseStore((s) => s.findByEmail)
-  const { exists, verify, register } = useAccountStore()
 
-  const isReturning = EMAIL_RE.test(email) && exists(email)
-
-  function handleSubmit(e: React.FormEvent) {
+  // 이메일 단계: 동의 확인 후 OTP 코드 발송 (C11)
+  async function handleRequestCode(e: React.FormEvent) {
     e.preventDefault()
-
     const next: typeof errors = {}
-
     if (!EMAIL_RE.test(email)) next.email = '올바른 이메일 주소를 입력해주세요.'
-    if (!password) next.password = '비밀번호를 입력해주세요.'
-
-    if (Object.keys(next).length === 0 && isReturning) {
-      if (!verify(email, password)) {
-        next.password = '비밀번호가 올바르지 않습니다.'
-      }
-    }
-
-    if (Object.keys(next).length === 0 && !isReturning && !agreed) {
-      next.agreed = '개인정보 수집 및 이용에 동의해주세요.'
-    }
-
+    if (!agreed) next.agreed = '개인정보 수집 및 이용에 동의해주세요.'
     if (Object.keys(next).length > 0) {
       setErrors(next)
       return
     }
+    setErrors({})
+    setLoading(true)
+    try {
+      await requestOtp({ email: email.trim().toLowerCase() })
+      setStep('code')
+    } catch (err) {
+      const msg = err instanceof ApiError ? '인증코드 발송에 실패했습니다. 잠시 후 다시 시도해주세요.' : '서버에 연결할 수 없습니다.'
+      setErrors({ email: msg })
+    } finally {
+      setLoading(false)
+    }
+  }
 
-    if (!isReturning) register(email, password)
-
-    setSession({ userId: email, role: 'CUSTOMER', name: '', email })
-
-    const existing = findByEmail(email)
-
-    const intakeStore = useIntakeResponseStore.getState()
-    const firstIntake = existing ? intakeStore.getByCase(existing.id, 'first') : null
-    const secondIntake = existing ? intakeStore.getByCase(existing.id, 'second') : null
-
-    if (!existing || firstIntake?.status !== 'submitted') {
-      // No case, or 1차 form not yet confirmed → 1차 입력 (pre-fills draft if any)
+  // 코드 단계: OTP 검증 → 세션 토큰 저장 → 온보딩 시작 (C12)
+  async function handleVerify(e: React.FormEvent) {
+    e.preventDefault()
+    if (!code.trim()) {
+      setErrors({ code: '인증코드를 입력해주세요.' })
+      return
+    }
+    setErrors({})
+    setLoading(true)
+    try {
+      const res = await verifyOtp({ email: email.trim().toLowerCase(), code: code.trim() })
+      setSession({ userId: email.trim().toLowerCase(), role: 'CUSTOMER', name: '', email: email.trim().toLowerCase() }, res.token)
       router.push('/customer/onboarding')
-    } else if (!secondIntake || secondIntake.status === 'not_started') {
-      // 1차 confirmed, 2차 not started → 2차 입력
-      router.push(`/customer/case/information?id=${existing.id}`)
-    } else if (secondIntake.status === 'draft') {
-      // 2차 draft saved → continue 2차 입력 (not review)
-      router.push(`/customer/case/information?id=${existing.id}`)
-    } else {
-      // 2차 confirmed (submitted) → route by case status
-      const s = existing.status
-      if (s === 'DOCUMENT_SUBMISSION_REQUIRED' || s === 'REVISION_REQUESTED') {
-        router.push(`/customer/case/documents?id=${existing.id}`)
-      } else {
-        router.push(`/customer/case?id=${existing.id}`)
-      }
+    } catch (err) {
+      const msg = err instanceof ApiError && err.status === 401 ? '인증코드가 올바르지 않거나 만료되었습니다.' : '인증에 실패했습니다. 다시 시도해주세요.'
+      setErrors({ code: msg })
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -164,58 +151,32 @@ export default function LandingPage() {
           >
             <div className="flex flex-col gap-1.5">
               <h2 className="text-[22px] leading-[34px] font-bold" style={{ color: 'var(--sb-n900)' }}>
-                {isReturning ? '다시 오셨군요' : '온보딩 시작하기'}
+                {step === 'email' ? '온보딩 시작하기' : '인증코드 입력'}
               </h2>
               <p className="text-[14px] leading-[20px]" style={{ color: 'var(--sb-n500)' }}>
-                {isReturning
-                  ? '비밀번호를 입력해 진행 중인 케이스를 이어가세요.'
-                  : '이메일과 비밀번호를 입력하면 온보딩을 시작합니다.'}
+                {step === 'email'
+                  ? '이메일로 인증코드를 보내드립니다.'
+                  : `${email} 로 보낸 인증코드를 입력해주세요.`}
               </p>
             </div>
 
-            <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-5">
-              <Input
-                label="이메일 주소"
-                type="email"
-                placeholder="example@company.com"
-                value={email}
-                onChange={(e) => {
-                  setEmail(e.target.value)
-                  setErrors((prev) => ({ ...prev, email: undefined }))
-                }}
-                error={errors.email}
-                iconLeft={<Envelope size={16} />}
-                autoComplete="email"
-                autoFocus
-              />
+            {step === 'email' ? (
+              <form onSubmit={handleRequestCode} noValidate className="flex flex-col gap-5">
+                <Input
+                  label="이메일 주소"
+                  type="email"
+                  placeholder="example@company.com"
+                  value={email}
+                  onChange={(e) => {
+                    setEmail(e.target.value)
+                    setErrors((prev) => ({ ...prev, email: undefined }))
+                  }}
+                  error={errors.email}
+                  iconLeft={<Envelope size={16} />}
+                  autoComplete="email"
+                  autoFocus
+                />
 
-              <Input
-                label="비밀번호"
-                type={showPassword ? 'text' : 'password'}
-                placeholder={isReturning ? '비밀번호 입력' : '사용할 비밀번호 설정'}
-                value={password}
-                onChange={(e) => {
-                  setPassword(e.target.value)
-                  setErrors((prev) => ({ ...prev, password: undefined }))
-                }}
-                error={errors.password}
-                iconLeft={<Lock size={16} />}
-                iconRight={
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword((v) => !v)}
-                    className="flex items-center transition-colors"
-                    style={{ color: 'var(--sb-n400)' }}
-                    tabIndex={-1}
-                  >
-                    {showPassword ? <EyeSlash size={16} /> : <Eye size={16} />}
-                  </button>
-                }
-                autoComplete={isReturning ? 'current-password' : 'new-password'}
-              />
-
-              {/* Agreement — 신규 가입 시만 */}
-              {!isReturning && (
                 <div>
                   <label
                     className="flex items-start gap-3 cursor-pointer group"
@@ -247,13 +208,44 @@ export default function LandingPage() {
                     <p className="mt-1.5 text-[11px] leading-[16px]" style={{ color: 'var(--sb-negative)' }}>{errors.agreed}</p>
                   )}
                 </div>
-              )}
 
-              <Button type="submit" fullWidth size="lg">
-                {isReturning ? '계속하기' : '시작하기'}
-                <ArrowRight size={16} weight="bold" />
-              </Button>
-            </form>
+                <Button type="submit" fullWidth size="lg" disabled={loading}>
+                  {loading ? '발송 중…' : '인증코드 받기'}
+                  {!loading && <ArrowRight size={16} weight="bold" />}
+                </Button>
+              </form>
+            ) : (
+              <form onSubmit={handleVerify} noValidate className="flex flex-col gap-5">
+                <Input
+                  label="인증코드"
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="6자리 코드"
+                  value={code}
+                  onChange={(e) => {
+                    setCode(e.target.value)
+                    setErrors((prev) => ({ ...prev, code: undefined }))
+                  }}
+                  error={errors.code}
+                  iconLeft={<LockKey size={16} />}
+                  autoFocus
+                />
+
+                <Button type="submit" fullWidth size="lg" disabled={loading}>
+                  {loading ? '확인 중…' : '확인'}
+                  {!loading && <ArrowRight size={16} weight="bold" />}
+                </Button>
+
+                <button
+                  type="button"
+                  onClick={() => { setStep('email'); setCode(''); setErrors({}) }}
+                  className="text-[13px] transition-colors text-center"
+                  style={{ color: 'var(--sb-n500)' }}
+                >
+                  ← 이메일 다시 입력
+                </button>
+              </form>
+            )}
 
             <div className="flex items-center gap-3">
               <div className="flex-1 h-px" style={{ background: 'var(--sb-n100)' }} />
