@@ -9,16 +9,7 @@ import type { ServiceCode, EntityCode, QuestionRule } from '@/src/shared/type'
 
 import DynamicQuestionsSection from './DynamicQuestionsSection'
 
-type Stage =
-  | 'corp_s1'
-  | 'corp_s2'
-  | 'indiv_s1'
-  | 'indiv_s2'
-  | 'fi_s1'
-  | 'fi_s2'
-  | 'fi_s3'
-  | 'fi_s4'
-  | 'vnd_questions'
+type Stage = 'corp_s1' | 'corp_s2' | 'indiv_s1' | 'indiv_s2' | 'fi_s1' | 'fi_s2' | 'vnd_questions'
 
 // Question IDs per screen — order determines display order
 const CORP_S1_IDS = [
@@ -72,8 +63,8 @@ const INDIV_S2_IDS = [
   'qs_krw_sector',
 ]
 
+// PI-219: FI 2화면 축소 — 서비스 선택 제외
 const FI_S1_IDS = [
-  'qc_virtual_asset',
   'qe_fi_legal_name',
   'qe_fi_legal_form',
   'qe_fi_founded_date',
@@ -81,19 +72,10 @@ const FI_S1_IDS = [
   'qe_fi_biz_reg_no',
   'qe_fi_website',
   'qe_fi_reg_address',
-  'qe_fi_biz_category',
   'qe_fi_rep_name',
   'qe_fi_rep_dob',
 ]
-const FI_S2_BASE_IDS = ['qe_fi_license_info', 'qe_fi_license_detail', 'qe_fi_auditor']
-const FI_S2_PAYOUT_IDS = ['qe_fi_intermediary']
-const FI_S3_IDS = [
-  'qe_fi_parent_name',
-  'qe_fi_parent_address',
-  'qe_fi_ubo_group',
-  'qe_fi_fund_source',
-]
-const FI_S4_IDS = ['qe_fi_aml_policy', 'qe_fi_aml_sanction']
+const FI_S2_IDS = ['qe_fi_ubo_group', 'qe_fi_aml_sanction', 'qc_virtual_asset']
 
 // Corporate fund source: exclude 근로·연금소득, 상속·증여, 일시 재산양도
 const CORP_FUND_SOURCE_ALLOWED = [
@@ -172,7 +154,6 @@ function PageContent() {
     svcSet.has('SVC_COL_VND') ||
     (Array.isArray(raw.serviceSegments) &&
       (raw.serviceSegments as string[]).includes('VND Collection'))
-  const hasPayout = svcSet.has('SVC_PAYOUT')
   const isKR = raw.foundingCountry === 'KR'
 
   const [accumulated, setAccumulated] = useState<Record<string, unknown>>(() => {
@@ -204,6 +185,64 @@ function PageContent() {
     return null
   }
 
+  // PI-218: 해외 설립 FI → 준비 중 안내 후 종료
+  if (entityCode === 'ENTITY_FI' && raw.foundingCountry !== 'KR') {
+    return (
+      <div
+        style={{
+          minHeight: '100vh',
+          background: 'var(--sb-n50)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '24px',
+        }}
+      >
+        <div
+          style={{
+            background: '#fff',
+            borderRadius: '12px',
+            border: '1px solid var(--sb-n200)',
+            padding: '32px',
+            maxWidth: '480px',
+            width: '100%',
+            textAlign: 'center',
+          }}
+        >
+          <p style={{ fontWeight: 600, color: 'var(--sb-n700)', marginBottom: '12px' }}>
+            서비스 준비 중
+          </p>
+          <p
+            style={{
+              fontSize: '14px',
+              color: 'var(--sb-n500)',
+              lineHeight: 1.6,
+              marginBottom: '24px',
+            }}
+          >
+            해외 설립 기업(해외 법인·개인·해외 금융기관)의 온보딩은 현재 준비 중입니다.
+            <br />
+            서비스가 오픈되면 별도로 안내드리겠습니다.
+          </p>
+          <button
+            onClick={() => router.back()}
+            style={{
+              padding: '8px 20px',
+              borderRadius: '8px',
+              border: '1px solid var(--sb-n300)',
+              background: 'none',
+              color: 'var(--sb-n600)',
+              fontSize: '14px',
+              cursor: 'pointer',
+            }}
+          >
+            이전으로
+          </button>
+        </div>
+      </div>
+    )
+  }
+
   const allQuestions = buildAllQuestions(entityCode, serviceCodes)
 
   function saveDraft(stageKey: string, data: Record<string, unknown>) {
@@ -220,8 +259,6 @@ function PageContent() {
       ...((next.indiv_s2 as Record<string, unknown>) ?? {}),
       ...((next.fi_s1 as Record<string, unknown>) ?? {}),
       ...((next.fi_s2 as Record<string, unknown>) ?? {}),
-      ...((next.fi_s3 as Record<string, unknown>) ?? {}),
-      ...((next.fi_s4 as Record<string, unknown>) ?? {}),
     }
     return { ...next, entity: entityData }
   }
@@ -230,7 +267,7 @@ function PageContent() {
     return (
       (entityCode === 'ENTITY_CORP' && stageKey === 'corp_s2') ||
       (entityCode === 'ENTITY_INDIV' && stageKey === 'indiv_s2') ||
-      (entityCode === 'ENTITY_FI' && stageKey === 'fi_s4')
+      (entityCode === 'ENTITY_FI' && stageKey === 'fi_s2')
     )
   }
 
@@ -258,7 +295,7 @@ function PageContent() {
   function lastEntityStage(): Stage {
     if (entityCode === 'ENTITY_CORP') return 'corp_s2'
     if (entityCode === 'ENTITY_INDIV') return 'indiv_s2'
-    return 'fi_s4'
+    return 'fi_s2'
   }
 
   // ── CORP Screen 1 ─────────────────────────────────────────────────────────
@@ -341,7 +378,7 @@ function PageContent() {
         questions={pickByIds(allQuestions, FI_S1_IDS)}
         initialData={(accumulated.fi_s1 as Record<string, unknown>) ?? {}}
         isKR={isKR}
-        screenInfo={{ current: 1, total: 4, label: '금융기관 정보 입력' }}
+        screenInfo={{ current: 1, total: 2, label: '금융기관 정보 입력' }}
         onComplete={(d) => advance('fi_s1', d, 'fi_s2')}
         onBack={() => goBack(null)}
         onDraftSave={(d) => saveDraft('fi_s1', d)}
@@ -349,51 +386,18 @@ function PageContent() {
     )
   }
 
-  // ── FI Screen 2 (인허가 + 서비스) ─────────────────────────────────────────
+  // ── FI Screen 2 (소유 구조 / AML) ────────────────────────────────────────
   if (stage === 'fi_s2') {
-    const ids = [...FI_S2_BASE_IDS, ...(hasPayout ? FI_S2_PAYOUT_IDS : [])]
     return (
       <DynamicQuestionsSection
-        title="인허가 / 서비스 정보"
-        questions={pickByIds(allQuestions, ids)}
+        title="소유 구조 / AML"
+        questions={pickByIds(allQuestions, FI_S2_IDS)}
         initialData={(accumulated.fi_s2 as Record<string, unknown>) ?? {}}
         isKR={isKR}
-        screenInfo={{ current: 2, total: 4, label: '금융기관 정보 입력' }}
-        onComplete={(d) => advance('fi_s2', d, 'fi_s3')}
+        screenInfo={{ current: 2, total: 2, label: '금융기관 정보 입력' }}
+        onComplete={(d) => advance('fi_s2', d, needsVND ? 'vnd_questions' : null)}
         onBack={() => goBack('fi_s1')}
         onDraftSave={(d) => saveDraft('fi_s2', d)}
-      />
-    )
-  }
-
-  // ── FI Screen 3 (소유 구조) ────────────────────────────────────────────────
-  if (stage === 'fi_s3') {
-    return (
-      <DynamicQuestionsSection
-        title="소유 구조 / 자금 원천"
-        questions={pickByIds(allQuestions, FI_S3_IDS)}
-        initialData={(accumulated.fi_s3 as Record<string, unknown>) ?? {}}
-        isKR={isKR}
-        screenInfo={{ current: 3, total: 4, label: '금융기관 정보 입력' }}
-        onComplete={(d) => advance('fi_s3', d, 'fi_s4')}
-        onBack={() => goBack('fi_s2')}
-        onDraftSave={(d) => saveDraft('fi_s3', d)}
-      />
-    )
-  }
-
-  // ── FI Screen 4 (법적/AML) ────────────────────────────────────────────────
-  if (stage === 'fi_s4') {
-    return (
-      <DynamicQuestionsSection
-        title="법적 / AML 정보"
-        questions={pickByIds(allQuestions, FI_S4_IDS)}
-        initialData={(accumulated.fi_s4 as Record<string, unknown>) ?? {}}
-        isKR={isKR}
-        screenInfo={{ current: 4, total: 4, label: '금융기관 정보 입력' }}
-        onComplete={(d) => advance('fi_s4', d, needsVND ? 'vnd_questions' : null)}
-        onBack={() => goBack('fi_s3')}
-        onDraftSave={(d) => saveDraft('fi_s4', d)}
       />
     )
   }

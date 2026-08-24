@@ -675,54 +675,6 @@ export const INITIAL_RULESET: RuleSet = {
       classification: 'entity-own',
       scope: 'ENTITY_FI',
     },
-    {
-      type: 'FINANCIAL_STATEMENTS',
-      displayName: 'Audited Financial Statements (최근 3년)',
-      isRequired: true,
-      isConditional: false,
-      classification: 'entity-own',
-      scope: 'ENTITY_FI',
-    },
-    {
-      type: 'AML_AUDIT',
-      displayName: 'Latest AML Audit Report',
-      isRequired: true,
-      isConditional: false,
-      classification: 'entity-own',
-      scope: 'ENTITY_FI',
-    },
-    {
-      type: 'ORG_CHART',
-      displayName: 'Organisational Chart',
-      isRequired: true,
-      isConditional: false,
-      classification: 'entity-own',
-      scope: 'ENTITY_FI',
-    },
-    {
-      type: 'WOLFSBERG',
-      displayName: 'Wolfsberg AML Questionnaire',
-      isRequired: true,
-      isConditional: false,
-      classification: 'entity-own',
-      scope: 'ENTITY_FI',
-    },
-    {
-      type: 'BOARD_RESOLUTION',
-      displayName: 'Board Resolution (서명 권한 위임)',
-      isRequired: true,
-      isConditional: false,
-      classification: 'entity-own',
-      scope: 'ENTITY_FI',
-    },
-    {
-      type: 'KYC_MERCHANTS',
-      displayName: 'KYC Documents for Sample Merchants (2건)',
-      isRequired: false,
-      isConditional: true,
-      classification: 'entity-own',
-      scope: 'ENTITY_FI',
-    },
     // KRW 고유
     {
       type: 'ARTICLES_OF_INCORP',
@@ -851,21 +803,22 @@ export const INITIAL_RULESET: RuleSet = {
         BANK_PROOF: { displayName: '은행계좌 사본 (Bank Account Copy)' },
       },
     },
-    // FI: SHAREHOLDER_LIST(=Ownership Chart) 추가, CONTRACT·SAMPLE_INVOICE_SHIPPING·WEBSITE_URL 제외
+    // FI: 공통 6종 + REMITTANCE_LICENSE + INTERNAL_POLICIES = 8종 (PI-220)
     {
       key: 'entity:ENTITY_FI',
       enabledCommonDocTypes: [
         'BIZ_REGISTRATION',
         'ID_COPY',
         'SHAREHOLDER_LIST',
-        'DIRECTOR_LIST',
+        'CORPORATE_REGISTRY',
+        'SEAL_CERTIFICATE',
         'BANK_PROOF',
       ],
       ownDocs: [],
       commonOverrides: {
-        ID_COPY: { displayName: 'Certified ID Copies — 이사 전원 + UBO 25%+' },
+        ID_COPY: { displayName: '대표자 신분증 사본 (이사 전원 + UBO 25%+)' },
         SHAREHOLDER_LIST: { displayName: 'Ownership Chart' },
-        BANK_PROOF: { displayName: 'Proof of Bank Account (최근 3개월 내)' },
+        BANK_PROOF: { displayName: '법인명의 은행계좌 사본' },
       },
     },
     // KRW: CONTRACT·SAMPLE_INVOICE_SHIPPING 제외 (섹터별 고유로 처리)
