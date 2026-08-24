@@ -1,5 +1,5 @@
 'use client'
-import { useRef, useState, Suspense } from 'react'
+import { useRef, useState, useEffect, Suspense } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { CheckCircle, CloudArrowUp, Warning, ArrowRight, Clock, Link } from '@phosphor-icons/react'
@@ -10,6 +10,7 @@ import { useRevisionRequestStore } from '@/store/revisionRequestStore'
 import { useSessionStore } from '@/store/sessionStore'
 import { transitionStatus, resubmitRevision } from '@/services/caseService'
 import { uploadFile as uploadDocFile } from '@/services/documentService'
+import { listDocuments as apiListDocuments, uploadDocumentFile } from '@/services/api/documents'
 import type { Document, DocumentFile, RevisionRequest } from '@/types'
 import Button from '@/components/ui/Button'
 import TabBar from '@/components/customer/TabBar'
@@ -171,6 +172,24 @@ function PageContent() {
   const [submitted, setSubmitted] = useState(false)
   const [uploadError, setUploadError] = useState<string | null>(null)
 
+  // PI-227 ④: 백엔드 문서 목록(C9) → type→docId 매핑 (MinIO 업로드 대상 식별용)
+  const token = useSessionStore((s) => s.token)
+  const backendId = c?.backendId
+  const [backendDocMap, setBackendDocMap] = useState<Record<string, string>>({})
+  useEffect(() => {
+    if (!token || !backendId) return
+    let cancelled = false
+    apiListDocuments(backendId, token)
+      .then((docs) => {
+        if (cancelled || !docs) return
+        const m: Record<string, string> = {}
+        for (const d of docs) m[d.type] = d.id
+        setBackendDocMap(m)
+      })
+      .catch(() => {})
+    return () => { cancelled = true }
+  }, [token, backendId])
+
   const ALLOWED_MIME = ['application/pdf', 'image/png', 'image/jpeg']
   const ALLOWED_EXT = ['.pdf', '.png', '.jpg', '.jpeg']
   const MAX_BYTES = 10 * 1024 * 1024
@@ -236,6 +255,12 @@ function PageContent() {
       uploadDocFile(docId, file.name, file.size, session?.name || session?.email || '고객', dataUrl)
     }
     reader.readAsDataURL(file)
+    // PI-227 ④: 백엔드 MinIO 업로드(C10) — backendId + 매핑된 backend docId 있을 때. 실패 시 로컬 유지.
+    const docType = documents.find((d) => d.id === docId)?.type
+    const beDocId = docType ? backendDocMap[docType] : undefined
+    if (token && backendId && beDocId) {
+      uploadDocumentFile(backendId, beDocId, file, token).catch(() => {})
+    }
   }
 
   function handleUrlSave(docId: string, url: string) {
