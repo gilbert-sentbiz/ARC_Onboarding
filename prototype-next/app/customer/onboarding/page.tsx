@@ -655,10 +655,14 @@ export default function OnboardingForm() {
               </div>
             </div>
 
-            {(data.businessType === 'financial' || fcType === 'foreign') && (
+            {(fcType === 'foreign' || data.services.includes('collection')) && (
               <div className="p-4 rounded-[10px] flex flex-col gap-1" style={{ background: '#fffbeb', border: '1px solid #fcd34d' }}>
                 <p className="text-[13px] font-semibold" style={{ color: '#b45309' }}>현재 서비스 준비 중입니다</p>
-                <p className="text-[12px]" style={{ color: '#d97706' }}>금융기관 및 해외 법인 고객은 현재 지원되지 않습니다. 빠른 시일 내 서비스할 예정이니 별도 문의 부탁드립니다.</p>
+                <p className="text-[12px]" style={{ color: '#d97706' }}>
+                  {data.services.includes('collection')
+                    ? '수금(Collection) 서비스는 현재 준비 중입니다. 송금 서비스로 진행해주세요.'
+                    : '해외에 설립된 기업(법인·개인·금융기관)의 온보딩은 현재 준비 중입니다. 국내 사업자 고객은 계속 진행하실 수 있습니다.'}
+                </p>
               </div>
             )}
 
@@ -770,7 +774,7 @@ export default function OnboardingForm() {
             onClick={handleNext}
             fullWidth={step === 0}
             className="flex-1"
-            disabled={step === 1 && (data.businessType === 'financial' || fcType === 'foreign')}
+            disabled={step === 1 && (fcType === 'foreign' || data.services.includes('collection'))}
           >
             {step === 1 ? '제출하기' : '다음'}
             {step === 0 && <ArrowRight size={16} />}

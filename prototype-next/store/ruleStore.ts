@@ -207,18 +207,12 @@ export const INITIAL_RULESET: RuleSet = {
     { type: 'SAMPLE_INVOICE_SHIPPING', displayName: '샘플 인보이스 및 선적자료 (Sample Invoice & Shipping)', isRequired: true,  isConditional: false, classification: 'common' },
     { type: 'BANK_PROOF',              displayName: '은행 증빙',                                            isRequired: true,  isConditional: false, classification: 'common' },
     { type: 'WEBSITE_URL',             displayName: '홈페이지 주소 (Website URL)',                          isRequired: false, isConditional: true,  classification: 'common' },
-    // 법인 고유
-    { type: 'CORPORATE_REGISTRY', displayName: '법인등기부등본 (Corporate Registry Extract)', isRequired: true,  isConditional: false, classification: 'entity-own', scope: 'ENTITY_CORP' },
-    { type: 'SEAL_CERTIFICATE',   displayName: '법인인감증명서 (Corporate Seal Certificate)',  isRequired: true,  isConditional: false, classification: 'entity-own', scope: 'ENTITY_CORP' },
-    // FI 고유
+    // 법인 서류 — 법인격 세그먼트(법인·FI) 공용, enabledCommonDocTypes로 세그먼트별 노출 제어
+    { type: 'CORPORATE_REGISTRY', displayName: '법인등기부등본 (Corporate Registry Extract)', isRequired: true,  isConditional: false, classification: 'common' },
+    { type: 'SEAL_CERTIFICATE',   displayName: '법인인감증명서 (Corporate Seal Certificate)',  isRequired: true,  isConditional: false, classification: 'common' },
+    // FI 고유 (국내 FI MVP: 금융 라이선스 + AML 내부통제규정)
     { type: 'REMITTANCE_LICENSE',   displayName: 'Remittance License (또는 동등 인허가)',          isRequired: true,  isConditional: false, classification: 'entity-own', scope: 'ENTITY_FI' },
     { type: 'INTERNAL_POLICIES',    displayName: 'Internal Policies (Compliance/Risk)',            isRequired: true,  isConditional: false, classification: 'entity-own', scope: 'ENTITY_FI' },
-    { type: 'FINANCIAL_STATEMENTS', displayName: 'Audited Financial Statements (최근 3년)',        isRequired: true,  isConditional: false, classification: 'entity-own', scope: 'ENTITY_FI' },
-    { type: 'AML_AUDIT',            displayName: 'Latest AML Audit Report',                       isRequired: true,  isConditional: false, classification: 'entity-own', scope: 'ENTITY_FI' },
-    { type: 'ORG_CHART',            displayName: 'Organisational Chart',                          isRequired: true,  isConditional: false, classification: 'entity-own', scope: 'ENTITY_FI' },
-    { type: 'WOLFSBERG',            displayName: 'Wolfsberg AML Questionnaire',                   isRequired: true,  isConditional: false, classification: 'entity-own', scope: 'ENTITY_FI' },
-    { type: 'BOARD_RESOLUTION',     displayName: 'Board Resolution (서명 권한 위임)',              isRequired: true,  isConditional: false, classification: 'entity-own', scope: 'ENTITY_FI' },
-    { type: 'KYC_MERCHANTS',        displayName: 'KYC Documents for Sample Merchants (2건)',      isRequired: false, isConditional: true,  classification: 'entity-own', scope: 'ENTITY_FI' },
     // KRW 고유
     { type: 'ARTICLES_OF_INCORP', displayName: 'Articles of Incorporation', isRequired: true, isConditional: false, classification: 'service-own', scope: 'SVC_COL_KRW' },
     // VND 고유 (9)
@@ -238,7 +232,7 @@ export const INITIAL_RULESET: RuleSet = {
     // 법인: DIRECTOR_LIST 제외 (FI·KRW·VND만) + 오버라이드
     {
       key: 'entity:ENTITY_CORP',
-      enabledCommonDocTypes: ['BIZ_REGISTRATION', 'ID_COPY', 'SHAREHOLDER_LIST', 'CONTRACT', 'SAMPLE_INVOICE_SHIPPING', 'BANK_PROOF', 'WEBSITE_URL'],
+      enabledCommonDocTypes: ['BIZ_REGISTRATION', 'ID_COPY', 'SHAREHOLDER_LIST', 'CORPORATE_REGISTRY', 'SEAL_CERTIFICATE', 'CONTRACT', 'SAMPLE_INVOICE_SHIPPING', 'BANK_PROOF', 'WEBSITE_URL'],
       ownDocs: [],
       commonOverrides: {
         ID_COPY:    { displayName: '대표자 신분증 사본 (CEO ID Copy, 공동대표 전원)' },
@@ -255,10 +249,10 @@ export const INITIAL_RULESET: RuleSet = {
         BANK_PROOF: { displayName: '은행계좌 사본 (Bank Account Copy)' },
       },
     },
-    // FI: SHAREHOLDER_LIST(=Ownership Chart) 추가, CONTRACT·SAMPLE_INVOICE_SHIPPING·WEBSITE_URL 제외
+    // FI: 공통 6종 (사업자등록증·대표자신분증·주주명부·법인등기부등본·법인인감·법인계좌) + FI-own 2종 = 8종 (PI-220)
     {
       key: 'entity:ENTITY_FI',
-      enabledCommonDocTypes: ['BIZ_REGISTRATION', 'ID_COPY', 'SHAREHOLDER_LIST', 'DIRECTOR_LIST', 'BANK_PROOF'],
+      enabledCommonDocTypes: ['BIZ_REGISTRATION', 'ID_COPY', 'SHAREHOLDER_LIST', 'CORPORATE_REGISTRY', 'SEAL_CERTIFICATE', 'BANK_PROOF'],
       ownDocs: [],
       commonOverrides: {
         ID_COPY:         { displayName: 'Certified ID Copies — 이사 전원 + UBO 25%+' },
