@@ -641,22 +641,20 @@ export const INITIAL_RULESET: RuleSet = {
       isConditional: true,
       classification: 'common',
     },
-    // 법인 고유
+    // 법인 서류 — 법인격 세그먼트(법인·FI) 공용, enabledCommonDocTypes로 세그먼트별 노출 제어
     {
       type: 'CORPORATE_REGISTRY',
       displayName: '법인등기부등본 (Corporate Registry Extract)',
       isRequired: true,
       isConditional: false,
-      classification: 'entity-own',
-      scope: 'ENTITY_CORP',
+      classification: 'common',
     },
     {
       type: 'SEAL_CERTIFICATE',
       displayName: '법인인감증명서 (Corporate Seal Certificate)',
       isRequired: true,
       isConditional: false,
-      classification: 'entity-own',
-      scope: 'ENTITY_CORP',
+      classification: 'common',
     },
     // FI 고유
     {
@@ -775,6 +773,8 @@ export const INITIAL_RULESET: RuleSet = {
         'BIZ_REGISTRATION',
         'ID_COPY',
         'SHAREHOLDER_LIST',
+        'CORPORATE_REGISTRY',
+        'SEAL_CERTIFICATE',
         'CONTRACT',
         'SAMPLE_INVOICE_SHIPPING',
         'BANK_PROOF',
