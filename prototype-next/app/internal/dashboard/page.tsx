@@ -1,14 +1,16 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { SignOut, Buildings } from '@phosphor-icons/react'
 import { useSessionStore } from '@/store/sessionStore'
 import { useCaseStore } from '@/store/caseStore'
 import { useCaseEventStore } from '@/store/caseEventStore'
 import { STATUS_LABELS, canView } from '@/services/stateMachine'
-import type { CaseStatus, UserRole } from '@/types'
+import { listCases } from '@/services/api/cases'
+import type { CaseStatus, UserRole, EntityCode, ServiceCode, SegmentInfo } from '@/types'
 import type { Case } from '@/types'
+import type { CaseSummaryResponse } from '@/types/api'
 import NotificationBell from '@/components/ui/NotificationBell'
 
 const ROLE_DEFAULT_FILTER: Record<string, CaseStatus> = {
@@ -48,6 +50,22 @@ function formatDate(ts: number) {
   return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`
 }
 
+// PI-222: 서버 요약 응답(CaseSummaryResponse) → 스토어 Case (신규 케이스 추가용, slim)
+function summaryToCase(s: CaseSummaryResponse): Case {
+  const ts = Date.parse(s.updatedAt) || Date.now()
+  return {
+    id: s.id,
+    createdAt: ts,
+    updatedAt: ts,
+    status: s.status as CaseStatus,
+    customerId: '',
+    customerName: s.companyName,
+    customerEmail: '',
+    segmentInfo: { entity: s.entityCode as EntityCode, services: s.services as ServiceCode[] } as SegmentInfo,
+    currentOwner: { role: 'SALES', name: s.assigneeStaffId ?? '—' },
+  }
+}
+
 function getDaysInStatus(c: Case): number {
   const events = useCaseEventStore.getState().getByCase(c.id)
   const entry = [...events].reverse().find(e => e.payload.newStatus === c.status)
@@ -71,8 +89,27 @@ export default function InternalDashboard() {
   const router = useRouter()
   const session = useSessionStore((s) => s.session)
   const clearSession = useSessionStore((s) => s.clearSession)
+  const token = useSessionStore((s) => s.token)
   const casesMap = useCaseStore((s) => s.cases)
   const cases = useMemo(() => Object.values(casesMap), [casesMap])
+
+  // PI-222: 마운트 시 서버 케이스 로드(I1: GET /internal/cases) → 스토어 병합.
+  // 백엔드 미연결(정적 데모 등)이면 조용히 localStorage 케이스 유지.
+  useEffect(() => {
+    if (!token) return
+    let cancelled = false
+    listCases({}, token)
+      .then((summaries) => {
+        if (cancelled) return
+        const store = useCaseStore.getState()
+        for (const s of summaries) {
+          if (store.cases[s.id]) store.updateCase(s.id, { status: s.status as CaseStatus })
+          else store.addCase(summaryToCase(s))
+        }
+      })
+      .catch(() => { /* 백엔드 미연결 — localStorage 폴백 */ })
+    return () => { cancelled = true }
+  }, [token])
 
   const role = session?.role as UserRole
   const defaultFilter = ROLE_DEFAULT_FILTER[role] ?? 'INITIAL_SCREENING'
