@@ -1,5 +1,5 @@
 'use client'
-import { Suspense, useState } from 'react'
+import { Suspense, useState, useEffect } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { useRouter, useSearchParams } from 'next/navigation'
 import JSZip from 'jszip'
@@ -18,6 +18,8 @@ import { useInternalNoteStore } from '@/store/internalNoteStore'
 import { useInternalStaffStore } from '@/store/internalStaffStore'
 import { transitionStatus, changeOwner } from '@/services/caseService'
 import { approveDocument, requestRevision } from '@/services/documentService'
+import { advanceCase, closeCase } from '@/services/api/cases'
+import { approveDocument as apiApproveDocument, requestRevision as apiRequestRevision, listDocuments as apiListDocuments } from '@/services/api/documents'
 import { STATUS_LABELS } from '@/services/stateMachine'
 import { emitNotification } from '@/store/notificationStore'
 import type { CaseStatus, CloseReason, DocumentStatus, UserRole, DocumentFile } from '@/types'
@@ -201,6 +203,24 @@ function CaseDetailContent() {
   const [ownerChangeMode, setOwnerChangeMode] = useState(false)
   const [selectedNewOwner, setSelectedNewOwner] = useState('')
 
+  // PI-225 ②: 백엔드 연동용 토큰 + 문서 type→backend docId 매핑(C9)
+  const token = useSessionStore((s) => s.token)
+  const backendId = c?.backendId
+  const [backendDocMap, setBackendDocMap] = useState<Record<string, string>>({})
+  useEffect(() => {
+    if (!token || !backendId) return
+    let cancelled = false
+    apiListDocuments(backendId, token)
+      .then((docs) => {
+        if (cancelled || !docs) return
+        const m: Record<string, string> = {}
+        for (const d of docs) m[d.type] = d.id
+        setBackendDocMap(m)
+      })
+      .catch(() => {})
+    return () => { cancelled = true }
+  }, [token, backendId])
+
   if (!c || !id || !session) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--sb-n50)' }}>
@@ -232,13 +252,25 @@ function CaseDetailContent() {
     Object.values(allRevisions).filter((r) => r.documentId === docId)
 
   // ── document handlers ──
+  // 로컬 docId → 백엔드 docId (type 경유)
+  const toBackendDocId = (docId: string): string | undefined => {
+    const t = documents.find((d) => d.id === docId)?.type
+    return t ? backendDocMap[t] : undefined
+  }
+
   function approveDoc(docId: string) {
     approveDocument(docId, '', sess.name)
+    // PI-225 ②: 백엔드 서류 승인(I6)
+    const beDoc = toBackendDocId(docId)
+    if (token && beDoc) apiApproveDocument(beDoc, token).catch(() => {})
   }
 
   function requestDocRevision(docId: string) {
     if (!docRevisionNote.trim()) return
     requestRevision(docId, docRevisionNote, sess.name)
+    // PI-225 ②: 백엔드 서류 보완요청(I5)
+    const beDoc = toBackendDocId(docId)
+    if (token && beDoc) apiRequestRevision(beDoc, { reason: docRevisionNote }, token).catch(() => {})
     if (caseObj.status !== 'REVISION_REQUESTED') {
       transitionStatus(caseId, 'REVISION_REQUESTED', { role, name: sess.name })
     } else {
@@ -281,6 +313,15 @@ function CaseDetailContent() {
     if (result.ok) {
       if (action.closeReason) {
         updateCase(caseId, { closeReason: action.closeReason })
+      }
+      // PI-225 ②: 백엔드 반영 — 종료(CLOSED)=close(I4), 그 외 전진=advance(I3)
+      if (token && backendId) {
+        if (action.to === 'CLOSED') {
+          const reason = action.closeReason === 'EXITED' ? 'EXITED' : 'DROPPED'
+          closeCase(backendId, { reason }, token).catch(() => {})
+        } else {
+          advanceCase(backendId, token).catch(() => {})
+        }
       }
       setPendingAction(null)
       setActionNote('')
