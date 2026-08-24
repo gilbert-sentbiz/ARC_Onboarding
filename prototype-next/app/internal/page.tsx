@@ -7,6 +7,7 @@ import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
 import { useSessionStore } from '@/store/sessionStore'
 import { useInternalStaffStore } from '@/store/internalStaffStore'
+import { mockInternalLogin } from '@/services/api/auth'
 
 export default function InternalLoginPage() {
   const [email, setEmail] = useState('')
@@ -18,7 +19,7 @@ export default function InternalLoginPage() {
   const setSession = useSessionStore((s) => s.setSession)
   const login = useInternalStaffStore((s) => s.login)
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError('')
 
@@ -33,12 +34,25 @@ export default function InternalLoginPage() {
       return
     }
 
-    setSession({
-      userId: staff.email,
-      role: staff.role,
-      name: staff.name,
-      email: staff.email,
-    })
+    // PI-224: 백엔드 mock-login으로 실 세션 토큰 취득 → Bearer 전송용으로 저장.
+    // 백엔드 미연결(정적 데모)이면 토큰 없이 진행 = localStorage 폴백.
+    let token: string | undefined
+    try {
+      const res = await mockInternalLogin({ email: staff.email, role: staff.role })
+      token = res.token
+    } catch {
+      /* 백엔드 미연결 — 로컬 세션으로 진행 */
+    }
+
+    setSession(
+      {
+        userId: staff.email,
+        role: staff.role,
+        name: staff.name,
+        email: staff.email,
+      },
+      token
+    )
     router.push('/internal/dashboard')
   }
 
