@@ -39,6 +39,8 @@ export default function LandingPage() {
 
   const router = useRouter()
   const setSession = useSessionStore((s) => s.setSession)
+  // 로컬 데모(백엔드 localhost)에서만 만능코드 힌트 노출 — 실 배포에는 표시 안 됨
+  const isLocalDemo = (process.env.NEXT_PUBLIC_API_BASE_URL ?? '').includes('localhost')
 
   // 이메일 단계: 동의 확인 후 OTP 코드 발송 (C11)
   async function handleRequestCode(e: React.FormEvent) {
@@ -230,6 +232,12 @@ export default function LandingPage() {
                   iconLeft={<LockKey size={16} />}
                   autoFocus
                 />
+
+                {isLocalDemo && (
+                  <p className="text-[12px] -mt-2" style={{ color: 'var(--sb-n400)' }}>
+                    로컬 데모: 인증코드 <span className="font-mono font-medium" style={{ color: 'var(--sb-brand)' }}>000000</span> 입력
+                  </p>
+                )}
 
                 <Button type="submit" fullWidth size="lg" disabled={loading}>
                   {loading ? '확인 중…' : '확인'}
