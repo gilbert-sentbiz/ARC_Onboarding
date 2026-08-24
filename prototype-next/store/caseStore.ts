@@ -3,16 +3,13 @@ import { persist } from 'zustand/middleware'
 import type { Case } from '@/types'
 
 // Migration: old 'cases' key had embedded documents/statusHistory/firstIntake/secondIntake.
-// New 'arc_cases' key stores slim Case. On old data detection, clear all arc_* stores.
+// New 'arc_cases' key stores slim Case.
+// PI-222: 레거시 'cases'(구 fat 스키마)만 제거하고 arc_*(현행 슬림 스토어)는 보존한다.
+// 이전엔 old 'cases' 감지 시 arc_* 전부 삭제해 기존 케이스가 통째로 사라졌음.
+// arc_cases의 구 상태코드는 아래 STATUS_REMAP로 in-place 마이그레이션.
 if (typeof window !== 'undefined') {
-  const oldData = localStorage.getItem('cases')
-  if (oldData) {
-    for (const key of [
-      'cases', 'arc_cases', 'arc_documents', 'arc_document_files',
-      'arc_revision_requests', 'arc_intake_responses', 'arc_case_events',
-    ]) {
-      localStorage.removeItem(key)
-    }
+  if (localStorage.getItem('cases')) {
+    localStorage.removeItem('cases')
   }
 
   // Migrate old role-based status codes → new action-based codes (PI-124)
