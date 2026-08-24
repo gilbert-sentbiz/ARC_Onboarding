@@ -271,6 +271,7 @@ export type CaseEvent = {
 // ERD: onboarding_case — 케이스 (중심 테이블, slim)
 export type Case = {
   id: string
+  backendId?: string // PI-223: 실 백엔드 케이스 id (API 연동 시). 로컬 id와 별도.
   createdAt: number
   updatedAt: number
   status: CaseStatus

@@ -4,6 +4,8 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { ArrowLeft, ArrowRight } from '@phosphor-icons/react'
 import { useCaseStore } from '@/store/caseStore'
 import { useIntakeResponseStore } from '@/store/intakeResponseStore'
+import { useSessionStore } from '@/store/sessionStore'
+import { createCase as apiCreateCase, submitFirstIntake } from '@/services/api/cases'
 import Button from '@/components/ui/Button'
 import { getCountryName } from '@/utils/countryNames'
 
@@ -67,8 +69,20 @@ function PageContent() {
   const services = (d.services as string[]) ?? []
   const collectionCountries = (d.collectionCountries as string[]) ?? []
 
-  function handleConfirm() {
+  async function handleConfirm() {
     if (!id) return
+    // PI-226 ③: 백엔드에도 케이스 생성(C1) + 1차 제출(C4) — 내부 대시보드가 실 API로 조회.
+    // 백엔드 미연결/실패 시 로컬 흐름 유지(비파괴). 실 caseId는 로컬 케이스에 보관.
+    const token = useSessionStore.getState().token
+    if (token && !c?.backendId) {
+      try {
+        const created = await apiCreateCase(token)
+        await submitFirstIntake(created.id, { answers: d }, token)
+        useCaseStore.getState().updateCase(id, { backendId: created.id })
+      } catch {
+        /* 백엔드 미연결 — 로컬 진행 */
+      }
+    }
     router.push(`/customer/case/information?id=${id}`)
   }
 
