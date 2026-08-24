@@ -26,6 +26,33 @@ services:
 
 - 컨테이너 기동 순서: db, storage 먼저 → backend(마이그레이션 완료 후) → frontend
 
+## 실행 (PI-229 — docker compose up 하나로 전부)
+
+`docker-compose.yml`은 **백엔드 레포(`ark-backend`)** 에 있고, `frontend` 서비스가 프론트 레포(`ARK_Onboarding`)를 build context로 참조한다. 두 레포를 **형제 경로**로 클론한 전제:
+
+```
+work/
+  ark-backend/        ← docker-compose.yml 여기
+  ARK_Onboarding/     ← frontend build context (prototype-next)
+```
+
+```bash
+cd ark-backend
+cp .env.example .env          # 최초 1회
+docker compose up -d --build  # db·redis·storage·backend·frontend 전부
+```
+
+- 접속: **http://localhost:3000/ARK_Onboarding/** (basePath 때문에 루트 `/`는 404)
+- 프론트 경로가 형제가 아니면: `FRONTEND_CONTEXT=/abs/path/to/prototype-next docker compose up -d --build`
+- 프론트는 `output:'standalone'`(서버 모드)로 빌드된다 — `next.config.ts`가 `DOCKER_BUILD=1`일 때 자동 전환(기본은 GitHub Pages용 정적 export). 브라우저가 호출하는 API는 호스트 기준 `http://localhost:8080` (build arg `FRONTEND_API_URL`로 오버라이드).
+
+### 로그인 (로컬 데모)
+
+- **고객**: 아무 이메일 + 만능 인증코드 **`000000`** (OTP 요청 불필요). `application-local.yaml`의 `ark.auth.otp-master-code`에만 설정 → dev/stg/prd 비활성.
+- **내부**: `sales@sentbe.com` / `compliance@sentbe.com` / `ops@sentbe.com` + `sentbe1234` (mock-login).
+
+⚠️ 로컬이라도 **가짜 데이터만** 사용. 실고객 개인정보·서류 금지.
+
 ## 환경변수 전체 목록
 
 `.env` 파일로 관리한다. 실제 `.env`는 커밋하지 않고 `.env.example`만 공유.
