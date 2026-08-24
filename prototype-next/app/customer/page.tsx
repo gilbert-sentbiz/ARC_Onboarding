@@ -105,7 +105,7 @@ export default function LandingPage() {
         style={{ background: 'var(--sb-n900)' }}
       >
         <img
-          src="/ARC_Onboarding/logos/wordmark-white.svg"
+          src="/ARK_Onboarding/logos/wordmark-white.svg"
           alt="SentBiz"
           className="h-7 w-auto object-left object-contain"
         />
@@ -154,7 +154,7 @@ export default function LandingPage() {
         style={{ background: 'var(--sb-n50)' }}
       >
         <div className="lg:hidden mb-10">
-          <img src="/ARC_Onboarding/logos/wordmark-navy.svg" alt="SentBiz" className="h-7 w-auto" />
+          <img src="/ARK_Onboarding/logos/wordmark-navy.svg" alt="SentBiz" className="h-7 w-auto" />
         </div>
 
         <div className="w-full max-w-[440px]">

@@ -46,7 +46,7 @@ export default function InternalLoginPage() {
     <div className="min-h-screen flex flex-col items-center justify-center px-6 py-12" style={{ background: 'var(--sb-n50)' }}>
       <div className="w-full max-w-[400px] flex flex-col gap-8">
         <div className="flex flex-col items-center gap-3 text-center">
-          <img src="/ARC_Onboarding/logos/wordmark-navy.svg" alt="SentBiz" className="h-7 w-auto" />
+          <img src="/ARK_Onboarding/logos/wordmark-navy.svg" alt="SentBiz" className="h-7 w-auto" />
           <div className="flex flex-col gap-1">
             <h2 className="text-[20px] leading-[30px] font-bold" style={{ color: 'var(--sb-n900)' }}>내부 담당자 로그인</h2>
             <p className="text-[14px] leading-[20px]" style={{ color: 'var(--sb-n500)' }}>계정 이메일과 비밀번호를 입력하세요</p>
