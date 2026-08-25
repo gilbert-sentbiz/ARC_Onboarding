@@ -311,7 +311,9 @@ export default function OnboardingForm() {
   function handleSubmit() {
     if (!session) return
     const savedCase = saveFirstIntakeDraft(toSaveData(), session)
-    useSessionStore.getState().setSession({ ...session, name: data.contactName })
+    // PI-233: 담당자 이름만 갱신 — 기존 OTP 토큰을 함께 전달해 소실 방지
+    const { token } = useSessionStore.getState()
+    useSessionStore.getState().setSession({ ...session, name: data.contactName }, token ?? undefined)
     router.push(`/customer/case/review/first?id=${savedCase.id}`)
   }
 
