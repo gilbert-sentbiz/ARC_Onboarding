@@ -249,12 +249,11 @@ function PageContent() {
       return
     }
     setUploadError(null)
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      const dataUrl = e.target?.result as string
-      uploadDocFile(docId, file.name, file.size, session?.name || session?.email || '고객', dataUrl)
-    }
-    reader.readAsDataURL(file)
+    // PI-239: base64 dataURL(수 MB)을 localStorage에 저장하면 quota 초과로 업로드 실패.
+    // 대신 blob URL(수십 자)만 저장 — localStorage 부담 없음. 실제 바이트는 아래 C10으로
+    // MinIO에 업로드돼 서버가 보관. blob URL은 세션 내 미리보기용(새로고침 시 무효, 무해).
+    const previewUrl = URL.createObjectURL(file)
+    uploadDocFile(docId, file.name, file.size, session?.name || session?.email || '고객', previewUrl)
     // PI-227 ④: 백엔드 MinIO 업로드(C10) — backendId + 매핑된 backend docId 있을 때. 실패 시 로컬 유지.
     const docType = documents.find((d) => d.id === docId)?.type
     const beDocId = docType ? backendDocMap[docType] : undefined
@@ -319,7 +318,7 @@ function PageContent() {
 
           <div className="flex flex-col gap-3">
             {displayDocs.map((doc) =>
-              doc.type === 'website_url' ? (
+              doc.type.toLowerCase() === 'website_url' ? ( // PI-238: 실제 타입은 'WEBSITE_URL' — 대소문자 무시 비교
                 <UrlRow key={doc.id} doc={doc} latestFile={getLatestFile(doc.id)} onSave={handleUrlSave} />
               ) : (
                 <DocRow

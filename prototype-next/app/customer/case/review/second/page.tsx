@@ -28,6 +28,26 @@ function buildLabelMap(): Record<string, string> {
   return map
 }
 
+// PI-237: 질문 id → { 옵션 value → 옵션 label } 맵. 라디오/셀렉트 답변값(예 'no')을
+// 한글 라벨(예 '아니오')로 치환하기 위함.
+function buildOptionMap(): Record<string, Record<string, string>> {
+  const rs = getRuleSet()
+  const map: Record<string, Record<string, string>> = {}
+  function walk(qs: QuestionRule[]) {
+    for (const q of qs) {
+      if (q.options?.length) {
+        map[q.id] = Object.fromEntries(q.options.map((o) => [o.value, o.label]))
+      }
+      if (q.children?.length) walk(q.children)
+    }
+  }
+  walk(rs.questionPool)
+  for (const config of rs.segmentQuestionConfigs) {
+    walk(config.ownQuestions)
+  }
+  return map
+}
+
 const SERVICE_LABELS: Record<string, string> = {
   remittance: '해외 송금',
   collection: '수금',
@@ -46,11 +66,16 @@ function getLabel(key: string, labelMap: Record<string, string>): string {
   return key
 }
 
-function renderValue(val: unknown): string {
+// PI-237: opts(옵션 value→label 맵)가 있으면 답변값을 옵션 라벨로 치환.
+function renderValue(val: unknown, opts?: Record<string, string>): string {
   if (val === null || val === undefined || val === '') return '—'
   if (typeof val === 'boolean') return val ? '예' : '아니오'
-  if (Array.isArray(val)) return val.length ? val.join(', ') : '—'
-  return String(val)
+  if (Array.isArray(val)) {
+    if (!val.length) return '—'
+    return val.map((v) => opts?.[String(v)] ?? String(v)).join(', ')
+  }
+  const s = String(val)
+  return opts?.[s] ?? s
 }
 
 type FieldProps = { label: string; value: string }
@@ -74,9 +99,13 @@ function SectionLabel({ children }: SectionLabelProps) {
   )
 }
 
-type DataBlockProps = { data: Record<string, unknown>; labelMap: Record<string, string> }
+type DataBlockProps = {
+  data: Record<string, unknown>
+  labelMap: Record<string, string>
+  optionMap: Record<string, Record<string, string>>
+}
 
-function DataBlock({ data, labelMap }: DataBlockProps) {
+function DataBlock({ data, labelMap, optionMap }: DataBlockProps) {
   const entries = Object.entries(data).filter(([key, v]) => {
     if (v === null || v === undefined || v === '' || v === false) return false
     if (Array.isArray(v) && v.length === 0) return false
@@ -86,9 +115,11 @@ function DataBlock({ data, labelMap }: DataBlockProps) {
   if (entries.length === 0) return <p className="text-[13px]" style={{ color: 'var(--sb-n400)' }}>입력된 정보가 없습니다.</p>
   return (
     <div className="grid grid-cols-2 gap-4">
-      {entries.map(([key, val]) => (
-        <Field key={key} label={getLabel(key, labelMap)} value={renderValue(val)} />
-      ))}
+      {entries.map(([key, val]) => {
+        // PI-237: 질문 id(반복 접미사 _N 제거)로 옵션 라벨 맵 조회 → 답변값 치환
+        const opts = optionMap[key] ?? optionMap[key.replace(/_\d+$/, '')]
+        return <Field key={key} label={getLabel(key, labelMap)} value={renderValue(val, opts)} />
+      })}
     </div>
   )
 }
@@ -116,6 +147,7 @@ function PageContent() {
   const collectionCountries = (d1.collectionCountries as string[]) ?? []
 
   const labelMap = buildLabelMap()
+  const optionMap = buildOptionMap()
 
   const d2 = (secondIntake?.answers ?? {}) as {
     entity?: Record<string, unknown>
@@ -245,7 +277,7 @@ function PageContent() {
           {d2.entity && (
             <div className="flex flex-col gap-3">
               <SectionLabel>기업 정보</SectionLabel>
-              <DataBlock data={d2.entity} labelMap={labelMap} />
+              <DataBlock data={d2.entity} labelMap={labelMap} optionMap={optionMap} />
             </div>
           )}
 
@@ -254,7 +286,7 @@ function PageContent() {
               <div className="h-px" style={{ background: 'var(--sb-n200)' }} />
               <div className="flex flex-col gap-3">
                 <SectionLabel>KRW 수금 정보</SectionLabel>
-                <DataBlock data={d2.krwCollection} labelMap={labelMap} />
+                <DataBlock data={d2.krwCollection} labelMap={labelMap} optionMap={optionMap} />
               </div>
             </>
           )}
@@ -264,7 +296,7 @@ function PageContent() {
               <div className="h-px" style={{ background: 'var(--sb-n200)' }} />
               <div className="flex flex-col gap-3">
                 <SectionLabel>VND 수금 정보</SectionLabel>
-                <DataBlock data={d2.vndCollection} labelMap={labelMap} />
+                <DataBlock data={d2.vndCollection} labelMap={labelMap} optionMap={optionMap} />
               </div>
             </>
           )}
