@@ -88,3 +88,98 @@ AuthSessionResponse { token/sessionId; role?; expiresAt }
 - 인증·역할 가드(고객 소유 / 내부 role) 적용
 - 프론트 서비스 레이어가 이 엔드포인트를 실제 호출(localStorage 대체)
 - 계약 테스트(Kotest, 요청/응답 스키마 + 권한 거부) 통과
+
+---
+
+# English Version
+
+# ARK - API Design (Frontend ↔ Server Contract)
+
+> **Source of truth: this GitHub document.** The single source for the frontend↔server data contract. Follows the backend standard ([SERVER-STANDARD.md](SERVER-STANDARD.md)) — each endpoint is a hexagonal `adapter/in` controller + a **typed request/response DTO** (no Map), producing Springdoc OpenAPI + Spring REST Docs snippets. The frontend integrates against the generated OpenAPI as the contract.
+> Last updated: 2026-08-15. **MVP scope = 18 endpoints** (excluding `/health`). **The two draft-save PUTs (C3·C5) are excluded from MVP — Full Spec** (confirmed 2026-08-15).
+
+## Backend Standard Applied (Design Principles)
+
+This API design directly follows [SERVER-STANDARD.md](SERVER-STANDARD.md) (the company backend standard):
+
+- **Architecture (hexagonal)**: each endpoint = a domain `adapter/in` controller + a request/response DTO in `adapter/in`. The controller has **no business logic** and only invokes `application/port/in` use cases. Persistence goes from the service through `port/out` (the JDBC adapter).
+- **Stack**: Kotlin 2.3.20 + Spring Boot 4.1.0 (Spring MVC, synchronous + coroutines), JDK 25. Persistence with Spring Data JDBC (not JPA), migrations with Liquibase.
+- **DTO/serialization**: responses are **typed data classes (no Map)**, kotlinx-serialization + Jackson.
+- **Docs**: Springdoc OpenAPI (Swagger) + Spring REST Docs — the source for the frontend contract.
+- **Quality**: ktlint 1.8.0, strict null safety. Tests with Kotest + Testcontainers (contract tests).
+- **Logging** Log4j2, errors via the `GlobalExceptionHandler` standard error DTO.
+- **Auth/network segregation**: customer APIs (internet) use OTP sessions / internal `/internal/*` (back-office·VDI network) use SSO + staff role. AWS SDK v2 (S3·Secrets Manager), 4 profiles (local/dev/stg/prd).
+
+## Common Rules
+
+- **Auth**: customer APIs = email OTP session (internet); internal APIs (`/internal/*`) = Google SSO + staff role (back-office/VDI network). Header/session mechanics follow the auth ticket.
+- **Response DTOs are defined as typed data classes** (currently `Map<String,Any>` → to be converted). This makes the OpenAPI response schema accurate and the frontend types match the contract.
+- Timestamps are ISO-8601 (timestamptz), ids are uuid strings.
+- Errors use the standard error DTO `{ code, message }` + an appropriate HTTP status (GlobalExceptionHandler).
+- Each endpoint = 1:1 with the corresponding function in the frontend service layer (`prototype-next/services/`).
+
+## 1. Customer API (13 — MVP 11 + Full 2: C3·C5 draft-save)
+
+| # | Method·Path | Purpose | Request DTO | Response DTO |
+| --- | --- | --- | --- | --- |
+| C1 | `POST /cases` | Create case + start first response | `CreateCaseRequest{ }` (customerId from the customer session) | `CaseResponse` |
+| C2 | `GET /cases/{id}` | Customer case detail (owned by self) | — | `CaseResponse` (status, document summary, guidance) |
+| ~~C3~~ | `PUT /cases/{id}/intake/first` | Save first response — **excluded from MVP (draft-save is Full Spec)** | — | — |
+| C4 | `POST /cases/{id}/intake/first/submit` | First submit → classify once + pin second questions | `IntakeAnswersRequest{ answers }` | `CaseResponse` (entityCode, services, pinned) |
+| ~~C5~~ | `PUT /cases/{id}/intake/second` | Save second response — **excluded from MVP (draft-save is Full Spec)** | — | — |
+| C6 | `POST /cases/{id}/intake/second/submit` | Second submit → generate documents → await document submission | `IntakeAnswersRequest{ answers }` | `CaseResponse` |
+| C7 | `GET /cases/{id}/intake/{phase}` | Retrieve saved responses | — | `IntakeResponse` |
+| C8 | `POST /cases/{id}/resubmit` | Revision re-submit → return to the review stage | — | `CaseResponse` |
+| C9 | `GET /cases/{caseId}/documents` | Case document list (+ current-round revision reasons) | — | `List<DocumentResponse>` |
+| C10 | `POST /cases/{caseId}/documents/{docId}/file` | Upload document file (pdf/png/jpg, 10MB, 1 file) | multipart `file` | `DocumentFileResponse` |
+| C11 | `POST /auth/otp/request` | Issue OTP code (email) | `OtpRequest{ email }` | `{ sent: true }` |
+| C12 | `POST /auth/otp/verify` | Verify OTP → issue session | `OtpVerifyRequest{ email, code }` | `AuthSessionResponse` |
+| C13 | `GET /rules/active` | Retrieve active rules (first questions·segments·pin targets) | `?segment=` (optional) | `ActiveRulesResponse` |
+
+## 2. Internal API (7)
+
+| # | Method·Path | Purpose | Request DTO | Response DTO |
+| --- | --- | --- | --- | --- |
+| I1 | `GET /internal/cases` | Dashboard list (default filter by role) | `?status=&assignee=` (optional) | `List<CaseSummaryResponse>` |
+| I2 | `GET /internal/cases/{id}` | Case detail + timeline (case_event) | — | `InternalCaseResponse` (+ timeline) |
+| I3 | `POST /internal/cases/{id}/advance` | Transition to the next review stage (role guard) | — | `CaseResponse` |
+| I4 | `POST /internal/cases/{id}/close` | Close case (reason required) | `CloseRequest{ reason: DROPPED\|EXITED }` | `CaseResponse` |
+| I5 | `POST /internal/documents/{id}/revision-requests` | Request document revision (reason required; sales·ops·compliance) | `RevisionRequest{ reason }` | `DocumentResponse` |
+| I6 | `POST /internal/documents/{id}/approve` | Approve document (compliance, individual) | — | `DocumentResponse` |
+| I7 | `POST /internal/auth/mock-login` | (local) internal SSO mock login | `MockLoginRequest{ email, role }` | `AuthSessionResponse` |
+
+## 3. Response DTO Definitions (typed)
+
+```
+CaseResponse {
+  id: uuid; status: string; entityCode: string?; services: string[];
+  closeReason: string?; revisionRequestedFrom: string?;
+  pinnedQuestionIds: { first: uuid[]; second: uuid[] };
+  createdAt; updatedAt
+}
+CaseSummaryResponse { id; customerId; companyName?; status; entityCode?; services; assigneeStaffId?; createdAt; updatedAt }
+InternalCaseResponse : CaseResponse + { segmentMeta; assigneeStaffId?; timeline: CaseEvent[] }
+CaseEvent { id; eventType; actorType; actorId?; payload; createdAt }
+IntakeResponse { caseId; phase; status; answers; savedAt; submittedAt? }
+DocumentResponse { id; caseId; type; displayName; status; isRequired; latestFile?: DocumentFileResponse; openRevisionReason?: string }
+DocumentFileResponse { id; documentId; fileName; fileSize; mimeType; isLatest; uploadedAt; uploaderType }
+ActiveRulesResponse { segments: Segment[]; questions: Question[]; docTemplates: DocTemplate[] }
+AuthSessionResponse { token/sessionId; role?; expiresAt }
+```
+
+## 4. Known Consistency Issues (resolved in this design)
+
+1. **Response `Map<String,Any>` → convert to the typed DTOs above** (all endpoints). Makes the OpenAPI response schema accurate.
+2. **Frontend integration unverified** → wire each endpoint to an actual call in the corresponding `prototype-next/services/` function, based on the OpenAPI contract.
+3. **Path/verb finalized** — upload is `/cases/{caseId}/documents/{docId}/file` (singular), transitions are `advance`/`close`. Not a generic `/transitions`. The frontend conforms to these actual paths.
+4. **Draft-save (PUT intake save)** — [confirmed 2026-08-15] **excluded from MVP** (draft-save = Full Spec). C3·C5 are scoped out — not wired on the frontend; the backend PUT endpoints are removed or disabled. Since the submits (C4·C6) take answers directly, no prior save is needed.
+5. **Manual assignee change** is excluded from MVP (one account per role) — no endpoint (as intended).
+
+## 5. Per-Endpoint Completion Criteria (common AC template)
+
+Each API ticket must satisfy the following to be complete:
+- Typed request/response DTO (not Map), invoking a `port/in` use case from the hexagonal `adapter/in`
+- Accurate schema exposed in Springdoc OpenAPI + Spring REST Docs snippets generated
+- Auth·role guards applied (customer ownership / internal role)
+- The frontend service layer actually calls this endpoint (replacing localStorage)
+- Contract tests (Kotest; request/response schema + authorization denial) pass

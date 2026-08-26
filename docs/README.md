@@ -9,3 +9,19 @@
 - [`source/arc-client-portal-spec-ko.txt`](./source/arc-client-portal-spec-ko.txt)
 
 화면기획서나 파생 문서는 이 파일을 기준으로 해석하고 갱신한다.
+
+---
+
+# English Version
+
+# Docs
+
+This directory holds the onboarding platform's planning documents and screen-definition documents.
+
+## Reference Document
+
+In this repo, the file below is treated as the reference document for customer onboarding.
+
+- [`source/arc-client-portal-spec-ko.txt`](./source/arc-client-portal-spec-ko.txt)
+
+Screen specs and derivative documents are interpreted and updated against this file.

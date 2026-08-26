@@ -354,3 +354,364 @@ MVP 차이는 각 섹션(2장 화면, 3장 상태값, 4장 분류·질문·서�
 
 * 내부제품은 VDI 내부에서만 사용 — 프론트를 백오피스에 추가, 계정은 백오피스 계정. 고객제품은 인터넷망.
 * 파기 정책(케이스 종료 1개월 후 부분 파기)은 컴플라이언스 사인오프 필요.
+
+---
+
+# English Version
+
+# ARK - Onboarding Platform PRD
+
+> **Source of truth: this GitHub document.** The [Confluence page](https://sentbe-product.atlassian.net/wiki/spaces/NSBS/pages/4134994324) is a **mirror** for stakeholder (business·compliance) viewing. Edit content here (GitHub) and reflect it into the Confluence mirror.
+> Last synced: 2026-08-13 (against Confluence v31)
+
+---
+
+## 1. Overview
+
+### 1.1 Purpose
+
+* Today, new-customer onboarding runs through: inbound via the website → initial screening and document guidance (call, email) → document acquisition (email) → review (Jira) → account creation.
+* Communication with the customer at each stage happens by call and email, which is labor-intensive and slow. This also causes a lot of customer drop-off.
+* Even as customer inbound grows, onboarding work becomes the bottleneck, making rapid scaling hard.
+
+### 1.2 Product Structure
+
+* Customer product: the product where the customer answers questions and uploads documents.
+* Internal product: the product for reviewing case information, changing status, screening, delivering revision feedback, and other onboarding work.
+
+### 1.3 Users & Roles
+
+| Role | What they do |
+| --- | --- |
+| Customer | Start the inquiry, enter information, submit documents, revise |
+| Sales (SALES) | Confirm the segment, confirm document submission, hand off to ops after initial screening |
+| Ops (OPS) | Screen submitted documents (before compliance handoff), guide account setup after compliance approval |
+| Compliance (COMPLIANCE) | Review the survey and documents, manage rules |
+
+### 1.4 Lifecycle (6 stages)
+
+| # | Stage | Customer | Internal |
+| --- | --- | --- | --- |
+| 1 | Inquiry received | Start onboarding | Create case |
+| 2 | Enter information | Enter required information | Obtain segment-decision basis |
+| 3 | Auto-classification, document guidance | Enter additional information, check required documents | Decide segment, determine guidance items |
+| 4 | Document submission | Upload documents | Accept submission |
+| 5 | Review | Re-submit revisions on request | Sales initial screening → ops document screening → compliance review |
+| 6 | Account setup | Wait until complete | Ops does final check and guides account setup |
+
+> **EXITED** = the customer stops midway / **DROPPED** = internal judgment stops the process.
+
+---
+
+## 2. Screens
+
+> The **MVP vs Full Spec** table at the end of each section covers what is excluded/reduced in the first prototype. Items not in a table are MVP = Full Spec. **MVP scope reduction confirmed (2026-08-04)**: remittance-only (CORP, INDIV), ad-hoc document addition·bulk approval·automatic business-number duplicate detection excluded. **Domestic FI added (2026-08-21)**: financial institutions + establishment country KR proceed with MVP onboarding — through second questions·documents. However, FI service selection (contract item 5, 5-1 payout / 5-2 settlement) is not finalized and is excluded from MVP. The 4-stage workflow, the 3-role revision-request permissions, document preview, and the customer timeline are retained.
+
+### 2.1 Customer Product
+
+* **Screen list (7)**
+
+| Screen | Role |
+| --- | --- |
+| Start | Log in or create account + start case |
+| First information entry | 15 first questions (conditional display), progress bar, draft-save |
+| First review | Read-only confirm of first answers → on submit, run segment classification |
+| Second information entry | Per-segment second questions (section grouping), auto-fill from first, draft-save |
+| Second review | Confirm all first+second → on submit, enter the document-submission stage |
+| Document upload | Per-segment document list + upload. In revision mode, highlight revision documents |
+| Status & history | Progress timeline + messages + completion/closure guidance |
+
+**Access, navigation**
+
+* Account creation and login methods are open (email + OTP or email + PW or …)
+    * If two emails from one corporation inquire, they must be deduplicated
+    * The same corporation may retry after dropping out
+    * Enable duplicate detection on a business-registration basis
+* **One account – one active case** (active = a case in progress from intake to account setup). A new case is possible after closure/completion.
+    * A policy is needed to delete after time passes
+* On re-login, auto-route by progress:
+
+| Progress | Destination screen |
+| --- | --- |
+| Answering first questions | First information entry (draft restored) |
+| First submitted / answering second questions | Second information entry (draft restored) |
+| Both first and second submitted | Document upload |
+| Revision requested | Document upload (revision mode) |
+| Internal review in progress / completed / closed | Status & history |
+| No active case | Start page |
+
+**Draft-save** — the first/second entry screens have a "Save draft" button (manual, not auto-save). Input data proceeds not-started → in-progress (draft-saved) → submitted.
+
+**Review screen** — question+answer, read-only. To edit, go "Back" to the entry screen. From the second review you can go "Back" all the way to the first to edit. **Editing the first re-computes the segment** → if the segment changes, show guidance; keep valid second responses, leave new questions blank, and delete questions that disappeared.
+
+**Document upload — two modes**
+
+* _Default mode_ (document-submission stage): per-document upload/preview/re-upload; submit is enabled once all required documents are uploaded.
+* _Revision mode_ (on revision request): for each document needing revision, show **the per-document reason written by the requesting staff** beside it. Undefined documents additionally requested by internal staff are shown too. Both revision and additional documents must all be uploaded to enable submit → on submit, return to the review stage that requested the revision. The customer sees **only the current round's reasons** (past rounds and the cumulative count are hidden).
+
+**Status & history** — progress timeline + 1:1 messages with the assignee + per-status guidance text (a go-to-upload button on revision request, a start-new-case button on completion/closure).
+
+**MVP vs Full Spec**
+
+| Item | MVP | Full Spec |
+| --- | --- | --- |
+| Draft-save | Excluded — batch submit only (no in-progress state) | Draft-save + not-started/in-progress/submitted |
+| Review screen | First/second merged into one screen; the flow of going back to the first to re-compute the segment is excluded | First/second separated + segment re-computation on re-edit |
+| Status & history — messages | Comment area excluded (timeline, status guidance only) | Comments included |
+| Business-number duplicate detection | **Excluded** — email unique only; duplicate cases for the same corporation handled manually by internal staff (drop) | Automatic duplicate detection on a business-registration basis |
+
+### 2.2 Internal Product - Case Management
+
+**Login** — SentBe internal staff Google login - back-office account
+
+**Case dashboard** — shared by the 3 roles. The default filter is auto-set to the logged-in role's stage (ops handles the two stages document screening and account setup; manual change is possible within its permission scope).
+
+List: company name, status, segment, created date, last modified date, days waiting, assignee. Default sort = last modified date descending. Top bar has the logo, role indicator, and logout.
+
+**Case detail — 3 tabs**
+
+| Tab | Content |
+| --- | --- |
+| Customer info | First+second entries + segment-decision result (read-only) |
+| Documents | Document list + preview/download + review actions + create additional requested documents |
+| History | Timeline / customer comments / internal notes (hidden from the customer, append-only) |
+
+* **Document review actions**: individual `[Request revision]` and `[+ Request additional document]` (undefined documents, document name entered manually) are available to **sales, ops, and compliance alike** — on execution the case switches to the revision-requested state and the requesting review stage is recorded. `[Approve]`/`[Bulk approve]` are **compliance only**. Download is for all roles. On revision request, a per-document reason is **required**.
+* **Additional document request**: depending on the case, documents not on the existing list can be requested additionally.
+* **Submission history**: all submissions are preserved (no overwrite); the latest is the current review target, previous ones collapse/expand.
+* **Bottom action buttons** differ by role and stage and transition the case status → see 3.1 for transition rules.
+
+**MVP vs Full Spec**
+
+| Item | MVP | Full Spec |
+| --- | --- | --- |
+| Assignee assignment | One account per role only | Round-robin auto-assignment + manual change |
+| Case detail history tab | Timeline only | Timeline + customer chat + internal notes |
+| Submission history | Latest submission only | All submissions preserved |
+| Document download | Individual only | Individual + bulk (zip) |
+| Additional document request (ad-hoc) | **Excluded** — if an additional document is needed, note it in the revision-request reason | Ad-hoc addition of documents not on the list (document name entered manually) |
+| Document bulk approval | **Excluded** — individual approval only | Individual + bulk approval (compliance) |
+
+* When one type of file is split into n parts in a single submission → **MVP is 1 file per document (no multi-upload); Full is multi-upload** (confirmed 2026-08-07, PI-127).
+    * Allowed formats pdf, png, jpg / max 10MB (confirmed 2026-08-07). Virus scanning is Full.
+
+### 2.3 Internal Product - Rule Management Panel
+
+An internal panel to edit the rules that flow first response → classification → second questions → documents, without code changes. **COMPLIANCE-only access.** Changes apply **to new cases only** (in-progress cases are pinned to the rules at creation time; the ruleset version is recorded).
+
+* 3-stage editing = **① classification rules** (first response → segment) / **② question rules** (segment → second questions, referencing a shared library + authoring unique questions) / **③ document rules** (segment → document checklist + sector/intersection condition slots).
+* The `[+ Add country]` wizard (4 steps: basic info → classification conditions → questions → documents) defines a whole new Collection country (`SVC_COL_IDR`, etc.). entity is not an addition target (Korean business-entity classification is fixed).
+
+**MVP vs Full Spec**
+
+| Item | MVP | Full Spec |
+| --- | --- | --- |
+| Rule-management panel (whole) | Excluded — classification/question/document rules hardcoded (seed); new countries via code changes | Compliance edits live in the panel + country-addition wizard |
+
+### 2.4 Internal Product - Account/Permission Management
+
+Manage internal-staff accounts and roles (permissions) from a screen. **Admin-only.**
+
+* Account list: email, name, role (sales/ops/compliance), active status.
+* A role = access permissions (which case stages·screens are visible, which actions can be performed). Role changes take effect immediately.
+
+**MVP vs Full Spec**
+
+| Item | MVP | Full Spec |
+| --- | --- | --- |
+| Account/permission management screen | Excluded — manage accounts·roles via the table (data) only, no screen | Admin screen for adding accounts·assigning/changing roles·deactivating |
+
+---
+
+## 3. Statuses
+
+Statuses are named by **the action the case is waiting on**, not by the assignee (role), and the responsible role of each status is mapped separately. That way, even though ops handles the two stages document screening and account setup, they are naturally distinguished as separate statuses.
+
+### 3.1 Case Statuses + Transitions
+
+| Customer Label | Internal Label | Code | Owner |
+| --- | --- | --- | --- |
+| Received | Case created | `INQUIRY_RECEIVED` | Customer (entering info) |
+| Document submission required | Awaiting document submission | `DOCUMENT_SUBMISSION_REQUIRED` | Customer |
+| Under review | Initial screening | `INITIAL_SCREENING` | Sales |
+| Under review | Document screening required | `DOCUMENT_SCREENING_REQUIRED` | Ops |
+| Under review | Review, approval required | `APPROVAL_REVIEW_REQUIRED` | Compliance |
+| Account being created | Account setup required | `ACCOUNT_SETUP_REQUIRED` | Ops |
+| Revision required | Revision requested (awaiting customer) | `REVISION_REQUESTED` | Customer |
+| Completed | Completed | `COMPLETED` | — |
+| Stopped | Closed (`closeReason`: `DROPPED`/`EXITED`) | `CLOSED` | — |
+
+**Transition table** (actor, trigger → next status)
+
+Normal flow (sales → ops → compliance → ops):
+
+| from | to | Actor | Trigger |
+| --- | --- | --- | --- |
+| INQUIRY_RECEIVED | DOCUMENT_SUBMISSION_REQUIRED | Customer | Second survey submitted (document list generated) |
+| DOCUMENT_SUBMISSION_REQUIRED | INITIAL_SCREENING | Customer | All required documents uploaded then submitted |
+| INITIAL_SCREENING | DOCUMENT_SCREENING_REQUIRED | Sales | Passed initial screening |
+| DOCUMENT_SCREENING_REQUIRED | APPROVAL_REVIEW_REQUIRED | Ops | Passed document screening |
+| APPROVAL_REVIEW_REQUIRED | ACCOUNT_SETUP_REQUIRED | Compliance | Review approved (all documents APPROVED) |
+| ACCOUNT_SETUP_REQUIRED | COMPLETED | Ops | Account setup complete |
+
+> **The original diagram image** is in [section 3.1 of the Confluence mirror](https://sentbe-product.atlassian.net/wiki/spaces/NSBS/pages/4134994324) (in GitHub markdown, the text transition table is authoritative).
+
+* The 4 review stages = `INITIAL_SCREENING`, `DOCUMENT_SCREENING_REQUIRED`, `APPROVAL_REVIEW_REQUIRED`, `ACCOUNT_SETUP_REQUIRED`.
+* On rejection/closure, a reason is required (recorded in the timeline). Document `[Approve]`/`[Bulk approve]` are compliance only.
+* Per-role view and change permissions are based on each role's owned status. Sales can view from `DOCUMENT_SUBMISSION_REQUIRED` onward.
+* Automatic dropout (EXITED) — see 3.3.
+* On revision request, the case switches to `REVISION_REQUESTED` and records the requesting review stage in `revisionRequestedFrom`. On customer re-submission, it returns to that stage.
+
+### 3.2 Document Statuses + Transitions
+
+| Customer Label | Internal Label | Code |
+| --- | --- | --- |
+| Not applicable | Not submitted | `NOT_REQUESTED` |
+| Submission required | Submission requested | `REQUESTED` |
+| Submitted | Under review | `SUBMITTED` |
+| Revision required | Revision requested | `REVISION_REQUIRED` |
+| Approved | Approved | `APPROVED` |
+
+Transitions: `NOT_REQUESTED → REQUESTED → SUBMITTED →` (`APPROVED` or `REVISION_REQUIRED → SUBMITTED` repeat). If a segment change makes it unnecessary, `REQUESTED → NOT_REQUESTED` (exception).
+
+### 3.3 Global Rules
+
+* **Revision return**: store the review stage that issued the revision request or additional document request → on customer re-submission, return to that stage (each of the sales, ops, compliance review stages).
+* **Automatic dropout**: after n days (separately configured) of inactivity in a state that requires customer action, auto-transition to `CLOSED (EXITED)`. Not applied to internal review states.
+
+**MVP vs Full Spec**
+
+| Item | MVP | Full Spec |
+| --- | --- | --- |
+| Automatic dropout timer | Excluded — internal manual closure only | Auto `CLOSED (EXITED)` after 5 days of inactivity |
+
+> Case/document statuses, the transition table, and the workflow are identical for MVP·Full. **The 4-stage workflow (sales → ops → compliance → ops) and the 3-role revision-request permissions are retained in MVP too (confirmed 2026-08-04).**
+
+---
+
+## 4. Classification, Questions, Documents
+
+A pipeline flowing first response → segment decision → per-segment second questions → per-segment documents. _Reflects the SentBiz Rule review (v1.0.5, BO 4143349976) — implementation in PI-115~120._
+
+### 4.1 Segment Model
+
+3 axes. The code (system identifier) is separated from the display name.
+
+| Axis | Values |
+| --- | --- |
+| **Entity** (business entity) | `ENTITY_CORP` (Korean corporation) / `ENTITY_INDIV` (Korean individual) / `ENTITY_FI` (financial institution, Collection user, including overseas corporation/individual) |
+| **Service** (service used) | `SVC_PAYOUT` (remittance) / `SVC_COL_KRW` / `SVC_COL_VND` / `SVC_COL_ETC` (fallback for undefined countries). Collection is per **collection country** |
+| **Sector** (industry) | A sub-attribute of KRW Collection. Trading (B2B/B2C), Consulting, Development/Design, Advertising/Marketing, Research, IT, Coupang seller — decided by the **Main Business Activity** selection in the KRW second questions |
+
+* **Union + dedup**: one customer can have multiple segments (remittance+collection, etc.), so service and sector are arrays. **Second questions and documents are decided by the union of the held segments and deduplicated by code (type).**
+* New Collection countries are added in the rule panel (2.3).
+
+### 4.2 First Questions → Segment Mapping
+
+**First questions (15 confirmed)** — company name, contact (name/title/phone/email), services used (multiple), collection country (if collecting), remittance origin/destination country (if remitting), business type, establishment country, transaction volume (required), inflow channel, additional inquiry, privacy consent. See the survey sheet for the full text. _Reflects the first-intake question review (v1.0.5) — transaction count removed, transaction volume made required, "other currency" is free-entry when "other" is selected in the select._
+
+**Step 1 — entity decision** (business type #10 + establishment country #11, a fully closed 6-cell)
+
+| Condition | → entity |
+| --- | --- |
+| Collection selected → business type auto-fixed to financial institution | `ENTITY_FI` |
+| Financial institution (regardless of country) | `ENTITY_FI` |
+| Corporation/individual + overseas | `ENTITY_FI` |
+| Corporation + Korea | `ENTITY_CORP` |
+| Individual + Korea | `ENTITY_INDIV` |
+
+> Summary condition: FI = `uses Collection OR financial institution OR establishment country = overseas`. The establishment country is received as the explicit selection `KR` (no free-text matching). The business-type option label is written as 'financial institution (PG·PSP·MSB, etc.)' (formerly 'financial business', reflecting review v1.0.5). **MVP: the collection option is not shown in the first-question services, remittance is fixed as selected (the collection-country question is also hidden) — confirmed 2026-08-05, PI-126. FI decision branch (revised 2026-08-21): financial institution + establishment country KR → onboard as domestic FI (remittance). Overseas establishment (corporation·individual·overseas FI) → show a 'coming soon' notice and close. That is, the MVP targets = CORP, INDIV, domestic FI (all remittance).**
+
+**Step 2 — service addition** (service #6 + collection country #7, multiple)
+
+| Condition | → service |
+| --- | --- |
+| Includes remittance | `SVC_PAYOUT` |
+| Collection + Korea | `SVC_COL_KRW` |
+| Collection + Vietnam | `SVC_COL_VND` |
+| Collection + other (undefined) | `SVC_COL_ETC` (fallback) |
+
+**Final segment = 1 entity + the union of multiple services.** The collection-country options are dynamically generated from the registered service segments (adding a country in the panel also reflects into first #7).
+
+### 4.3 Second Questions
+
+**Management model — question library + segment mapping.** A question is defined once in a single source (the library) and segments reference it by check (no copying). Editing the library in one place reflects across all segments.
+
+* **3 tiers**: common questions (auto-included in all segments) / entity-unique / service, currency-unique. A segment's questions = common ∪ unique, deduplicated by question code.
+* **Common question composition** (Rule review v1.0.5): business registration number, business category (up-tae), business item (jong-mok), VASP status, transaction purpose (settlement agency for sales proceeds/other), source of funds, tax classification (taxable/exempt), homepage address, representative contact, main settlement-agency requested items, company size, listing status, establishment date + BO fields (name, date of birth, nationality, country of residence). Labels follow the business-registration-certificate wording (business category/item).
+* **Option filter override**: even a common question can expose only a subset of options per segment (e.g., source of funds — CORP·FI 5 (business income/real-estate rental/real-estate transfer/financial income/other), INDIV all 8).
+* **Display conditions** are `[question]=[value]` structured (no free text). **Repeated entry** (owners, directors, executives of n people) uses a repeat flag + sub-fields — no upfront count question; grow via the [Add] button.
+* **Display method**: section-based multi-step wizard (progress bar, step save/restore). Two sections per screen by default (three if small). First values auto-fill into the second + are editable.
+
+**Per-segment unique questions (summary)** — the survey sheet is the single source for the full text and options. _MVP active = Corporate, Individual, **domestic FI** (through questions·documents, excluding service selection/contract item 5). KRW·VND·other Collection and overseas FI are Full Spec._
+
+| Segment | Screens | Core unique questions |
+| --- | --- | --- |
+| Corporate | 2 screens | Company name (KO/EN), company contact, business address, corporation type (**non-profit selection = onboarding not allowed**), corporation registration number, representative type (sole/joint/**several** — for joint·several, all entered repeatedly) / **separate BO section**: skip-verification check → 25% natural person → step 2 (largest shareholding, etc.) → step 3 (representative=BO); BO entered repeatedly via [Add] |
+| Individual | 2 screens | Trade name (KO/**EN**), contact, business address, residence, representative info (name KO/EN, date of birth, gender, nationality) / whether representative=BO (if no, collect BO info) |
+| FI (domestic) — **MVP included** | 2 screens (reduced) | Legal name (KO/EN), corporation type, corporation registration number, website, business address, establishment date/country, company·representative contact, representative (name, date of birth, gender, nationality) / 25%+ owner repeated entry (same structure as CORP BO), AML sanctions history. **Removed**: license (authority/type/issuance/expiry), external auditor, FI/MSB/PSP intermediation, parent company, AML policy holding, duplicate items. **Service selection (contract item 5, 5-1/5-2) is excluded from MVP — reflected separately after confirmation (Esther)** |
+| KRW Collection — Full only | 4 sections | A basic info (FI transaction history, sub-merchant holding, etc.) / B business nature (**Main Business Activity option → sector·document branching**, business description, source of funds) / C products·services (purpose of use, number of virtual accounts, reason for fixed-account issuance, expected transaction volume, depositor relationship/type) / D contact (name, title, contact). Items duplicated with common·FI are auto-filled + deduped |
+| VND Collection — Full only | +4 questions | Main business activity, account-opening purpose, depositor relationship, depositor type |
+| Other Collection — Full only | — | TBD (placeholder) |
+
+* BO fields (name, date of birth, nationality, country of residence) are common; the BO **determination logic** is entity-unique.
+
+### 4.4 Documents
+
+**Decision logic**: entity-segment documents + service-segment documents = the final list (union). KRW has additional documents per sector (Main Business Activity). **Dedup by standard type code** (same meaning = same type, shown as 1 item on the customer screen). But if scope or format differs, keep separate types (e.g., bank-account copy ≠ bank transaction statement).
+
+Example standard types: `BIZ_REGISTRATION`, `DIRECTOR_LIST`, `SHAREHOLDER_LIST`, `ID_COPY` (representative ID), `CONTRACT`, `SAMPLE_INVOICE_SHIPPING`. _WEBSITE_URL is removed from documents — moved to a common question (v1.0.5)._
+
+**Explicit document conditions** (Rule review v1.0.5): issuance validity period (corporate registry extract, corporate seal certificate, shareholder list — issued within 3 months), sealing (shareholder list), target scope (corporate seal — collected from all several·joint representatives), real-transaction basis (contract — the actual contract, masking-allowed notice / invoice — the actual-transaction copy).
+
+**Conditional documents, 2 axes** (rule panel document-tab slots):
+
+* **Sector condition**: `sector = value → additional document` (per KRW Collection industry, the Coupang-seller special path).
+* **Intersection (entity) condition**: exclusive to an `entity + service` combination. E.g., `{FI + KRW}` → KYC Documents for Sample Merchants.
+
+**Per-segment documents (summary)** — see the Rule review's sub document page for the full list. _MVP is Corporate, Individual, **domestic FI**._
+
+| Segment | Document count | Notes |
+| --- | --- | --- |
+| Corporate | 8 required + 2 optional | Business registration certificate, corporate registry extract, sealed shareholder list, representative ID, corporate seal, bank account, actual contract, invoice + optional: shipping materials, customs documents (new) |
+| Individual | 4 required + 2 optional | Business registration certificate, representative ID, bank account, actual-transaction invoice + optional: contract (required→optional), shipping materials (B/L, AWB) |
+| FI (domestic) — **MVP included** | 8 types | 6 common (business registration certificate, registry extract, seal, representative ID, shareholder list, corporate-name bank account) + financial-license copy, AML internal-control regulations. Reduced from the previous 13 (audit report, AML audit, org chart, ownership chart, Wolfsberg, Board Resolution excluded). Overseas FI policy TBD (Full) |
+| KRW Collection — Full only | 6 base + per-sector | 6 base + optional (Articles of Incorporation, office photo) + per-Main-Business-Activity additional documents, Coupang 3. Submission guidance: include a translation for non-English, reason if unable to submit, prefer actual-transaction samples, sensitive info may be blinded |
+| VND Collection — Full only | 16 types | Company Charter, Certificate of Incorporation, accountant documents, etc. (some conditional, TBD) |
+
+**MVP vs Full Spec**
+
+| Item | MVP | Full Spec |
+| --- | --- | --- |
+| Entity segment | **CORP, INDIV, domestic FI** (financial institution + establishment KR) — overseas-established FI is closed with 'coming soon' | CORP, INDIV, FI (domestic·overseas) |
+| Service segment | **Remittance only** — collection option not shown in first questions, remittance selection fixed (PI-126) | Remittance + KRW, VND, other Collection |
+| FI second questions, documents | **Domestic FI included** (questions·documents) — service selection/contract item 5 excluded | Full domestic-FI revision (including service selection) + overseas FI |
+| KRW / VND / other Collection second questions, documents | Excluded | KRW 4 sections (A~D), VND 4 questions, per-sector documents, etc. |
+| entity × service intersection conditional documents (FI + KRW → KYC) | Excluded — since the KRW segment is excluded, the FI+KRW combination itself does not exist (domestic FI is remittance-only) | Applied |
+
+> The 15 first questions, the Corporate/Individual/domestic-FI second questions and documents, and the question-library + mapping model are identical for MVP·Full (domestic-FI service selection is excluded from MVP).
+
+---
+
+## 5. MVP Summary
+
+MVP differences are organized in the **MVP vs Full Spec** tables of each section (chapter 2 screens, chapter 3 statuses, chapter 4 classification·questions·documents). The below is an at-a-glance view. _Scope reduction confirmed 2026-08-04._
+
+* **Excluded** — **all of Collection, overseas-established FI, FI service selection (contract item 5, 5-1/5-2) (MVP entities = CORP·INDIV·domestic FI, all remittance — the collection option is not shown in the first questions and remittance is fixed; only financial institution + establishment KR proceeds as domestic FI, overseas-established FI is closed with 'coming soon')**, ad-hoc document request, document bulk approval, automatic business-number duplicate detection, text communication (comments), in-app notifications, the rule-management panel, the account/permission management screen, the automatic dropout timer, entity×service intersection conditional documents.
+* **Reduced** — assignee assignment (manual only), submission history (latest only), draft-save (batch submit only), document download (individual only), review screen (single merged), multi-upload (1 file per document).
+* **Retained (confirmed)** — the 4-stage workflow (sales → ops → compliance → ops), the 3-role revision-request permissions, automatic segment classification + automatic document guidance, the revision loop (per-document reasons), document preview, the customer timeline.
+
+---
+
+## References
+
+* Original PRD (initial): https://sentbe-product.atlassian.net/wiki/spaces/NSBS/pages/4113727492
+* Single source for the full question text (wording, options) — the survey sheet "ARK Customer-Type Survey": https://docs.google.com/spreadsheets/d/1b7ZMAWl6QIgLT-fnRnrt3r2fdmLUKc785VzyRk1J3pQ/edit
+* SentBiz Rule review (v1.0.5): https://sentbe-product.atlassian.net/wiki/spaces/BO/pages/4143349976 — reflected in tickets PI-114~120
+* Full Spec archive: https://sentbe-product.atlassian.net/wiki/spaces/NSBS/pages/4155506735 / code branch `archive/full-spec-v1.0.5`; deployment is `mvp`-branch only
+* Server design: [ERD.md](ERD.md), [TABLE-SPEC.md](TABLE-SPEC.md), server norm `server-spec/CLAUDE.md` (server-spec branch)
+
+### Open
+
+* The internal product is used only inside VDI — the frontend is added to the back office, accounts are back-office accounts. The customer product is on the internet.
+* The disposal policy (partial disposal 1 month after case closure) requires compliance sign-off.

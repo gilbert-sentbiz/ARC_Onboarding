@@ -171,3 +171,181 @@ com.sentbe.bizplatform.ark.{도메인}/
 ## 데이터 주의
 
 실고객 데이터, 운영 크리덴셜을 AI 도구 입력에 넣지 않는다. 시드와 테스트 데이터는 전부 가짜(schema.sql 하단 예시). 개인정보 컬럼(사업자번호, 연락처, BO 정보)은 로그에 남기지 않는다.
+
+---
+
+# English Version
+
+# ARK Onboarding Platform — Server
+
+The server for SentBe's B2B customer onboarding platform. Customers answer a survey and upload documents, then three internal roles (sales → ops → compliance → ops) review in order and open the account. The MVP is **remittance-only** — it onboards only Korean corporations (CORP) and Korean sole proprietors (INDIV).
+
+## Stack, Local Environment
+
+**It follows the company backend standard (BizPlatform / Tech-SentBiz-Backend) exactly.** The "Company Backend Standard" section below is the higher-level norm for architecture·stack·conventions and must not be violated.
+
+- **backend: Kotlin 2.3.20 + Spring Boot 4.1.0** (Spring MVC, synchronous + coroutines together), **JDK 25**, Gradle 9.2.1 (Kotlin DSL, wrapper). Persistence is **Spring Data JDBC (not JPA)**, migrations are **Liquibase**.
+- **frontend: React** — reuse the existing `prototype-next` (Next.js), switching from localStorage to API. The touchpoint is `prototype-next/services/`. **There is no frontend-specific company standard document** → conform to the backend's API contract·4 profiles (local/dev/stg/prd)·auth (OTP/SSO).
+- **db: PostgreSQL** · **cache: Redis** (short-lived TTL for OTP codes, etc.) · **storage: AWS S3 (SDK v2)** — locally, MinIO (S3-compatible).
+- Locally, **Docker compose** brings up db/redis/storage/backend/frontend → verify, then migrate to the company environment. Spec in `LOCAL_DEV.md`. Local↔company differences are absorbed **only via environment variables** (no hardcoded endpoints).
+
+> ⚠️ The current code in `server/` (the ark-dev reference implementation, PI-128~132) was written before this standard was finalized and is **non-compliant** (Spring Boot 3.4 / JPA / Flyway / flat layers / Kotlin 1.9 / JDK 21). Use it only as a working **reference implementation**; the actual backend is re-scaffolded on top of the standard below — PI-133.
+
+## Company Backend Standard (higher-level norm, BINDING)
+
+Source: [Backend Tech Spec (BizPlatform basis)](https://sentbe-product.atlassian.net/wiki/spaces/S2/pages/4173660292). This document is final for architecture·conventions·versions. ARK provides *what is built* (the domain); *how it is built* all follows here.
+
+### Architecture — Hexagonal (Ports & Adapters)
+
+ARK is **incorporated as a module inside bizplatform**. Package root `com.sentbe.bizplatform.ark.{domain}` (the module name `arc` is **provisional** — renamed once the backend team's convention is finalized; a mechanical find-and-replace of the package path). Each domain has the same layers:
+
+```
+com.sentbe.bizplatform.ark.{도메인}/
+├── adapter/
+│   ├── in/          # REST 컨트롤러, 요청·응답 DTO
+│   └── out/         # JDBC 리포지토리, S3·외부 API 클라이언트
+└── application/
+    ├── domain/      # 도메인 모델
+    ├── port/in/     # 유스케이스 인터페이스 (컨트롤러가 호출)
+    ├── port/out/    # 외부 의존 인터페이스 (서비스가 호출)
+    ├── service/     # 비즈니스 로직
+    ├── event/       # 도메인 이벤트
+    └── exception/   # 도메인 예외
+```
+
+Business logic (`application`) depends only on `port` interfaces, and concrete technologies like the DB·S3 are isolated in `adapter`.
+
+### ARK Domain Split
+
+| Domain | Tables | Core Use Cases |
+| --- | --- | --- |
+| `case` | onboarding_case, case_event | Case creation, 4-stage status transitions, timeline |
+| `intake` | intake_response | Save·submit first/second responses |
+| `document` | document, document_file, revision_request | Document creation·upload·revision loop·approval |
+| `rule` | segment, question, doc_template | Rule-seed retrieval, classification·question·document decisions |
+| `customer` | customer | Customer account, email OTP authentication |
+| `staff` | staff | Internal account, role authorization (SSO) |
+| `global` | — | Common (exceptions, config, event infrastructure) |
+
+Case creation and first/second submission are orchestrations where the `case` domain service calls the `port/out` of `rule`·`document`·`intake` (no direct cross-domain DB access).
+
+### Persistence — Spring Data JDBC (no JPA)
+
+- JPA-style constructs like `@Entity`·lazy loading are prohibited. Repositories are per aggregate root.
+- `jsonb` (pinned_question_ids, answers, segment_meta, payload, options, etc.) and `text[]` (services, sectors) are mapped via **custom converters** (Jackson jsonb, Postgres array).
+- The schema moves the contents of `schema.sql` into a **Liquibase changelog** (format change only, identical content). DB-level constraints such as the `question` immutability trigger and partial unique indexes are kept intact regardless of the ORM.
+
+### Conventions·Quality Gates
+
+- **ktlint 1.8.0 enforced** — a violation fails compilation. Run `./gradlew ktlintFormat` before committing.
+- Strict compiler null safety (`-Xjsr305=strict`).
+- Serialization with kotlinx-serialization + Jackson together, logging with Log4j2 (Logback excluded).
+- API docs with Springdoc OpenAPI (Swagger UI) + Spring REST Docs.
+
+### Testing
+
+- **Kotest 6.x (BDD style)** + JUnit 5. DB tests use **Testcontainers (PostgreSQL)**, schema via Liquibase. mockito-kotlin, external HTTP via MockWebServer.
+
+### Infrastructure·Build
+
+- Docker multi-stage (temurin 25, alpine, non-root execution), in-house Nexus repository — the build requires `NEXUS_USERNAME`/`NEXUS_PASSWORD` (build fails without them).
+- AWS SDK v2: Secrets Manager, S3, STS/SSO. Four environment profiles (local/dev/stg/prd).
+
+### AI-Coding Cautions (company doc, section 6)
+
+- **Spring Boot 4.x·Kotlin 2.3·JDK 25 are the latest majors** — AI tends to suggest 3.x/older APIs, so always keep the versions in context.
+- If JPA-style code appears, state in the prompt that it won't work (this is Spring Data JDBC).
+- Onboarding has no monetary calculations; instead **state transitions·invariants** are the danger points — review·test even AI-generated code without fail.
+
+## Spec Sources (in this order on conflict)
+
+> **Architecture·stack·conventions: the "Company Backend Standard" above takes top priority.** The below are sources for *what is built* (the domain).
+
+1. [Table Specification](https://sentbe-product.atlassian.net/wiki/spaces/NSBS/pages/4158980234) — the schema (the origin of `schema.sql`)
+2. [PRD](https://sentbe-product.atlassian.net/wiki/spaces/NSBS/pages/4134994324) — scope, screens, workflow (per-section MVP vs Full tables — implement the MVP column only)
+3. [ERD](https://sentbe-product.atlassian.net/wiki/spaces/NSBS/pages/4148920321) — design principles and rationale
+4. The prototype `prototype-next/` — the living spec for screens·flows. The reference implementation of server logic is `prototype-next/services/`
+
+Spec changes go doc → code. Do not change code first.
+
+## Invariants That Must Never Be Broken
+
+1. **question rows are immutable.** UPDATE is allowed only to set `deactivated_at` (enforced by a trigger in schema.sql). Editing a question = deactivate the existing row + insert a new row (lineage linked via `replaces_question_id`).
+2. **A case "pins" the rules it references.** At case creation the list of first-question ids, and at first submission the list of second-question ids, are stored in `onboarding_case.pinned_question_ids`. An in-progress case's screens always render from this list — if a rule change applies retroactively to an existing case, that's a bug.
+3. **The document list is copied from doc_template into document rows at decision time** (union + type dedup). Later template changes must not affect existing cases.
+4. **Segment classification is evaluated once at first submission and the result stored** (`entity_code`, `services`). No re-evaluation.
+5. **case_event is append-only.** No edits or deletes. The timeline screen = this single table.
+6. **One account, one active case** — enforced by a partial unique index. A new case is possible only after COMPLETED/CLOSED.
+7. **Deletion of rule tables (segment, question, doc_template) is a soft delete** (`deactivated_at`) — rows are preserved because past cases reference them.
+
+## Case Statuses and Transitions
+
+Statuses (PRD 3.1 — named by the pending action, with the responsible role mapped separately):
+
+| Code | Internal Label | Owner |
+| --- | --- | --- |
+| `INQUIRY_RECEIVED` | Case created (entering first, second information) | Customer |
+| `DOCUMENT_SUBMISSION_REQUIRED` | Awaiting document submission | Customer |
+| `INITIAL_SCREENING` | Initial screening | Sales (SALES) |
+| `DOCUMENT_SCREENING_REQUIRED` | Document screening | Ops (OPS) |
+| `APPROVAL_REVIEW_REQUIRED` | Review, approval | Compliance (COMPLIANCE) |
+| `ACCOUNT_SETUP_REQUIRED` | Account setup | Ops (OPS) |
+| `REVISION_REQUESTED` | Revision requested (awaiting customer) | Customer |
+| `COMPLETED` | Completed | — |
+| `CLOSED` | Closed (`close_reason`: DROPPED=internal stop / EXITED=customer dropout) | — |
+
+Normal flow:
+
+| from | to | Actor | Trigger |
+| --- | --- | --- | --- |
+| INQUIRY_RECEIVED | DOCUMENT_SUBMISSION_REQUIRED | Customer | Second survey submitted (document list generated) |
+| DOCUMENT_SUBMISSION_REQUIRED | INITIAL_SCREENING | Customer | All required documents uploaded then submitted |
+| INITIAL_SCREENING | DOCUMENT_SCREENING_REQUIRED | Sales | Passed initial screening |
+| DOCUMENT_SCREENING_REQUIRED | APPROVAL_REVIEW_REQUIRED | Ops | Passed document screening |
+| APPROVAL_REVIEW_REQUIRED | ACCOUNT_SETUP_REQUIRED | Compliance | Review approved (all documents APPROVED) |
+| ACCOUNT_SETUP_REQUIRED | COMPLETED | Ops | Account setup complete |
+
+Revision loop (common to the 3 review stages):
+
+- INITIAL_SCREENING / DOCUMENT_SCREENING_REQUIRED / APPROVAL_REVIEW_REQUIRED → **REVISION_REQUESTED** (revision request — per-document reason required; the requesting stage is recorded in `revision_requested_from`)
+- REVISION_REQUESTED → **returns to the stage recorded in `revision_requested_from`** (on customer re-submission)
+- Unresolved revision_request rows are always from the same stage (a case is at one stage at a time) — `revision_requested_from` is a derived cache; the origin is the revision_request table
+
+Closing: from any of the above states, internal staff can CLOSED (DROPPED) after entering a reason. Automatic dropout (the EXITED batch) is Full Spec — MVP is manual only.
+
+Document status (per document): `NOT_REQUESTED → REQUESTED → SUBMITTED → APPROVED or REVISION_REQUIRED → SUBMITTED …`. Approval is by compliance only, individual approval only (no bulk).
+
+Implementation reference: `prototype-next/services/stateMachine.ts` (if the implementation differs from the table above, PRD 3.1 is correct — confirm with the PM).
+
+## Candidate API List
+
+The functions in the prototype service layer (`prototype-next/services/`) are the endpoints that will be needed. Draft:
+
+| Prototype Function | Proposed REST | Permission |
+| --- | --- | --- |
+| createCase | POST /cases (includes first response) | Customer |
+| getIntakeResponse | GET /cases/{id}/intake/{phase} | Customer, internal |
+| confirmSecondIntake | POST /cases/{id}/intake/second (submit → confirm classification + generate documents) | Customer |
+| getDocuments | GET /cases/{id}/documents | Customer, internal |
+| uploadFile | POST /documents/{id}/files | Customer |
+| approveDocument | POST /documents/{id}/approve | Compliance |
+| requestRevision | POST /documents/{id}/revision-requests (reason required) | Sales, ops, compliance |
+| resubmitRevision | POST /cases/{id}/resubmit (→ return to the requesting stage) | Customer |
+| transitionStatus | POST /cases/{id}/transitions (guard = the transition table above) | Per role |
+| changeOwner | PATCH /cases/{id}/assignee | Internal |
+| (caseEventStore) | GET /cases/{id}/events (timeline) | Customer (partial), internal |
+| (ruleStore) | GET /rules/active (for retrieving first questions, segments, pin targets) | Customer, internal |
+
+Auth: customer = **email + email OTP** (confirmed 2026-08-07 — no password, `password_hash` is always null; OTP-code storage is a separate short-lived store, the dev team's choice), internal = Google SSO (back-office account) + role authorization via the staff table role. Internal APIs are on the VDI/back-office network, customer APIs on the internet — network segregation is at the API layer, the DB is shared.
+
+File upload (confirmed 2026-08-07): allowed formats pdf, png, jpg / max 10MB / **MVP is 1 file per document, Full is multi-upload** / virus scanning is Full. Format and size validation are at the API.
+
+Data disposal (confirmed 2026-08-07): **MVP is manual disposal only**. **Full is a disposal batch 1 month after case closure** — deletes intake_response·document·document_file·revision_request, retaining only customer(company_name, contact_name)·onboarding_case(entity_code, services, status). The reason company_name/contact_name are copied into customer is this retention. ⚠️ The 1-month basis and the legal basis for retaining the contact name are subject to compliance sign-off.
+
+## What the MVP Does Not Build
+
+Collection and the entire FI segment, the rule-management screen (rules by seed only — seed changes are migrations), comments, notifications, draft-save, bulk approval, ad-hoc document addition, automatic business-number duplicate detection, the automatic dropout batch, and account/permission management screens. All Full Spec — the schema is already designed to expand only via additions/relaxations, so do not build them in advance.
+
+## Data Caution
+
+Do not put real customer data or production credentials into AI-tool inputs. Seed and test data are all fake (examples at the bottom of schema.sql). Do not leave PII columns (business number, contact info, BO information) in logs.
