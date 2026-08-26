@@ -412,3 +412,422 @@
 | created_at | createdAt | Instant? |
 
 **otp_token** · JdbcEntity 없음 (인증 어댑터에서 직접 접근) — DDL 컬럼: `id` uuid PK, `email` varchar, `code` varchar(6), `expires_at` timestamptz, `used_at` timestamptz?, `created_at` timestamptz.
+
+---
+
+# English Version
+
+# ARK - Table Specification (14 implemented: rules 3 + case 8 + auth 3)
+
+> **Source of truth: this GitHub document.** The [Confluence page](https://sentbe-product.atlassian.net/wiki/spaces/NSBS/pages/4158980234) is a read-only mirror. The executable DDL is the companion source of truth in `server-spec/schema.sql` (server-spec branch).
+> Last synced: 2026-08-13 (against Confluence v4)
+
+---
+
+This is the table specification based on the 2026-08-05 revised model in the [ERD](ERD.md) (immutable question + case pinning). It covers only the **11** MVP implementation targets (rules 3 + case 8). Full-Spec-only tables such as comment and notification are in the extension notes at the bottom.
+
+## Common Rules
+
+* PKs are all `uuid`; all timestamps are `timestamptz`.
+* If a constraint cell has no `nullable`, the column is **NOT NULL**.
+* Status and code fields use `varchar` + a CHECK constraint instead of an enum type — adding a value only requires updating the CHECK (no type migration). The goal is to block typos and arbitrary values from entering the DB.
+* Deletion of the rule tables (segment, question, doc_template) is always a **soft delete** (setting `deactivated_at`) — past cases keep referencing them, so the rows are preserved.
+* **question is immutable**: an UPDATE may only set `deactivated_at`. A content edit = deactivate + a new row (new id).
+
+## 1. Rule Tables (3)
+
+### 1.1 segment — segment definition
+
+The segment dictionary along the axes of customer type (entity), service, and sector. Adding a Collection country = one row insert here. Ordinarily editable — changes affect only new cases (a case keeps its own classification result and question set).
+
+| Column | Type | Constraint | Description |
+| --- | --- | --- | --- |
+| id | uuid | PK |  |
+| axis | varchar | CHECK: `entity` / `service` / `sector` | Segment axis |
+| code | varchar | unique among active rows (partial index) | `ENTITY_CORP`, `SVC_PAYOUT`, `SVC_COL_KRW` … |
+| label | varchar |  | Display name (separate from the code, PRD 4.1) |
+| classification_trigger | jsonb | nullable | The conditions under which this segment is assigned: an array of `{priority, logic, conditions:[{field, op, value}]}`. Evaluated once at first submission and the result stored on the case — later changes do not reclassify existing cases |
+| question_overrides | jsonb | nullable | Per-segment question exceptions: `{question_id: {enabled, option_filter:[values…], display_order}}`. Option subsets of common questions (e.g. the 5 CORP source-of-funds options), on/off |
+| doc_overrides | jsonb | nullable | Per-segment document exceptions: `{doc_type: {enabled, is_required}}` |
+| created_at | timestamptz |  |  |
+| deactivated_at | timestamptz | nullable | Soft delete — stops being shown in new cases |
+
+* If overrides grow to dozens of segments and reverse lookups ("which segments use question X") become frequent, promote to a map table (ERD principle: normalize when needed).
+
+### 1.2 question — question library (immutable)
+
+One question = one row. Because it is the sole rule definition that an in-progress case keeps re-reading, it is **immutable** — text and options cannot be edited; an edit = deactivate + a new row. So once a case pins the list of question ids, retroactive change is prevented at the source.
+
+| Column | Type | Constraint | Description |
+| --- | --- | --- | --- |
+| id | uuid | PK | The key of a response (`intake_response.answers`) |
+| code | varchar | unique among active rows | Semantic key (e.g. `Q_BIZ_CATEGORY`). On replacement, the new row inherits it — the basis for grouping response statistics along a lineage |
+| phase | varchar | CHECK: `first` / `second` | First / second survey |
+| classification | varchar | CHECK: `common` / `own` | Common (auto-included in all segments) / segment-specific |
+| owner_segment_id | uuid | FK → segment, nullable | The owning segment when `own` |
+| label | text |  | Question text |
+| input_type | varchar | CHECK | `text` / `textarea` / `select` / `radio` / `multi` / `number` / `date` |
+| options | jsonb | nullable | Choices `[{value, label}]` — part of the question content, so embedded and immutable together |
+| is_required | boolean |  |  |
+| show_when | jsonb | nullable | Display condition `{question_id, value}` — only the `[question]=[value]` structure (PRD 4.3) |
+| repeat | boolean | default false | Repeating input group (BO; co-representatives / n representatives — the \[Add\] button). **See 2.4 for the response structure** |
+| parent_question_id | uuid | FK → question, nullable | Subfield of a repeating group; the parent of a follow-up question |
+| display_order | int |  | Default display order (per-segment order comes from the segment override) |
+| replaces_question_id | uuid | FK → question, nullable | Replacement lineage — which question this replaced |
+| created_by_staff_id | uuid | FK → staff, nullable | MVP seeds are null; Full is the rule-panel author |
+| created_at | timestamptz |  |  |
+| deactivated_at | timestamptz | nullable | Soft delete — excluded from new cases, but past responses still render |
+
+### 1.3 doc_template — document definition
+
+The document-type dictionary. Because it is copied into `document` rows at case creation (a snapshot), template changes do not affect existing cases — ordinarily editable.
+
+| Column | Type | Constraint | Description |
+| --- | --- | --- | --- |
+| id | uuid | PK |  |
+| type | varchar | unique among active rows | Standard code (e.g. `BIZ_REGISTRATION`) — the segment-union dedup key |
+| display_name | varchar |  | Display name on the customer screen |
+| classification | varchar | CHECK: `common` / `own` | Common / segment-specific |
+| owner_segment_id | uuid | FK → segment, nullable | The owning segment when `own` |
+| is_required | boolean |  | Required / optional |
+| is_conditional | boolean |  | Whether conditional |
+| condition | jsonb | nullable | Sector conditions, entity×service intersection conditions (unused in MVP — remittance only) |
+| guide | text | nullable | Submission guidance — issued within 3 months, sealed, an actual transaction copy, masking allowed, etc. (Rule review v1.0.5) |
+| created_at | timestamptz |  |  |
+| deactivated_at | timestamptz | nullable | Soft delete |
+
+## 2. Case Tables (8)
+
+### 2.1 customer — customer account
+
+| Column | Type | Constraint | Description |
+| --- | --- | --- | --- |
+| id | uuid | PK |  |
+| email | varchar | unique | Login identifier |
+| auth_method | varchar | CHECK: `otp` / `password`, default `otp` | **MVP =** `otp` (email OTP, confirmed 2026-08-07). No password. Storage of OTP issuance/verification (short TTL) is a separate store (a table or an external service/Redis) — as auth infrastructure it is the dev team's choice and is not part of this schema |
+| password_hash | varchar | nullable | Unused in MVP (always null) — kept for a future password migration |
+| business_reg_no | varchar | nullable, indexed | Business registration number — backfilled at second submission. MVP stores only (automatic duplicate detection is Full) |
+| company_name | varchar |  | Company name — copied from the first response (for dashboard display). **Retained even after Full destruction** |
+| contact_name | varchar | nullable | Contact name — copied from the first response. **Retained even after Full destruction** (copied here so it survives even when the response is deleted) |
+| created_at | timestamptz |  |  |
+
+* MVP enforces only email uniqueness — the same business can create duplicate accounts using different emails. **Operations manually identifies these on the dashboard and drops duplicate cases** (PRD 2.1 MVP table). The `business_reg_no` index is also for this manual lookup.
+* **Items retained after Full destruction** — when destroying one month after case closure, only `company_name`, `contact_name` are kept (+ the case's entity/services = desired transaction type). Since responses and files are deleted, these two are copied onto customer outside the response. Details in section 3.
+
+### 2.2 staff — internal staff
+
+Authentication is Google SSO — this table holds only authorization (role). MVP manages rows directly, without a screen.
+
+| Column | Type | Constraint | Description |
+| --- | --- | --- | --- |
+| id | uuid | PK |  |
+| email | varchar | unique | Google login (back-office account) identifier |
+| name | varchar |  |  |
+| role | varchar | CHECK: `SALES` / `OPS` / `COMPLIANCE` / `ADMIN` | Role = access permission |
+| is_active | boolean |  | Deactivated = access blocked (PRD 2.4) |
+| created_at | timestamptz |  |  |
+
+### 2.3 onboarding_case — the case (central table)
+
+| Column | Type | Constraint | Description |
+| --- | --- | --- | --- |
+| id | uuid | PK |  |
+| customer_id | uuid | FK → customer, not null |  |
+| status | varchar | CHECK: PRD 3.1, 9 statuses | `INQUIRY_RECEIVED` … `CLOSED` (new names — PI-124) |
+| close_reason | varchar | nullable, CHECK | `DROPPED` (internal halt) / `EXITED` (customer drop-off) |
+| revision_requested_from | varchar | nullable | The review stage that issued the revision request — the return target on resubmission. **Derived cache**: the source is the unresolved rows in revision_request. Since a case is only ever in one review stage at a time, the unresolved rows are always at the same stage (invariant) — this cache lets transition logic read only the case row without a join, and is updated together on revision-request/resubmission transitions |
+| entity_code | varchar | nullable | Classification result. MVP: only `ENTITY_CORP` / `ENTITY_INDIV`. **Part of the desired transaction type — retained after Full destruction** |
+| services | text\[\] | default `{}` | Classification result (multiple). MVP: fixed `{SVC_PAYOUT}` — the same value for all cases, so the **GIN index is Full-only**. **Desired transaction type — retained after Full destruction** |
+| sectors | text\[\] | default `{}` | KRW sub-sectors. Unused in MVP |
+| segment_meta | jsonb |  | Country of establishment, transaction volume + a record of the trigger applied to the classification (preserving the classification basis). _Deleted on destruction_ |
+| pinned_question_ids | jsonb |  | **Pinned question set**: `{first:[question_id…], second:[…]}`. first is fixed at case creation, second at first submission (segment classification) — blocks retroactive rule changes thereafter |
+| assignee_staff_id | uuid | FK → staff, nullable | Current assignee. The responsible role is derived from status |
+| last_customer_action_at | timestamptz |  | MVP records only (the automatic drop-off batch is Full) |
+| created_at / updated_at | timestamptz |  |  |
+
+* **One active case per account**: `CREATE UNIQUE INDEX … ON onboarding_case(customer_id) WHERE status NOT IN ('COMPLETED','CLOSED')`
+* Dashboard index: `(status, updated_at desc)`
+
+### 2.4 intake_response — first/second response
+
+| Column | Type | Constraint | Description |
+| --- | --- | --- | --- |
+| id | uuid | PK |  |
+| case_id | uuid | FK → onboarding_case, not null |  |
+| phase | varchar | CHECK: `first` / `second`, unique `(case_id, phase)` | Up to 2 rows per case |
+| status | varchar | CHECK | `not_started` / `submitted` (MVP — `draft` save is Full) |
+| answers | jsonb |  | `{question_id: value}` full response — since question is immutable it joins accurately anytime. **See below for the repeating-group structure.** _Deleted on Full destruction_ |
+| saved_at | timestamptz |  | Last save |
+| submitted_at | timestamptz | nullable | Submission time |
+
+* **Value rules for answers** — ordinary question: scalar (`"value"`, number) / multi: array of strings / **repeating group (question.repeat=true): an array of objects keyed by the parent question id**. Each object's keys are the ids of the subquestions (questions linked via parent_question_id).
+
+```
+{
+  "q-corp-name": "SentBe",
+  "q-rep-type": "joint",
+  "q-bo-group": [
+    { "q-bo-name": "Kim OO", "q-bo-birth": "1980-01-01", "q-bo-nationality": "KR" },
+    { "q-bo-name": "Lee OO", "q-bo-birth": "1985-05-05", "q-bo-nationality": "KR" }
+  ]
+}
+```
+
+### 2.5 document — per-case required documents
+
+At segment classification, these are **copied** from doc_template (union + type dedup) — this copy is the retroactive-change prevention for the document list.
+
+| Column | Type | Constraint | Description |
+| --- | --- | --- | --- |
+| id | uuid | PK |  |
+| case_id | uuid | FK → onboarding_case, not null |  |
+| doc_template_id | uuid | FK → doc_template, **not null (MVP)** | The template it was created from. In MVP all documents are created from a template, so not null — when ad-hoc additions arrive in Full this relaxes to nullable |
+| type | varchar | unique `(case_id, type)` | Copied from the template — dedup also guaranteed at the DB level |
+| display_name | varchar |  | Copied from the template |
+| status | varchar | CHECK: PRD 3.2, 5 document statuses | `NOT_REQUESTED` … `APPROVED` |
+| is_required | boolean |  | Copied from the template |
+| created_at / updated_at | timestamptz |  |  |
+
+### 2.6 document_file — submissions (append-only)
+
+File binaries live in object storage (S3, etc.); the DB holds only the key. When a new submission is uploaded, the previous row's `is_latest=false`; nothing is deleted.
+
+| Column | Type | Constraint | Description |
+| --- | --- | --- | --- |
+| id | uuid | PK |  |
+| document_id | uuid | FK → document, not null |  |
+| file_name | varchar |  |  |
+| file_size | int |  | Cap **10MB** (confirmed 2026-08-07) — validated in the API |
+| mime_type | varchar |  | Allowed **pdf, png, jpg** (confirmed 2026-08-07). Virus scanning is Full |
+| storage_key | varchar |  | Object storage key |
+| uploader_type | varchar | CHECK: `CUSTOMER` / `STAFF` | Upload actor. MVP uploads are customer-only — always `CUSTOMER` |
+| uploader_staff_id | uuid | FK → staff, nullable | Only when `STAFF` — a sentinel value and an FK are not mixed in one column |
+| is_latest | boolean |  | The submission currently under review |
+| uploaded_at | timestamptz |  |  |
+
+* **MVP is one file per document (no multi-upload); Full is multi-upload** (confirmed 2026-08-07) — this is an API constraint and the schema is identical in both cases (a submission is always an appended row). Allowed pdf/png/jpg, 10MB cap. _Deleted on Full destruction_
+
+### 2.7 revision_request — per-document revision reasons
+
+"Only the current round's reasons are shown to the customer" (PRD 2.1) = return only rows where `resolved_at IS NULL`. Past rounds are kept for internal use. **The source of truth for the revision return target** (the case's revision_requested_from is a derived cache of this table).
+
+| Column | Type | Constraint | Description |
+| --- | --- | --- | --- |
+| id | uuid | PK |  |
+| document_id | uuid | FK → document, not null |  |
+| reason | text |  | Per-document reason — input required (PRD 2.2) |
+| requested_by_staff_id | uuid | FK → staff, not null |  |
+| requested_from_status | varchar |  | The review stage at request time — records the return target on resubmission |
+| requested_at | timestamptz |  |  |
+| resolved_at | timestamptz | nullable | Customer resubmission time |
+
+### 2.8 case_event — unified history log (append-only)
+
+Case status changes, document status changes, assignee changes, and rejection/closure reasons all accumulate in one table. The timeline screen = this single table. No edits/deletes.
+
+| Column | Type | Constraint | Description |
+| --- | --- | --- | --- |
+| id | uuid | PK |  |
+| case_id | uuid | FK → onboarding_case, not null, indexed |  |
+| event_type | varchar | CHECK: `CASE_CREATED` / `CASE_STATUS_CHANGED` / `DOC_STATUS_CHANGED` / `ASSIGNEE_CHANGED` | Event kind. **Adding one = updating the CHECK** — an intended cost (blocking typos and arbitrary values from the DB comes first). Finer distinctions go in payload |
+| actor_type | varchar | CHECK: `CUSTOMER` / `STAFF` / `SYSTEM` | The acting subject |
+| actor_id | uuid | nullable | customer or staff id (interpreted via actor_type) |
+| payload | jsonb |  | `{prev, next, reason, close_reason, document_id …}` |
+| created_at | timestamptz |  | Timeline sort key |
+
+## 3. Full Spec Extension Notes
+
+The following are not built now. All are extensible by **addition or relaxation only** (no destructive change to the existing 11 tables).
+
+* **comment** table — customer comments + internal notes (distinguished by visibility)
+* **notification** table — in-app notifications
+* **document** gains `is_ad_hoc`, `requested_by_staff_id` columns + relaxing `doc_template_id` to nullable — ad-hoc document-addition requests
+* **multi-upload** — Full allows multiple files per document (MVP is one file). No schema change (document_file is already a multi-row append structure); only the API constraint is lifted.
+* `draft` value in **intake_response.status** — draft save
+* a GIN index on **onboarding_case.services** — when service filtering becomes meaningful with Collection added
+* virus scanning — integrate a scanner (ClamAV, etc.) into the upload pipeline
+* **destruction batch one month after case closure** — **delete**: `intake_response`, `document`, `document_file` (files), `revision_request`, `onboarding_case.segment_meta`. **retain**: `customer` (company_name, contact_name) + `onboarding_case` (entity_code, services = desired transaction type, status). MVP has no automatic destruction (manual only). ⚠️ The one-month basis and the legal basis for retaining the contact name (personal data) require compliance sign-off.
+* automatic business-number duplicate detection — using `business_reg_no` (the column already exists)
+* promoting the segment override jsonb to a map table — when the number of segments grows
+
+---
+
+## 4. Column ↔ Kotlin Field Mapping (implementation, `ark-backend` main / 2026-08-26)
+
+> Spring Data JDBC `@Column("snake_case") val camelCase` explicit mapping. `created_at`=`@CreatedDate @ReadOnlyProperty`, `updated_at`=`@LastModifiedDate`. For jsonb, the **case family = `Map<String,Any>` (converter), the rule family = `String?` (raw json)**. `text[]`=`List<String>`.
+
+### 4.1 Rules (3)
+
+**segment** · `SegmentJdbcEntity`
+| DB Column | Kotlin Field | Type |
+| --- | --- | --- |
+| id | id | UUID |
+| axis | axis | String |
+| code | code | String |
+| label | label | String |
+| classification_trigger | classificationTrigger | String? (jsonb raw) |
+| question_overrides | questionOverrides | String? (jsonb raw) |
+| doc_overrides | docOverrides | String? (jsonb raw) |
+| created_at | createdAt | Instant? |
+| deactivated_at | deactivatedAt | OffsetDateTime? |
+
+**question** · `QuestionJdbcEntity` (immutability trigger)
+| DB Column | Kotlin Field | Type |
+| --- | --- | --- |
+| id | id | UUID |
+| code | code | String |
+| phase | phase | String |
+| classification | classification | String |
+| owner_segment_id | ownerSegmentId | UUID? |
+| label | label | String |
+| input_type | inputType | String |
+| options | options | String? (jsonb raw) |
+| is_required | isRequired | Boolean |
+| show_when | showWhen | String? (jsonb raw) |
+| repeat | repeat | Boolean |
+| parent_question_id | parentQuestionId | UUID? |
+| display_order | displayOrder | Int |
+| replaces_question_id | replacesQuestionId | UUID? |
+| created_by_staff_id | createdByStaffId | UUID? |
+| created_at | createdAt | Instant? |
+| deactivated_at | deactivatedAt | OffsetDateTime? |
+
+**doc_template** · `DocTemplateJdbcEntity`
+| DB Column | Kotlin Field | Type |
+| --- | --- | --- |
+| id | id | UUID |
+| type | type | String |
+| display_name | displayName | String |
+| classification | classification | String |
+| owner_segment_id | ownerSegmentId | UUID? |
+| is_required | isRequired | Boolean |
+| is_conditional | isConditional | Boolean |
+| condition | condition | String? (jsonb raw) |
+| guide | guide | String? |
+| created_at | createdAt | Instant? |
+| deactivated_at | deactivatedAt | OffsetDateTime? |
+
+### 4.2 Case (8)
+
+**customer** · `CustomerJdbcEntity`
+| DB Column | Kotlin Field | Type |
+| --- | --- | --- |
+| id | id | UUID? |
+| email | email | String |
+| auth_method | authMethod | String |
+| password_hash | passwordHash | String? |
+| business_reg_no | businessRegNo | String? |
+| company_name | companyName | String? |
+| contact_name | contactName | String? |
+| created_at | createdAt | Instant? |
+
+**staff** · `StaffJdbcEntity`
+| DB Column | Kotlin Field | Type |
+| --- | --- | --- |
+| id | id | UUID |
+| email | email | String |
+| name | name | String |
+| role | role | String |
+| is_active | isActive | Boolean |
+| created_at | createdAt | Instant? |
+
+**onboarding_case** · `OnboardingCaseJdbcEntity`
+| DB Column | Kotlin Field | Type |
+| --- | --- | --- |
+| id | id | UUID |
+| customer_id | customerId | UUID |
+| status | status | String |
+| close_reason | closeReason | String? |
+| revision_requested_from | revisionRequestedFrom | String? |
+| entity_code | entityCode | String? |
+| services | services | List\<String\> (text[]) |
+| sectors | sectors | List\<String\> (text[]) |
+| segment_meta | segmentMeta | Map\<String,Any\> (jsonb) |
+| pinned_question_ids | pinnedQuestionIds | Map\<String,Any\> (jsonb) |
+| assignee_staff_id | assigneeStaffId | UUID? |
+| last_customer_action_at | lastCustomerActionAt | OffsetDateTime? |
+| created_at | createdAt | Instant? |
+| updated_at | updatedAt | Instant? |
+
+**intake_response** · `IntakeResponseJdbcEntity`
+| DB Column | Kotlin Field | Type |
+| --- | --- | --- |
+| id | id | UUID? |
+| case_id | caseId | UUID |
+| phase | phase | String |
+| status | status | String |
+| answers | answers | Map\<String,Any\> (jsonb) |
+| saved_at | savedAt | OffsetDateTime? (@ReadOnly) |
+| submitted_at | submittedAt | OffsetDateTime? |
+
+**document** · `DocumentJdbcEntity`
+| DB Column | Kotlin Field | Type |
+| --- | --- | --- |
+| id | id | UUID |
+| case_id | caseId | UUID |
+| doc_template_id | docTemplateId | UUID |
+| type | type | String |
+| display_name | displayName | String |
+| status | status | String |
+| is_required | isRequired | Boolean |
+| is_conditional | isConditional | Boolean |
+| created_at | createdAt | Instant? |
+| updated_at | updatedAt | Instant? |
+
+**document_file** · `DocumentFileJdbcEntity`
+| DB Column | Kotlin Field | Type |
+| --- | --- | --- |
+| id | id | UUID? |
+| document_id | documentId | UUID |
+| file_name | fileName | String |
+| file_size | fileSize | Int |
+| mime_type | mimeType | String |
+| storage_key | storageKey | String |
+| uploader_type | uploaderType | String |
+| uploader_staff_id | uploaderStaffId | UUID? |
+| is_latest | isLatest | Boolean |
+| uploaded_at | uploadedAt | Instant? |
+
+**revision_request** · `RevisionRequestJdbcEntity`
+| DB Column | Kotlin Field | Type |
+| --- | --- | --- |
+| id | id | UUID? |
+| document_id | documentId | UUID |
+| reason | reason | String |
+| requested_by_staff_id | requestedByStaffId | UUID |
+| requested_from_status | requestedFromStatus | String |
+| requested_at | requestedAt | Instant? |
+| resolved_at | resolvedAt | OffsetDateTime? |
+
+**case_event** · `CaseEventJdbcEntity`
+| DB Column | Kotlin Field | Type |
+| --- | --- | --- |
+| id | id | UUID? |
+| case_id | caseId | UUID |
+| event_type | eventType | String |
+| actor_type | actorType | String |
+| actor_id | actorId | UUID? |
+| payload | payload | Map\<String,Any\> (jsonb) |
+| created_at | createdAt | Instant? |
+
+### 4.3 Auth (3)
+
+**customer_session** · `CustomerSessionJdbcEntity`
+| DB Column | Kotlin Field | Type |
+| --- | --- | --- |
+| id | id | UUID? |
+| customer_id | customerId | UUID |
+| token | token | String (unique) |
+| expires_at | expiresAt | OffsetDateTime |
+| created_at | createdAt | Instant? |
+
+**staff_session** · `StaffSessionJdbcEntity`
+| DB Column | Kotlin Field | Type |
+| --- | --- | --- |
+| id | id | UUID? |
+| staff_id | staffId | UUID |
+| token | token | String (unique) |
+| expires_at | expiresAt | OffsetDateTime |
+| created_at | createdAt | Instant? |
+
+**otp_token** · no JdbcEntity (accessed directly from the auth adapter) — DDL columns: `id` uuid PK, `email` varchar, `code` varchar(6), `expires_at` timestamptz, `used_at` timestamptz?, `created_at` timestamptz.

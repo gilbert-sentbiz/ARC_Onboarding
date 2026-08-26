@@ -131,3 +131,142 @@ erDiagram
 4. **상태 코드 표기** — [완료] 프론트 신명칭 마이그레이션 PI-124. 서버는 처음부터 신명칭.
 5. **질문 교체 계보 운영 기준** — 교체 시 code 승계 규칙(응답 통계를 어느 단위로 묶을지) 확정 필요. _룰 패널(Full) 도입 시 확정 — MVP는 시드 관리라 급하지 않음._
 6. **사업자 기준 중복 판단 (Full Spec)** — 사업자등록번호는 2차 수집이라 중복 검사를 2차 제출 시점에 하는 흐름이 맞는지.
+
+---
+
+# English Version
+
+# ARK - Server Data Model (ERD)
+
+> **Source of truth: this GitHub document.** The [Confluence page](https://sentbe-product.atlassian.net/wiki/spaces/NSBS/pages/4148920321) is a read-only mirror. For the column ↔ Kotlin field mapping see [TABLE-SPEC.md](TABLE-SPEC.md); the DDL source of truth is the `ark-backend` liquibase changelogs (`src/main/resources/db/changelog/sql/`).
+> Last synced: **2026-08-26 — against the `ark-backend` implemented schema** (liquibase V002 schema + V004 auth, 13 JdbcEntities).
+
+---
+
+Designed from the [PRD](PRD.md) and **actually implemented in `ark-backend`**, this is the server data model (reflecting the 2026-08-26 implementation). **Design of 2026-08-05**: the ruleset JSONB version-snapshot approach (the former `rule_set` table) was dropped and redesigned around an **immutable question + case pinning** model — this makes rule-panel CRUD and Collection country expansion natural at the row level. For column ↔ field details see [TABLE-SPEC.md](TABLE-SPEC.md).
+
+## 1. Design Principles
+
+* **14 tables (rules 3 + case 8 + auth 3).** Auth (`otp_token`, `customer_session`, `staff_session`) was added in PI-132 (liquibase V004). Full-Spec extensions such as comment and notification are all additive — table/column additions only, with no changes to the existing schema.
+* **Retroactive-change prevention is achieved by "pinning the case."** The question set is stored in the case's `pinned_question_ids` as the list of ids frozen at confirmation time, the document list is created by copying into `document` rows, and the segment classification is evaluated once at first submission and the result is stored. That is why no ruleset version snapshot is needed.
+* **Only question is immutable.** The question is the sole rule definition that an in-progress case keeps re-reading every time it renders a screen, so it cannot be edited — only creation + soft delete are allowed; an edit = deactivate + a new row (`replaces_question_id` lineage). Since the content is immutable, a case only needs to pin the list of ids for the whole thing to be frozen.
+* **segment and doc_template are ordinarily editable.** Because the structure makes any change affect only new cases (thanks to the pinning above), no versioning is needed. The Full-Spec rule panel becomes a simple CRUD screen over these tables.
+* **Adding a Collection country = inserting rows.** One segment row + its unique questions and document rows — no schema change.
+* **First/second responses are one JSONB row each.** `{question_id: value}` — since question is immutable, it joins accurately whenever queried.
+* **History is a single unified event log** (`case_event`, append-only), **file binaries live outside the DB** (object storage; the DB holds only the key), and **status codes are** `varchar` + CHECK.
+
+> Network segregation (internal product = VDI/back office, customer product = the internet) is split at the API layer, with the DB shared as a single instance. Split via a read replica if needed.
+
+## 2. ERD
+
+```
+[Rule domain — the area the (Full) rule panel edits]
+
+ ┌─────────┐ 1 (owns) N   ┌──────────────┐   ┌──────────────┐
+ │ segment │ ──────────── │   question   │   │ doc_template │
+ └────┬────┘              │ (immutable)  │   │              │
+      │ 1 (owns)          └──────────────┘   └──────┬───────┘
+      └───────────────────────────────────────────────┘
+   classification trigger + question/doc overrides are embedded as jsonb in segment
+
+[Case domain — a case "pins" the rules and references them]
+
+ ┌──────────┐ 1           N ┌─────────────────────────┐
+ │ customer │ ───────────── │    onboarding_case      │
+ └──────────┘               │ pinned_question_ids     │
+ ┌──────────┐ ───────────── │ = pinned question set   │
+ │  staff   │ 1 (assignee) N└────────────┬────────────┘
+ └──────────┘                          1 │
+           ┌───────────────────┬─────────┴───────────┐
+         N │                 N │                   N │
+  ┌────────────────┐    ┌───────────┐      ┌─────────────────┐
+  │intake_response │    │ document  │◄──── │ doc_template    │
+  │{question_id:v} │    └─────┬─────┘ copy │ (created at      │
+  └────────────────┘        1 │            │  classification) │
+                  ┌───────────┴─────────┐      └─────────────────┘
+                N │                   N │      ┌─────────────────┐
+        ┌───────────────┐   ┌──────────────────┐│   case_event    │
+        │ document_file │   │ revision_request ││ (unified history │
+        └───────────────┘   └──────────────────┘│  log, case 1:N) │
+                                                 └─────────────────┘
+```
+
+Mermaid source (paste into a tool if needed):
+
+```
+erDiagram
+  segment ||--o{ question : "owns"
+  segment ||--o{ doc_template : "owns"
+  question ||--o{ question : "parent / replaces (self-ref)"
+  staff ||--o{ question : "authors (created_by)"
+  doc_template ||--o{ document : "copied at classification"
+  customer ||--o{ onboarding_case : "owns"
+  staff ||--o{ onboarding_case : "assignee"
+  onboarding_case ||--o{ intake_response : ""
+  onboarding_case ||--o{ document : ""
+  document ||--o{ document_file : "submissions"
+  document ||--o{ revision_request : "revision reasons"
+  staff ||--o{ document_file : "uploads (STAFF)"
+  staff ||--o{ revision_request : "requests"
+  onboarding_case ||--o{ case_event : "timeline"
+  customer ||--o{ customer_session : "auth"
+  staff ||--o{ staff_session : "auth"
+  %% otp_token: issues email-based codes (logical reference to customer.email, no FK)
+```
+
+## 3. Table Summary
+
+Column definitions live in [TABLE-SPEC.md](TABLE-SPEC.md), which is the source of truth.
+
+| Table | What it holds |
+| --- | --- |
+| **segment** | Segment dictionary — code/label + classification trigger (jsonb) + per-segment question/document overrides (jsonb). Adding a country = one row |
+| **question** (immutable) | One question = one row — text, options, display condition, common/own. Edit = new row + lineage |
+| **doc_template** | Document-type dictionary — type code (dedup key), label, required/conditional, submission guide |
+| **customer** | Customer account — email, company name, contact name, business registration number |
+| **staff** | Internal staff — Google SSO identifier, role (authorization) |
+| **onboarding_case** | Case ledger — status, segment classification result, assignee, **pinned list of question ids** |
+| **intake_response** | Intake answers — 1 first-phase row + 1 second-phase row, `{question_id: value}` |
+| **document** | Per-case required document list + document status (copied from templates) |
+| **document_file** | Uploaded files — file name, storage key (append-only) |
+| **revision_request** | Per-document revision-request reasons — who, at which stage, why |
+| **case_event** | Timeline — all status/assignee change history (append-only) |
+| **otp_token** (auth) | Email OTP code issuance/expiry (email-based, no FK). Accessed directly, without a JdbcEntity |
+| **customer_session** (auth) | Customer session token — issued after OTP verification, `token` unique |
+| **staff_session** (auth) | Internal staff session token — issued after mock-login/SSO, `token` unique |
+
+## 3.5 Implementation Notes (2026-08-26, per ark-backend)
+
+The design and schema skeleton are identical; the details confirmed during implementation are as follows. The full column ↔ Kotlin field list is in [TABLE-SPEC.md](TABLE-SPEC.md).
+
+* **jsonb mapping types differ by domain** — the case family uses `Map<String,Any>` (parsed via a converter): `onboarding_case.segment_meta`/`pinned_question_ids`, `intake_response.answers`, `case_event.payload`. The **rule family, by contrast, uses `String?` (holding the raw json string)**: `segment.classification_trigger`/`question_overrides`/`doc_overrides`, `question.options`/`show_when`, `doc_template.condition`.
+* **Audit fields** — `created_at` is `@CreatedDate @ReadOnlyProperty val createdAt: Instant?`, `updated_at` is `@LastModifiedDate ... Instant?`. Other time columns are `OffsetDateTime?`.
+* **`text[]` mapping** — `onboarding_case.services`/`sectors` → `List<String>` (read via ArrayToStringListConverter, written with a `::text[]` cast).
+* **DB-enforced invariants** — the `question_immutable` trigger (only `deactivated_at` may change), one active case per customer (`case_one_active_per_customer_uq`), one document per type per case (`unique(case_id,type)`), file-uploader integrity CHECK (`(uploader_type='STAFF') = (uploader_staff_id IS NOT NULL)`), and an active-unique partial index on each rule table's `code/type`.
+* **JdbcEntity = 13** (excluding otp_token; sessions/OTP are in the auth adapter). File names: `{Segment,Question,DocTemplate,OnboardingCase,CaseEvent,IntakeResponse,Document,DocumentFile,RevisionRequest,Customer,CustomerSession,Staff,StaffSession}JdbcEntity`.
+
+## 4. Operational Flow (how retroactive-change prevention works)
+
+1. **Case creation** — the active first-phase questions are queried and pinned into `pinned_question_ids.first`. Even if the first-phase questions change later, this case's screen stays the same.
+2. **First submission** — the segment classification trigger is **evaluated once** → `entity_code`, `services` are stored (the basis for the decision is recorded in `segment_meta`). The second-phase questions of the assigned segments (common ∪ own, with overrides applied) are pinned into `pinned_question_ids.second`. Documents are **copied** into `document` rows as the union of doc_templates with type dedup.
+3. **Subsequent rule changes** (question replacement, template/trigger/override edits) — apply only from new cases onward. In-progress cases keep operating on the pinned ids and copied rows.
+
+## 5. MVP Scope
+
+* **The 3 rule tables are populated by seed inserts only** — there is no rule panel (PI-125), and the source for the full question text is the survey sheet. A question change = a new row inserted via seed migration (the immutability principle holds in the MVP too).
+* MVP implementation constraints (schema unchanged; only values and APIs are limited):
+    * **Segment**: entity is only `ENTITY_CORP`, `ENTITY_INDIV`. services is fixed to `SVC_PAYOUT` — the collection option is not shown in the first-phase questions, and remittance selection is fixed (PI-126). sectors is unused.
+    * **No ad-hoc document additions** — the document list comes only from doc_template.
+    * **No automatic business-number duplicate detection** — `business_reg_no` is stored only.
+    * **No draft save** — `intake_response.status` is only not_started / submitted.
+    * **Customer authentication = email OTP**, **files pdf/png/jpg, 10MB, 1 per document (Full allows multi-upload)**, **approval is per-item only**, **destruction is manual only (Full is automatic)**, **staff rows are managed directly**.
+* The Full-Spec extension list (comment, notification, ad-hoc columns, draft, multi-upload, automatic destruction, automatic drop-off, duplicate detection, promoting overrides to a map) is in [TABLE-SPEC.md](TABLE-SPEC.md), section 3.
+
+## 6. To Be Confirmed (Open)
+
+1. **File policy** — [Confirmed 2026-08-07] pdf/png/jpg, 10MB cap, MVP one file per document / Full multi-upload. Virus scanning is Full.
+2. **Case destruction policy** — [Direction confirmed 2026-08-07] MVP does manual destruction only. Full runs a **destruction batch one month after case closure** — responses, documents, and files are deleted; only company name, contact name, and desired transaction type (entity/services) remain (TABLE-SPEC section 3). ⚠️ **The one-month basis and the legal basis for retaining the contact name (personal data) require compliance sign-off** (separate track).
+3. **Customer login method** — [Confirmed 2026-08-07] email + email OTP (no password). The OTP code store (table/external service) is the dev team's implementation choice. Internal uses Google SSO.
+4. **Status code naming** — [Done] the frontend migration to the new names is PI-124. The server uses the new names from the start.
+5. **Question-replacement lineage operating rule** — the rule for succeeding `code` on replacement (at what granularity to group response statistics) needs to be confirmed. _To be confirmed when the (Full) rule panel is introduced — not urgent for the MVP since it is seed-managed._
+6. **Business-number-based duplicate detection (Full Spec)** — since the business registration number is collected in the second phase, whether it is correct to run the duplicate check at second submission.
