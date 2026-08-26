@@ -11,7 +11,8 @@ import { useSessionStore } from '@/store/sessionStore'
 import { transitionStatus, resubmitRevision } from '@/services/caseService'
 import { uploadFile as uploadDocFile } from '@/services/documentService'
 import { listDocuments as apiListDocuments, uploadDocumentFile } from '@/services/api/documents'
-import type { Document, DocumentFile, RevisionRequest } from '@/types'
+import { getCase } from '@/services/api/cases'
+import type { Document, DocumentFile, RevisionRequest, Case, DocumentStatus, CaseStatus } from '@/types'
 import Button from '@/components/ui/Button'
 import TabBar from '@/components/customer/TabBar'
 
@@ -165,39 +166,99 @@ function PageContent() {
   const id = searchParams.get('id') ?? ''
   const router = useRouter()
   const session = useSessionStore((s) => s.session)
-  const c = useCaseStore((s) => (id ? s.cases[id] : null))
-  const documents = useDocumentStore(useShallow((s) => s.getByCase(id)))
+  // PI-243: 로컬 스토어에서 local id 직접 또는 backendId 매칭(재로그인 시 URL은 backendId)
+  const storeCase = useCaseStore((s) =>
+    id ? (s.cases[id] ?? Object.values(s.cases).find((x) => x.backendId === id) ?? null) : null,
+  )
+  const storeDocuments = useDocumentStore(useShallow((s) => s.getByCase(id)))
   const allFiles = useDocumentFileStore((s) => s.files)
   const allRevisions = useRevisionRequestStore((s) => s.requests)
   const [submitted, setSubmitted] = useState(false)
   const [uploadError, setUploadError] = useState<string | null>(null)
-
-  // PI-227 ④: 백엔드 문서 목록(C9) → type→docId 매핑 (MinIO 업로드 대상 식별용)
   const token = useSessionStore((s) => s.token)
-  const backendId = c?.backendId
+
+  // PI-243: 재로그인(로컬 스토어 비어있음)이면 백엔드에서 케이스+문서+파일 하이드레이트.
+  const [hydratedCase, setHydratedCase] = useState<Case | null>(null)
+  const [serverDocs, setServerDocs] = useState<Document[] | null>(null)
+  const [serverFiles, setServerFiles] = useState<Record<string, DocumentFile>>({})
   const [backendDocMap, setBackendDocMap] = useState<Record<string, string>>({})
+
+  const c = storeCase ?? hydratedCase
+  const backendId = c?.backendId ?? (storeCase ? undefined : id)
+
+  // 케이스 하이드레이트(스토어에 없을 때)
+  useEffect(() => {
+    if (storeCase || !id || !token) return
+    let cancelled = false
+    const s = useSessionStore.getState().session
+    getCase(id, token)
+      .then((res) => {
+        if (cancelled || !res) return
+        const ts = Date.now()
+        setHydratedCase({
+          id: res.id, backendId: res.id,
+          createdAt: Date.parse(res.createdAt) || ts, updatedAt: Date.parse(res.updatedAt) || ts,
+          status: res.status as CaseStatus,
+          closeReason: (res.closeReason as Case['closeReason']) ?? undefined,
+          customerId: s?.userId ?? '', customerName: s?.name || s?.email || '고객', customerEmail: s?.email ?? '',
+          segmentInfo: { entity: res.entityCode ?? undefined, services: res.services } as Case['segmentInfo'],
+          currentOwner: { role: 'CUSTOMER', name: s?.name || '고객' },
+        })
+      })
+      .catch(() => {})
+    return () => { cancelled = true }
+  }, [storeCase, id, token])
+
+  // 백엔드 문서 목록(C9) — type→docId 매핑 + (재로그인 시) 문서·최신파일 하이드레이트
   useEffect(() => {
     if (!token || !backendId) return
     let cancelled = false
     apiListDocuments(backendId, token)
       .then((docs) => {
         if (cancelled || !docs) return
-        const m: Record<string, string> = {}
-        for (const d of docs) m[d.type] = d.id
-        setBackendDocMap(m)
+        const map: Record<string, string> = {}
+        for (const d of docs) map[d.type] = d.id
+        setBackendDocMap(map)
+        // 로컬 문서가 없으면(재로그인) 서버 문서/파일로 하이드레이트
+        if (storeDocuments.length === 0) {
+          setServerDocs(docs.map((d) => ({
+            id: d.id, caseId: backendId, type: d.type, displayName: d.displayName,
+            status: d.status as DocumentStatus, isRequired: d.isRequired, isConditional: false,
+          })))
+          // 주의: C9 latestFile은 축약형({fileName, mimeType, uploadedAt}) — id/isLatest 없음.
+          // docId 기반으로 파일 참조를 합성하고 isLatest=true 고정.
+          const files: Record<string, DocumentFile> = {}
+          for (const d of docs) {
+            const lf = d.latestFile
+            if (lf) {
+              const fileKey = `srv_${d.id}`
+              files[fileKey] = {
+                id: fileKey, documentId: d.id, fileName: lf.fileName,
+                fileSize: lf.fileSize ?? 0, uploadedAt: Date.parse(lf.uploadedAt) || Date.now(),
+                uploadedBy: '고객', isLatest: true,
+              }
+            }
+          }
+          setServerFiles(files)
+        }
       })
       .catch(() => {})
     return () => { cancelled = true }
-  }, [token, backendId])
+  }, [token, backendId, storeDocuments.length])
+
+  // 렌더에 쓸 문서 목록·파일: 로컬 우선, 없으면 서버 하이드레이트본
+  const documents = storeDocuments.length > 0 ? storeDocuments : (serverDocs ?? [])
 
   const ALLOWED_MIME = ['application/pdf', 'image/png', 'image/jpeg']
   const ALLOWED_EXT = ['.pdf', '.png', '.jpg', '.jpeg']
   const MAX_BYTES = 10 * 1024 * 1024
 
   if (!c || !id) {
+    // 재로그인 하이드레이션 진행 중이면 로딩 표시(토큰 있는데 아직 케이스 미도착)
+    const loadingCase = !!id && !!token && !storeCase && !hydratedCase
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--sb-n50)' }}>
-        <p style={{ color: 'var(--sb-n500)' }}>케이스를 찾을 수 없습니다.</p>
+        <p style={{ color: 'var(--sb-n500)' }}>{loadingCase ? '케이스를 불러오는 중…' : '케이스를 찾을 수 없습니다.'}</p>
       </div>
     )
   }
@@ -218,8 +279,11 @@ function PageContent() {
     )
   }
 
+  // PI-243: 로컬 파일 우선, 없으면 서버 하이드레이트본에서 최신 파일 조회
   const getLatestFile = (docId: string) =>
-    Object.values(allFiles).find((f) => f.documentId === docId && f.isLatest) ?? null
+    Object.values(allFiles).find((f) => f.documentId === docId && f.isLatest) ??
+    Object.values(serverFiles).find((f) => f.documentId === docId && f.isLatest) ??
+    null
   const getLatestRevision = (docId: string) =>
     Object.values(allRevisions)
       .filter((r) => r.documentId === docId && !r.resolvedAt)
