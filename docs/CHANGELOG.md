@@ -1,5 +1,13 @@
 # 온보딩 플랫폼 PRD 변경 로그
 
+## 2026-08-26 — ERD·TABLE-SPEC를 구현 스키마 기준으로 갱신
+
+> Gilbert 지시("현재 기준으로 업데이트, 그게 최신"). `ark-backend` 실제 구현(liquibase DDL + JdbcEntity)을 정본으로 반영.
+
+- **ERD.md** — 테이블 11 → **14개**(룰 3 + 케이스 8 + **인증 3**: otp_token·customer_session·staff_session, PI-132 V004). 완전판 mermaid(self-ref·staff·세션 관계) + §3.5 구현 반영 노트.
+- **TABLE-SPEC.md** — §4 **컬럼↔Kotlin 변수 매핑** 부록(14테이블 `@Column snake ↔ camel` + 타입).
+- 구현 특이점: jsonb가 케이스=`Map<String,Any>` / 룰=`String?`(raw json), 감사필드 `Instant?`, text[]=`List<String>`, DB 불변식(question_immutable 트리거·활성 케이스 unique·업로더 CHECK). otp_token은 JdbcEntity 없이 직접 접근.
+
 ## 2026-08-15 — API: 임시저장 제외 + 프론트 전환 토대·통합 테스트 티켓
 
 > Gilbert 결정. 임시저장 MVP 제외, 그리고 프론트 API 전환 1·2·3 중 앱-레벨 토대·통합을 티켓화.

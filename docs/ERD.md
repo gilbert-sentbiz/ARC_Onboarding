@@ -1,15 +1,15 @@
 # ARK - 서버 데이터 모델 (ERD)
 
-> **정본: 이 GitHub 문서.** [Confluence 페이지](https://sentbe-product.atlassian.net/wiki/spaces/NSBS/pages/4148920321)는 열람용 미러. 컬럼 상세는 [TABLE-SPEC.md](TABLE-SPEC.md), DDL은 `server-spec/schema.sql`(server-spec 브랜치)이 원본.
-> 최종 동기화: 2026-08-13 (Confluence v6 기준)
+> **정본: 이 GitHub 문서.** [Confluence 페이지](https://sentbe-product.atlassian.net/wiki/spaces/NSBS/pages/4148920321)는 열람용 미러. 컬럼↔Kotlin 변수 매핑은 [TABLE-SPEC.md](TABLE-SPEC.md), DDL 원본은 `ark-backend` liquibase(`src/main/resources/db/changelog/sql/`).
+> 최종 동기화: **2026-08-26 — `ark-backend` 구현 스키마 기준** (liquibase V002 스키마 + V004 인증, JdbcEntity 13개).
 
 ---
 
-[PRD](PRD.md)와 프로토타입 코드(`gilbert-sentbiz/ARK_Onboarding`, `prototype-next`)를 기준으로 설계한 서버 데이터 모델이다. **2026-08-05 개정**: 룰셋 JSONB 버전 스냅샷(구 rule_set 테이블)을 버리고, **불변 질문 + 케이스 고정** 모델로 재설계 — 룰 패널 CRUD와 Collection 국가 확장이 행 단위로 자연스러워진다. 컬럼 상세는 [TABLE-SPEC.md](TABLE-SPEC.md) 참조.
+[PRD](PRD.md) 기반으로 설계하고 **`ark-backend`에 실제 구현된** 서버 데이터 모델이다(2026-08-26 구현 반영). **2026-08-05 설계**: 룰셋 JSONB 버전 스냅샷(구 rule_set 테이블)을 버리고, **불변 질문 + 케이스 고정** 모델로 재설계 — 룰 패널 CRUD와 Collection 국가 확장이 행 단위로 자연스러워진다. 컬럼↔변수 상세는 [TABLE-SPEC.md](TABLE-SPEC.md) 참조.
 
 ## 1. 설계 원칙
 
-* **테이블 11개 (룰 3 + 케이스 8).** comment, notification 등 Full Spec 확장은 전부 테이블/컬럼 추가만으로 — 기존 스키마 변경 없음.
+* **테이블 14개 (룰 3 + 케이스 8 + 인증 3).** 인증(`otp_token`·`customer_session`·`staff_session`)은 PI-132에서 추가(liquibase V004). comment, notification 등 Full Spec 확장은 전부 테이블/컬럼 추가만으로 — 기존 스키마 변경 없음.
 * **소급 차단은 "케이스가 고정"으로 달성한다.** 질문 구성은 케이스의 `pinned_question_ids`에 확정 시점 id 목록으로 저장, 서류 목록은 `document` 행으로 복사 생성, 세그먼트 분류는 1차 제출 시 1회 평가 후 결과 저장. 그래서 룰셋 버전 스냅샷이 필요 없다.
 * **불변은 question 하나만.** 질문은 진행 중 케이스가 화면을 그릴 때마다 계속 다시 읽는 유일한 룰 정의라서 수정 불가 — 생성 + 소프트 삭제만 허용, 수정 = 비활성 + 새 행(`replaces_question_id` 계보). 내용이 불변이니 케이스는 id 목록만 고정하면 전체가 고정된다.
 * **segment, doc_template은 일반 편집 가능.** 변경이 신규 케이스에만 영향을 주는 구조라(위 고정 덕분) 버저닝 불필요. Full Spec 룰 패널은 이 테이블들의 단순 CRUD 화면이 된다.
@@ -58,6 +58,8 @@ Mermaid 소스 (필요 시 도구에 붙여넣기):
 erDiagram
   segment ||--o{ question : "own 소속"
   segment ||--o{ doc_template : "own 소속"
+  question ||--o{ question : "parent / replaces (self-ref)"
+  staff ||--o{ question : "authors (created_by)"
   doc_template ||--o{ document : "판정 시 복사 생성"
   customer ||--o{ onboarding_case : "owns"
   staff ||--o{ onboarding_case : "assignee"
@@ -65,7 +67,12 @@ erDiagram
   onboarding_case ||--o{ document : ""
   document ||--o{ document_file : "submissions"
   document ||--o{ revision_request : "revision reasons"
+  staff ||--o{ document_file : "uploads (STAFF)"
+  staff ||--o{ revision_request : "requests"
   onboarding_case ||--o{ case_event : "timeline"
+  customer ||--o{ customer_session : "auth"
+  staff ||--o{ staff_session : "auth"
+  %% otp_token: email 기반 코드 발급 (customer.email 논리 참조, FK 없음)
 ```
 
 ## 3. 테이블 요약
@@ -85,6 +92,19 @@ erDiagram
 | **document_file** | 업로드 파일 — 파일명, 스토리지 키 (append-only) |
 | **revision_request** | 서류별 보완 요청 사유 — 누가, 어느 단계에서, 왜 |
 | **case_event** | 타임라인 — 모든 상태/담당자 변경 이력 (append-only) |
+| **otp_token** (인증) | 이메일 OTP 코드 발급/만료 (email 기반, FK 없음). JdbcEntity 없이 직접 접근 |
+| **customer_session** (인증) | 고객 세션 토큰 — OTP 검증 후 발급, `token` unique |
+| **staff_session** (인증) | 내부 직원 세션 토큰 — mock-login/SSO 후 발급, `token` unique |
+
+## 3.5 구현 반영 노트 (2026-08-26, ark-backend 기준)
+
+설계와 스키마 골격은 동일하며, 구현에서 확인된 상세는 다음과 같다. 컬럼↔Kotlin 변수 전체는 [TABLE-SPEC.md](TABLE-SPEC.md).
+
+* **jsonb 매핑 타입이 도메인별로 다름** — 케이스 계열은 `Map<String,Any>`(컨버터로 파싱): `onboarding_case.segment_meta`/`pinned_question_ids`, `intake_response.answers`, `case_event.payload`. 반면 **룰 계열은 `String?`(raw json 문자열 보관)**: `segment.classification_trigger`/`question_overrides`/`doc_overrides`, `question.options`/`show_when`, `doc_template.condition`.
+* **감사필드** — `created_at`은 `@CreatedDate @ReadOnlyProperty val createdAt: Instant?`, `updated_at`은 `@LastModifiedDate ... Instant?`. 그 외 시각 컬럼은 `OffsetDateTime?`.
+* **`text[]` 매핑** — `onboarding_case.services`/`sectors` → `List<String>` (읽기 ArrayToStringListConverter, 쓰기 `::text[]` 캐스팅).
+* **DB 강제 불변식** — `question_immutable` 트리거(deactivated_at만 변경 허용), 고객당 활성 케이스 1개(`case_one_active_per_customer_uq`), 서류당 케이스 유일(`unique(case_id,type)`), 파일 업로더 무결성 CHECK(`(uploader_type='STAFF') = (uploader_staff_id IS NOT NULL)`), 각 룰 테이블 `code/type` active-unique 부분 인덱스.
+* **JdbcEntity = 13개** (otp_token 제외, 세션/OTP는 인증 어댑터). 파일명: `{Segment,Question,DocTemplate,OnboardingCase,CaseEvent,IntakeResponse,Document,DocumentFile,RevisionRequest,Customer,CustomerSession,Staff,StaffSession}JdbcEntity`.
 
 ## 4. 동작 흐름 (소급 차단이 작동하는 방식)
 

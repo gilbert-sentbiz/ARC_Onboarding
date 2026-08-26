@@ -1,4 +1,4 @@
-# ARK - 테이블 정의서 (MVP 11개)
+# ARK - 테이블 정의서 (구현 14개: 룰 3 + 케이스 8 + 인증 3)
 
 > **정본: 이 GitHub 문서.** [Confluence 페이지](https://sentbe-product.atlassian.net/wiki/spaces/NSBS/pages/4158980234)는 열람용 미러. 실행 가능한 DDL은 `server-spec/schema.sql`(server-spec 브랜치)이 짝 원본.
 > 최종 동기화: 2026-08-13 (Confluence v4 기준)
@@ -230,3 +230,185 @@
 * **케이스 종료 1개월 후 파기 배치** — **삭제**: `intake_response`, `document`, `document_file`(파일), `revision_request`, `onboarding_case.segment_meta`. **잔존**: `customer`(company_name, contact_name) + `onboarding_case`(entity_code, services=희망 거래형태, status). MVP는 자동 파기 없음(수동만). ⚠️ 1개월 기준, 담당자명(개인정보) 보관 근거는 컴플라이언스 사인오프 필요.
 * 사업자번호 자동 중복 판단 — `business_reg_no` 활용 (컬럼은 이미 있음)
 * segment 오버라이드 jsonb의 map 테이블 승격 — 세그먼트 규모가 커지면
+
+---
+
+## 4. 컬럼 ↔ Kotlin 변수 매핑 (구현, `ark-backend` main / 2026-08-26)
+
+> Spring Data JDBC `@Column("snake_case") val camelCase` 명시 매핑. `created_at`=`@CreatedDate @ReadOnlyProperty`, `updated_at`=`@LastModifiedDate`. jsonb는 **케이스 계열=`Map<String,Any>`(컨버터), 룰 계열=`String?`(raw json)**. `text[]`=`List<String>`.
+
+### 4.1 룰 (3)
+
+**segment** · `SegmentJdbcEntity`
+| DB 컬럼 | Kotlin 변수 | 타입 |
+| --- | --- | --- |
+| id | id | UUID |
+| axis | axis | String |
+| code | code | String |
+| label | label | String |
+| classification_trigger | classificationTrigger | String? (jsonb raw) |
+| question_overrides | questionOverrides | String? (jsonb raw) |
+| doc_overrides | docOverrides | String? (jsonb raw) |
+| created_at | createdAt | Instant? |
+| deactivated_at | deactivatedAt | OffsetDateTime? |
+
+**question** · `QuestionJdbcEntity` (불변 트리거)
+| DB 컬럼 | Kotlin 변수 | 타입 |
+| --- | --- | --- |
+| id | id | UUID |
+| code | code | String |
+| phase | phase | String |
+| classification | classification | String |
+| owner_segment_id | ownerSegmentId | UUID? |
+| label | label | String |
+| input_type | inputType | String |
+| options | options | String? (jsonb raw) |
+| is_required | isRequired | Boolean |
+| show_when | showWhen | String? (jsonb raw) |
+| repeat | repeat | Boolean |
+| parent_question_id | parentQuestionId | UUID? |
+| display_order | displayOrder | Int |
+| replaces_question_id | replacesQuestionId | UUID? |
+| created_by_staff_id | createdByStaffId | UUID? |
+| created_at | createdAt | Instant? |
+| deactivated_at | deactivatedAt | OffsetDateTime? |
+
+**doc_template** · `DocTemplateJdbcEntity`
+| DB 컬럼 | Kotlin 변수 | 타입 |
+| --- | --- | --- |
+| id | id | UUID |
+| type | type | String |
+| display_name | displayName | String |
+| classification | classification | String |
+| owner_segment_id | ownerSegmentId | UUID? |
+| is_required | isRequired | Boolean |
+| is_conditional | isConditional | Boolean |
+| condition | condition | String? (jsonb raw) |
+| guide | guide | String? |
+| created_at | createdAt | Instant? |
+| deactivated_at | deactivatedAt | OffsetDateTime? |
+
+### 4.2 케이스 (8)
+
+**customer** · `CustomerJdbcEntity`
+| DB 컬럼 | Kotlin 변수 | 타입 |
+| --- | --- | --- |
+| id | id | UUID? |
+| email | email | String |
+| auth_method | authMethod | String |
+| password_hash | passwordHash | String? |
+| business_reg_no | businessRegNo | String? |
+| company_name | companyName | String? |
+| contact_name | contactName | String? |
+| created_at | createdAt | Instant? |
+
+**staff** · `StaffJdbcEntity`
+| DB 컬럼 | Kotlin 변수 | 타입 |
+| --- | --- | --- |
+| id | id | UUID |
+| email | email | String |
+| name | name | String |
+| role | role | String |
+| is_active | isActive | Boolean |
+| created_at | createdAt | Instant? |
+
+**onboarding_case** · `OnboardingCaseJdbcEntity`
+| DB 컬럼 | Kotlin 변수 | 타입 |
+| --- | --- | --- |
+| id | id | UUID |
+| customer_id | customerId | UUID |
+| status | status | String |
+| close_reason | closeReason | String? |
+| revision_requested_from | revisionRequestedFrom | String? |
+| entity_code | entityCode | String? |
+| services | services | List\<String\> (text[]) |
+| sectors | sectors | List\<String\> (text[]) |
+| segment_meta | segmentMeta | Map\<String,Any\> (jsonb) |
+| pinned_question_ids | pinnedQuestionIds | Map\<String,Any\> (jsonb) |
+| assignee_staff_id | assigneeStaffId | UUID? |
+| last_customer_action_at | lastCustomerActionAt | OffsetDateTime? |
+| created_at | createdAt | Instant? |
+| updated_at | updatedAt | Instant? |
+
+**intake_response** · `IntakeResponseJdbcEntity`
+| DB 컬럼 | Kotlin 변수 | 타입 |
+| --- | --- | --- |
+| id | id | UUID? |
+| case_id | caseId | UUID |
+| phase | phase | String |
+| status | status | String |
+| answers | answers | Map\<String,Any\> (jsonb) |
+| saved_at | savedAt | OffsetDateTime? (@ReadOnly) |
+| submitted_at | submittedAt | OffsetDateTime? |
+
+**document** · `DocumentJdbcEntity`
+| DB 컬럼 | Kotlin 변수 | 타입 |
+| --- | --- | --- |
+| id | id | UUID |
+| case_id | caseId | UUID |
+| doc_template_id | docTemplateId | UUID |
+| type | type | String |
+| display_name | displayName | String |
+| status | status | String |
+| is_required | isRequired | Boolean |
+| is_conditional | isConditional | Boolean |
+| created_at | createdAt | Instant? |
+| updated_at | updatedAt | Instant? |
+
+**document_file** · `DocumentFileJdbcEntity`
+| DB 컬럼 | Kotlin 변수 | 타입 |
+| --- | --- | --- |
+| id | id | UUID? |
+| document_id | documentId | UUID |
+| file_name | fileName | String |
+| file_size | fileSize | Int |
+| mime_type | mimeType | String |
+| storage_key | storageKey | String |
+| uploader_type | uploaderType | String |
+| uploader_staff_id | uploaderStaffId | UUID? |
+| is_latest | isLatest | Boolean |
+| uploaded_at | uploadedAt | Instant? |
+
+**revision_request** · `RevisionRequestJdbcEntity`
+| DB 컬럼 | Kotlin 변수 | 타입 |
+| --- | --- | --- |
+| id | id | UUID? |
+| document_id | documentId | UUID |
+| reason | reason | String |
+| requested_by_staff_id | requestedByStaffId | UUID |
+| requested_from_status | requestedFromStatus | String |
+| requested_at | requestedAt | Instant? |
+| resolved_at | resolvedAt | OffsetDateTime? |
+
+**case_event** · `CaseEventJdbcEntity`
+| DB 컬럼 | Kotlin 변수 | 타입 |
+| --- | --- | --- |
+| id | id | UUID? |
+| case_id | caseId | UUID |
+| event_type | eventType | String |
+| actor_type | actorType | String |
+| actor_id | actorId | UUID? |
+| payload | payload | Map\<String,Any\> (jsonb) |
+| created_at | createdAt | Instant? |
+
+### 4.3 인증 (3)
+
+**customer_session** · `CustomerSessionJdbcEntity`
+| DB 컬럼 | Kotlin 변수 | 타입 |
+| --- | --- | --- |
+| id | id | UUID? |
+| customer_id | customerId | UUID |
+| token | token | String (unique) |
+| expires_at | expiresAt | OffsetDateTime |
+| created_at | createdAt | Instant? |
+
+**staff_session** · `StaffSessionJdbcEntity`
+| DB 컬럼 | Kotlin 변수 | 타입 |
+| --- | --- | --- |
+| id | id | UUID? |
+| staff_id | staffId | UUID |
+| token | token | String (unique) |
+| expires_at | expiresAt | OffsetDateTime |
+| created_at | createdAt | Instant? |
+
+**otp_token** · JdbcEntity 없음 (인증 어댑터에서 직접 접근) — DDL 컬럼: `id` uuid PK, `email` varchar, `code` varchar(6), `expires_at` timestamptz, `used_at` timestamptz?, `created_at` timestamptz.
