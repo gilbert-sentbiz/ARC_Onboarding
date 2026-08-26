@@ -1,6 +1,6 @@
 'use client'
 
-import { Suspense } from 'react'
+import { Suspense, useState, useEffect } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { useRouter, useSearchParams } from 'next/navigation'
 import {
@@ -14,8 +14,10 @@ import {
 } from '@phosphor-icons/react'
 import { useCaseStore } from '@/store/caseStore'
 import { useCaseEventStore } from '@/store/caseEventStore'
+import { useSessionStore } from '@/store/sessionStore'
+import { getCase } from '@/services/api/cases'
 import { STATUS_LABELS } from '@/services/stateMachine'
-import type { CaseStatus, CaseEvent } from '@/types'
+import type { CaseStatus, CaseEvent, Case } from '@/types'
 import TabBar from '@/components/customer/TabBar'
 
 const MILESTONES: { status: CaseStatus; label: string }[] = [
@@ -88,13 +90,51 @@ function PageContent() {
   const searchParams = useSearchParams()
   const id = searchParams.get('id') ?? ''
   const router = useRouter()
-  const c = useCaseStore((s) => (id ? s.cases[id] : null))
+  // 로컬 스토어에서 조회: local id 직접, 또는 backendId 매칭(재로그인 시 URL은 backendId)
+  const storeCase = useCaseStore((s) =>
+    id ? (s.cases[id] ?? Object.values(s.cases).find((x) => x.backendId === id) ?? null) : null,
+  )
   const events = useCaseEventStore(useShallow((s) => s.getByCase(id)))
+
+  // PI-241: 새 세션(로컬 스토어 비어있음)이면 백엔드에서 케이스 하이드레이트.
+  const [hydrated, setHydrated] = useState<Case | null>(null)
+  const [loading, setLoading] = useState(false)
+  useEffect(() => {
+    if (storeCase || !id) return
+    const token = useSessionStore.getState().token
+    const session = useSessionStore.getState().session
+    if (!token) return
+    let cancelled = false
+    setLoading(true)
+    getCase(id, token)
+      .then((res) => {
+        if (cancelled || !res) return
+        const ts = Date.now()
+        setHydrated({
+          id: res.id,
+          backendId: res.id,
+          createdAt: Date.parse(res.createdAt) || ts,
+          updatedAt: Date.parse(res.updatedAt) || ts,
+          status: res.status as CaseStatus,
+          closeReason: (res.closeReason as Case['closeReason']) ?? undefined,
+          customerId: session?.userId ?? '',
+          customerName: session?.name || session?.email || '고객',
+          customerEmail: session?.email ?? '',
+          segmentInfo: { entity: res.entityCode ?? undefined, services: res.services } as Case['segmentInfo'],
+          currentOwner: { role: 'CUSTOMER', name: session?.name || '고객' },
+        })
+      })
+      .catch(() => { /* 조회 실패 */ })
+      .finally(() => { if (!cancelled) setLoading(false) })
+    return () => { cancelled = true }
+  }, [storeCase, id])
+
+  const c = storeCase ?? hydrated
 
   if (!c || !id) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--sb-n50)' }}>
-        <p style={{ color: 'var(--sb-n500)' }}>케이스를 찾을 수 없습니다.</p>
+        <p style={{ color: 'var(--sb-n500)' }}>{loading ? '케이스를 불러오는 중…' : '케이스를 찾을 수 없습니다.'}</p>
       </div>
     )
   }
