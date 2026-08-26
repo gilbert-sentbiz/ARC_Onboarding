@@ -9,6 +9,8 @@ export default defineConfig({
   testDir: './e2e',
   timeout: 30_000,
   fullyParallel: false,
+  // 실 백엔드/OTP 상태를 공유하는 e2e라 순차 실행(병렬 시 케이스·세션 충돌).
+  workers: 1,
   reporter: [['list']],
   use: {
     baseURL: FRONT,

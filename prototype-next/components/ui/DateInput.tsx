@@ -35,6 +35,15 @@ export default function DateInput({ value, onChange, error }: Props) {
         onChange={(e) => onChange(e.target.value)}
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
+        // PI-234: opacity-0 date input은 본문 클릭으로 달력이 안 열림(캘린더 인디케이터도 투명).
+        // 클릭 시 showPicker()로 달력 강제 오픈. 미지원 브라우저는 옵셔널 체이닝으로 무해.
+        onClick={(e) => {
+          try {
+            e.currentTarget.showPicker?.()
+          } catch {
+            /* showPicker 미지원/보안 제약 시 무시 — 키보드 입력은 그대로 동작 */
+          }
+        }}
         className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
       />
     </div>
