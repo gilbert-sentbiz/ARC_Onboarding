@@ -7,6 +7,7 @@ import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
 import { useSessionStore } from '@/store/sessionStore'
 import { requestOtp, verifyOtp } from '@/services/api/auth'
+import { getMyCase } from '@/services/api/cases'
 import { ApiError } from '@/services/apiClient'
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -77,7 +78,16 @@ export default function LandingPage() {
     try {
       const res = await verifyOtp({ email: email.trim().toLowerCase(), code: code.trim() })
       setSession({ userId: email.trim().toLowerCase(), role: 'CUSTOMER', name: '', email: email.trim().toLowerCase() }, res.token)
-      router.push('/customer/onboarding')
+      // PI-241: 본인 케이스(C2b) 조회 → 있으면 상태 페이지, 없으면 온보딩(신규).
+      // 재로그인/타 기기에서 기존 케이스로 복귀, 중복 케이스 생성 방지.
+      let dest = '/customer/onboarding'
+      try {
+        const mine = await getMyCase(res.token)
+        if (mine?.id) dest = `/customer/case?id=${mine.id}`
+      } catch {
+        /* 조회 실패(백엔드 미연결 등) → 온보딩 폴백 */
+      }
+      router.push(dest)
     } catch (err) {
       const msg = err instanceof ApiError && err.status === 401 ? '인증코드가 올바르지 않거나 만료되었습니다.' : '인증에 실패했습니다. 다시 시도해주세요.'
       setErrors({ code: msg })

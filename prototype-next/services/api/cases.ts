@@ -11,6 +11,11 @@ export function getCase(caseId: string, token: string) {
   return api.get<CaseResponse>(`/cases/${caseId}`, { token })
 }
 
+// C2b: GET /cases/me — 본인 활성 케이스(없으면 204 → undefined). PI-242
+export function getMyCase(token: string) {
+  return api.get<CaseResponse | null>('/cases/me', { token })
+}
+
 // C4: POST /cases/{id}/intake/first/submit
 export function submitFirstIntake(caseId: string, body: IntakeAnswersRequest, token: string) {
   return api.post<CaseResponse>(`/cases/${caseId}/intake/first/submit`, body, { token })

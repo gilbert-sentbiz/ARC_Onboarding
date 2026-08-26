@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   ArrowLeft,
@@ -16,6 +16,7 @@ import Textarea from '@/components/ui/Textarea'
 import Select from '@/components/ui/Select'
 import Button from '@/components/ui/Button'
 import { useSessionStore } from '@/store/sessionStore'
+import { getMyCase } from '@/services/api/cases'
 import { saveFirstIntakeDraft } from '@/services/caseService'
 import { useCaseStore } from '@/store/caseStore'
 import { useIntakeResponseStore } from '@/store/intakeResponseStore'
@@ -201,6 +202,23 @@ function OptionCard({
 export default function OnboardingForm() {
   const router = useRouter()
   const session = useSessionStore((s) => s.session)
+
+  // PI-241 가드: 서버에 제출완료(비-신규) 케이스가 있으면 상태 페이지로 리다이렉트 → 중복 케이스 생성 차단.
+  useEffect(() => {
+    const token = useSessionStore.getState().token
+    if (!token) return
+    let cancelled = false
+    getMyCase(token)
+      .then((mine) => {
+        if (cancelled || !mine?.id) return
+        // INQUIRY_RECEIVED(1차 미제출 신규)만 온보딩 계속. 그 외(제출완료·진행중)는 상태 페이지로.
+        if (mine.status && mine.status !== 'INQUIRY_RECEIVED') {
+          router.replace(`/customer/case?id=${mine.id}`)
+        }
+      })
+      .catch(() => { /* 조회 실패 → 로컬 흐름 유지 */ })
+    return () => { cancelled = true }
+  }, [router])
 
   const existingCase = useCaseStore((s) => {
     if (!session?.email) return null
