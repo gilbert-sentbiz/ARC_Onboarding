@@ -56,5 +56,10 @@ test('PI-241: 케이스 보유 고객 재로그인 → 상태 페이지 복귀(�
   // 상태 페이지가 백엔드 하이드레이션으로 실제 렌더돼야 함("케이스를 찾을 수 없습니다" 아님) — PI-241 2차
   await expect(page2.getByText('진행 현황')).toBeVisible({ timeout: 15_000 })
   await expect(page2.getByText('케이스를 찾을 수 없습니다')).toHaveCount(0)
+
+  // PI-243: 서류 업로드 탭 클릭 → 쿼리파라미터 URL로 이동(404 아님)
+  await page2.getByRole('button', { name: '서류 업로드' }).click()
+  await expect(page2).toHaveURL(/\/customer\/case\/documents\/?\?id=/, { timeout: 15_000 })
+  await expect(page2.getByText('This page could not be found')).toHaveCount(0)
   await ctx2.close()
 })

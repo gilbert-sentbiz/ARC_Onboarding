@@ -28,7 +28,7 @@ export default function TabBar({ caseId, active }: Props) {
       <div className="flex max-w-[640px] mx-auto items-stretch">
         <button
           type="button"
-          onClick={() => router.push(`/customer/case/${caseId}/documents`)}
+          onClick={() => router.push(`/customer/case/documents?id=${caseId}`)}
           className="flex-1 flex items-center justify-center gap-2 py-3.5 text-[14px] font-medium transition-colors border-b-2"
           style={
             active === 'documents'
@@ -41,7 +41,7 @@ export default function TabBar({ caseId, active }: Props) {
         </button>
         <button
           type="button"
-          onClick={() => router.push(`/customer/case/${caseId}`)}
+          onClick={() => router.push(`/customer/case?id=${caseId}`)}
           className="flex-1 flex items-center justify-center gap-2 py-3.5 text-[14px] font-medium transition-colors border-b-2"
           style={
             active === 'status'
