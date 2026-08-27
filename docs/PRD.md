@@ -301,7 +301,7 @@
 
 표준 type 예: `BIZ_REGISTRATION`, `DIRECTOR_LIST`, `SHAREHOLDER_LIST`, `ID_COPY`(대표자 신분증), `CONTRACT`, `SAMPLE_INVOICE_SHIPPING`. _WEBSITE_URL은 서류에서 제거 — 공통 질문으로 이동(v1.0.5)._
 
-**서류 조건 명시** (Rule 검토 v1.0.5): 발급 유효기간(법인등기부등본, 법인인감증명서, 주주명부 — 3개월 이내 발급본), 날인(주주명부), 대상 범위(법인인감 — 각자·공동대표 전원 징구), 실거래 기준(계약서 — 실제 계약서, 마스킹 가능 안내 / 인보이스 — 실거래본).
+**서류 조건 명시** (Rule 검토 v1.0.5): 발급 유효기간(법인등기부등본, 법인인감증명서, 주주명부 — 3개월 이내 발급본), 날인(주주명부), 대상 범위(법인인감 — 각자·공동대표 전원 징구), 실거래 기준(계약서 — 실제 계약서, 마스킹 가능 안내 / 인보이스 — 실거래본). **계약서(`CONTRACT`)는 전 세그먼트에서 항상 선택(optional)** (2026-08-27 결정, PI-256).
 
 **조건부 서류 2축** (룰 패널 서류 탭 슬롯):
 
@@ -312,7 +312,7 @@
 
 | 세그먼트 | 서류 수 | 비고 |
 | --- | --- | --- |
-| Corporate | 필수 8종 + 선택 2종 | 사업자등록증, 법인등기부등본, 날인 주주명부, 대표자 신분증, 법인인감, 은행계좌, 실제 계약서, 인보이스 + 선택: 선적 자료, 세관 서류(신규) |
+| Corporate | 필수 7종 + 선택 3종 | 사업자등록증, 법인등기부등본, 날인 주주명부, 대표자 신분증, 법인인감, 은행계좌, 인보이스 + 선택: **계약서**(항상 선택), 선적 자료, 세관 서류(신규) |
 | Individual | 필수 4종 + 선택 2종 | 사업자등록증, 대표자 신분증, 은행계좌, 실거래 인보이스 + 선택: 계약서(필수→선택 전환), 선적자료(B/L, AWB) |
 | FI (국내) — **MVP 포함** | 8종 | 공통 6종(사업자등록증, 등기부, 인감, 대표자 신분증, 주주명부, 법인명의 은행계좌) + 금융 라이선스 사본, AML 내부통제규정. 기존 13종에서 축소(감사보고서, AML감사, 조직도, 지분도, Wolfsberg, Board Resolution 제외). 해외 FI 정책 미정(Full) |
 | KRW Collection — Full만 | 기본 6종 + 섹터별 | 기본 6종 + 선택(Articles of Incorporation, 사무실 사진) + Main Business Activity별 추가 서류, 쿠팡 3종. 제출 안내: 영문 외 번역본 동봉, 제출 불가 시 사유, 실거래 샘플 우선, 민감정보 블라인드 가능 |
@@ -662,7 +662,7 @@ A pipeline flowing first response → segment decision → per-segment second qu
 
 Example standard types: `BIZ_REGISTRATION`, `DIRECTOR_LIST`, `SHAREHOLDER_LIST`, `ID_COPY` (representative ID), `CONTRACT`, `SAMPLE_INVOICE_SHIPPING`. _WEBSITE_URL is removed from documents — moved to a common question (v1.0.5)._
 
-**Explicit document conditions** (Rule review v1.0.5): issuance validity period (corporate registry extract, corporate seal certificate, shareholder list — issued within 3 months), sealing (shareholder list), target scope (corporate seal — collected from all several·joint representatives), real-transaction basis (contract — the actual contract, masking-allowed notice / invoice — the actual-transaction copy).
+**Explicit document conditions** (Rule review v1.0.5): issuance validity period (corporate registry extract, corporate seal certificate, shareholder list — issued within 3 months), sealing (shareholder list), target scope (corporate seal — collected from all several·joint representatives), real-transaction basis (contract — the actual contract, masking-allowed notice / invoice — the actual-transaction copy). The **contract (`CONTRACT`) is always optional across all segments** (decided 2026-08-27, PI-256).
 
 **Conditional documents, 2 axes** (rule panel document-tab slots):
 
@@ -673,7 +673,7 @@ Example standard types: `BIZ_REGISTRATION`, `DIRECTOR_LIST`, `SHAREHOLDER_LIST`,
 
 | Segment | Document count | Notes |
 | --- | --- | --- |
-| Corporate | 8 required + 2 optional | Business registration certificate, corporate registry extract, sealed shareholder list, representative ID, corporate seal, bank account, actual contract, invoice + optional: shipping materials, customs documents (new) |
+| Corporate | 7 required + 3 optional | Business registration certificate, corporate registry extract, sealed shareholder list, representative ID, corporate seal, bank account, invoice + optional: **contract** (always optional), shipping materials, customs documents (new) |
 | Individual | 4 required + 2 optional | Business registration certificate, representative ID, bank account, actual-transaction invoice + optional: contract (required→optional), shipping materials (B/L, AWB) |
 | FI (domestic) — **MVP included** | 8 types | 6 common (business registration certificate, registry extract, seal, representative ID, shareholder list, corporate-name bank account) + financial-license copy, AML internal-control regulations. Reduced from the previous 13 (audit report, AML audit, org chart, ownership chart, Wolfsberg, Board Resolution excluded). Overseas FI policy TBD (Full) |
 | KRW Collection — Full only | 6 base + per-sector | 6 base + optional (Articles of Incorporation, office photo) + per-Main-Business-Activity additional documents, Coupang 3. Submission guidance: include a translation for non-English, reason if unable to submit, prefer actual-transaction samples, sensitive info may be blinded |
