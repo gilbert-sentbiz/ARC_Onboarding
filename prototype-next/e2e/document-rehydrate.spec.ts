@@ -36,6 +36,8 @@ test('PI-243: 재로그인 서류 탭 — 제출 서류가 백엔드 하이드�
   // 케이스 하이드레이션 → "케이스를 찾을 수 없습니다" 아님, 업로드한 파일명이 표시돼야 함
   await expect(page.getByText('케이스를 찾을 수 없습니다')).toHaveCount(0, { timeout: 15_000 })
   await expect(page.getByText('hydrate-proof.pdf 업로드됨')).toBeVisible({ timeout: 15_000 })
+  // PI-243: isRequired 하이드레이션 — CORP 케이스는 필수 서류가 있어야 함("필수 서류 0개" 아님)
+  await expect(page.getByText('필수 서류 0개')).toHaveCount(0)
 
   await api.dispose()
 })

@@ -223,7 +223,7 @@ function PageContent() {
         if (storeDocuments.length === 0) {
           setServerDocs(docs.map((d) => ({
             id: d.id, caseId: backendId, type: d.type, displayName: d.displayName,
-            status: d.status as DocumentStatus, isRequired: d.isRequired, isConditional: false,
+            status: d.status as DocumentStatus, isRequired: d.required, isConditional: false,
           })))
           // 주의: C9 latestFile은 축약형({fileName, mimeType, uploadedAt}) — id/isLatest 없음.
           // docId 기반으로 파일 참조를 합성하고 isLatest=true 고정.

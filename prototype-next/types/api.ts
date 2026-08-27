@@ -54,9 +54,9 @@ export type DocumentResponse = {
   type: string
   displayName: string
   status: string
-  isRequired: boolean
+  required: boolean // 실제 백엔드 응답 필드명 (PI-243: isRequired 아님)
   latestFile: DocumentFileResponse | null
-  openRevisionReason: string | null
+  openRevisions: string[]
 }
 
 export type DocumentFileResponse = {
