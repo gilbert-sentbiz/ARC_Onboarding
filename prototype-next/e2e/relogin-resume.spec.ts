@@ -24,8 +24,7 @@ test('PI-241: 케이스 보유 고객 재로그인 → 상태 페이지 복귀(�
   await page.getByPlaceholder('대리, 과장 등').fill('과장')
   await page.getByPlaceholder('+82-10-0000-0000').fill('+82-10-1234-5678')
   await page.getByPlaceholder('example@company.com').fill(email)
-  await page.locator('div', { has: page.getByText('송금 출발 국가') }).last()
-    .getByRole('button', { name: '한국', exact: true }).click()
+  // PI-253: 송금 출발 국가는 KR 고정(읽기전용) — 클릭 불필요
   await page.locator('div', { has: page.getByText('송금 도착 국가') }).last()
     .getByRole('button', { name: '미국', exact: true }).click()
   await page.getByRole('button', { name: /다음/ }).click()

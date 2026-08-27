@@ -70,7 +70,7 @@ const INITIAL: FormData = {
   services: ['remittance'],
   collectionCountries: [],
   collectionOtherCountry: '',
-  remittanceFrom: '',
+  remittanceFrom: 'KR', // PI-253: MVP 국내 고객 한정 — 출발 국가 KR 고정
   remittanceFromOther: '',
   remittanceTo: [],
   remittanceToOther: '',
@@ -510,36 +510,20 @@ export default function OnboardingForm() {
                   className="flex flex-col gap-4 p-4 rounded-[10px] border"
                   style={{ background: 'var(--sb-n50)', borderColor: 'var(--sb-n200)' }}
                 >
-                  {/* 출발 국가 — single select */}
+                  {/* 출발 국가 — KR 고정 (PI-253: MVP 국내 고객 한정) */}
                   <div className="flex flex-col gap-2">
                     <p className="text-[13px] font-medium" style={{ color: 'var(--sb-n700)' }}>
-                      송금 출발 국가 <span style={{ color: 'var(--sb-negative)' }}>*</span>
+                      송금 출발 국가
                     </p>
-                    <div className="flex flex-wrap gap-2">
-                      {REMITTANCE_COUNTRIES.map((c) => (
-                        <ToggleChip
-                          key={c.value}
-                          label={c.label}
-                          selected={data.remittanceFrom === c.value}
-                          onClick={() => { set('remittanceFrom', c.value); set('remittanceFromOther', '') }}
-                        />
-                      ))}
-                      <ToggleChip
-                        label="기타"
-                        selected={data.remittanceFrom === '__OTHER__'}
-                        onClick={() => set('remittanceFrom', '__OTHER__')}
-                      />
+                    <div
+                      className="inline-flex w-fit items-center gap-1.5 px-3 py-2 rounded-[8px] border text-[13px] font-medium"
+                      style={{ background: 'var(--sb-n100)', borderColor: 'var(--sb-n200)', color: 'var(--sb-n600)' }}
+                    >
+                      한국 (KR)
                     </div>
-                    {data.remittanceFrom === '__OTHER__' && (
-                      <Input
-                        placeholder="출발 국가를 직접 입력해주세요"
-                        value={data.remittanceFromOther}
-                        onChange={(e) => set('remittanceFromOther', e.target.value)}
-                      />
-                    )}
-                    {errors.remittanceFrom && (
-                      <p className="text-[11px]" style={{ color: 'var(--sb-negative)' }}>{errors.remittanceFrom}</p>
-                    )}
+                    <p className="text-[11px]" style={{ color: 'var(--sb-n400)' }}>
+                      국내 고객 서비스로 출발 국가는 한국으로 고정됩니다.
+                    </p>
                   </div>
 
                   {/* 도착 국가 — multi select */}

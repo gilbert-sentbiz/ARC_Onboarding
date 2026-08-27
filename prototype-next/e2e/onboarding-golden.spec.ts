@@ -24,9 +24,10 @@ test('PI-233: 고객 온보딩 완주 → 백엔드에 케이스 저장(토큰 �
   await page.getByPlaceholder('대리, 과장 등').fill('과장')
   await page.getByPlaceholder('+82-10-0000-0000').fill('+82-10-1234-5678')
   await page.getByPlaceholder('example@company.com').fill(email)
-  // 송금 출발 국가(칩) — 섹션 헤딩의 부모 컨테이너로 스코프
+  // PI-253: 송금 출발 국가는 KR 고정(읽기전용) — 선택 버튼 없이 '한국 (KR)' 노출
   const fromSection = page.locator('div', { has: page.getByText('송금 출발 국가') }).last()
-  await fromSection.getByRole('button', { name: '한국', exact: true }).click()
+  await expect(fromSection.getByText('한국 (KR)')).toBeVisible()
+  await expect(fromSection.getByRole('button', { name: '한국', exact: true })).toHaveCount(0)
   const toSection = page.locator('div', { has: page.getByText('송금 도착 국가') }).last()
   await toSection.getByRole('button', { name: '미국', exact: true }).click()
   await page.getByRole('button', { name: /다음/ }).click()
