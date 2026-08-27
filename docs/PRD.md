@@ -58,7 +58,7 @@
 | 2차 정보 입력 | 세그먼트별 2차 질문(섹션 그룹핑), 1차 자동 채움, 임시저장 |
 | 2차 리뷰 | 1차+2차 전체 확인 → 제출 시 서류 제출 단계로 진입 |
 | 서류 업로드 | 세그먼트별 서류 목록 + 업로드. 보완 모드 시 보완 서류 강조 |
-| 상태 & 이력 | 진행 타임라인 + 메시지 + 완료/종료 안내 |
+| 상태 & 이력 | 진행 타임라인 + 메시지 + 완료/종료 안내 + **제출 답변 읽기 전용 조회** |
 
 **접근, 네비게이션**
 
@@ -88,7 +88,7 @@
 * _기본 모드_ (서류 제출 단계): 서류별 업로드/미리보기/재업로드, 필수 전부 업로드 시 제출 활성화.
 * _보완 모드_ (보완 요청 시): 보완 필요 서류마다 **요청한 담당자가 쓴 서류별 사유**를 옆에 표시. 내부가 추가 요청한 미정의 서류도 함께 노출. 보완+추가 서류를 모두 올려야 제출 활성화 → 제출 시 보완을 요청한 검토 단계로 복귀. 고객에겐 **현재 라운드 사유만** 노출(과거 라운드, 누적 횟수 숨김).
 
-**상태 & 이력** — 진행 타임라인 + 담당자 1:1 메시지 + 상태별 안내 문구(보완 요청 시엔 업로드 이동 버튼, 완료/종료 시엔 새 케이스 시작 버튼).
+**상태 & 이력** — 진행 타임라인 + 담당자 1:1 메시지 + 상태별 안내 문구(보완 요청 시엔 업로드 이동 버튼, 완료/종료 시엔 새 케이스 시작 버튼) + **제출한 1·2차 답변 읽기 전용 조회**(질문+답, 세그먼트 판정 결과 포함). 제출 후에도 고객이 자기 응답을 다시 확인할 수 있다 — 조회 API(C7 `GET /cases/{id}/intake/{phase}`) 연동, 수정 불가. 불변 질문 계보 기준으로 제출 당시 질문/답 매칭. (2026-08-27 추가, PI-248)
 
 **MVP vs Full Spec**
 
@@ -419,7 +419,7 @@ MVP 차이는 각 섹션(2장 화면, 3장 상태값, 4장 분류·질문·서�
 | Second information entry | Per-segment second questions (section grouping), auto-fill from first, draft-save |
 | Second review | Confirm all first+second → on submit, enter the document-submission stage |
 | Document upload | Per-segment document list + upload. In revision mode, highlight revision documents |
-| Status & history | Progress timeline + messages + completion/closure guidance |
+| Status & history | Progress timeline + messages + completion/closure guidance + **read-only view of submitted answers** |
 
 **Access, navigation**
 
@@ -449,7 +449,7 @@ MVP 차이는 각 섹션(2장 화면, 3장 상태값, 4장 분류·질문·서�
 * _Default mode_ (document-submission stage): per-document upload/preview/re-upload; submit is enabled once all required documents are uploaded.
 * _Revision mode_ (on revision request): for each document needing revision, show **the per-document reason written by the requesting staff** beside it. Undefined documents additionally requested by internal staff are shown too. Both revision and additional documents must all be uploaded to enable submit → on submit, return to the review stage that requested the revision. The customer sees **only the current round's reasons** (past rounds and the cumulative count are hidden).
 
-**Status & history** — progress timeline + 1:1 messages with the assignee + per-status guidance text (a go-to-upload button on revision request, a start-new-case button on completion/closure).
+**Status & history** — progress timeline + 1:1 messages with the assignee + per-status guidance text (a go-to-upload button on revision request, a start-new-case button on completion/closure) + **read-only view of the submitted 1st/2nd answers** (question+answer, including the segment-decision result). After submission the customer can review their own responses again — wired to the read API (C7 `GET /cases/{id}/intake/{phase}`), no editing. Matched to the question at submission time via the immutable-question lineage. (added 2026-08-27, PI-248)
 
 **MVP vs Full Spec**
 
