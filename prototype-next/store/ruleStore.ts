@@ -203,7 +203,7 @@ export const INITIAL_RULESET: RuleSet = {
     { type: 'ID_COPY',                 displayName: '신분증 사본',                                         isRequired: true,  isConditional: false, classification: 'common' },
     { type: 'SHAREHOLDER_LIST',        displayName: '주주명부 (Shareholder List)',                          isRequired: true,  isConditional: false, classification: 'common' },
     { type: 'DIRECTOR_LIST',           displayName: '이사명부 (Director List)',                             isRequired: true,  isConditional: false, classification: 'common' },
-    { type: 'CONTRACT',                displayName: '계약서 (Contract)',                                    isRequired: true,  isConditional: false, classification: 'common' },
+    { type: 'CONTRACT',                displayName: '계약서 (Contract)',                                    isRequired: false, isConditional: false, classification: 'common' }, // PI-256: 전 세그먼트 항상 선택(optional)
     { type: 'SAMPLE_INVOICE_SHIPPING', displayName: '샘플 인보이스 및 선적자료 (Sample Invoice & Shipping)', isRequired: true,  isConditional: false, classification: 'common' },
     { type: 'BANK_PROOF',              displayName: '은행 증빙',                                            isRequired: true,  isConditional: false, classification: 'common' },
     { type: 'WEBSITE_URL',             displayName: '홈페이지 주소 (Website URL)',                          isRequired: false, isConditional: true,  classification: 'common' },
