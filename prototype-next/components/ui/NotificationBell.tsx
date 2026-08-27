@@ -47,10 +47,11 @@ export default function NotificationBell({ role, userId, name }: Props) {
   function handleClickNotif(n: Notification) {
     markRead(n.id)
     setOpen(false)
+    // PI-244: 실제 라우트는 쿼리파라미터(?id=) — 경로파라미터는 404 (PI-243 TabBar와 동일 패턴)
     const route =
       role === 'CUSTOMER'
-        ? `/customer/case/${n.caseId}`
-        : `/internal/case/${n.caseId}`
+        ? `/customer/case?id=${n.caseId}`
+        : `/internal/case?id=${n.caseId}`
     router.push(route)
   }
 
