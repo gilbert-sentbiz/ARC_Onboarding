@@ -116,6 +116,7 @@ function PageContent() {
           createdAt: Date.parse(res.createdAt) || ts,
           updatedAt: Date.parse(res.updatedAt) || ts,
           status: res.status as CaseStatus,
+          revisionRequestedFrom: (res.revisionRequestedFrom as CaseStatus) ?? undefined,
           closeReason: (res.closeReason as Case['closeReason']) ?? undefined,
           customerId: session?.userId ?? '',
           customerName: session?.name || session?.email || '고객',

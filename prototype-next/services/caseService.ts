@@ -379,7 +379,9 @@ export function resubmitRevision(
 ): TransitionResult {
   const c = useCaseStore.getState().cases[caseId]
   if (!c) return { ok: false, error: '케이스를 찾을 수 없습니다.' }
-  const target: CaseStatus = c.revisionRequestedFrom ?? 'APPROVAL_REVIEW_REQUIRED'
+  // PI-252: revisionRequestedFrom(보완요청이 발생한 원래 단계)으로 복원.
+  // 값이 없어도 심사(APPROVAL)로 자동 전진하지 말 것 — 서류 스크리닝(운영 재검토)으로 안전 복원.
+  const target: CaseStatus = c.revisionRequestedFrom ?? 'DOCUMENT_SCREENING_REQUIRED'
 
   // resolve all active revision requests on this case's documents
   const now = Date.now()

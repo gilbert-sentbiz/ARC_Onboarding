@@ -11,7 +11,7 @@ import { useSessionStore } from '@/store/sessionStore'
 import { transitionStatus, resubmitRevision } from '@/services/caseService'
 import { uploadFile as uploadDocFile } from '@/services/documentService'
 import { listDocuments as apiListDocuments, uploadDocumentFile } from '@/services/api/documents'
-import { getCase } from '@/services/api/cases'
+import { getCase, resubmitRevision as apiResubmitRevision } from '@/services/api/cases'
 import type { Document, DocumentFile, RevisionRequest, Case, DocumentStatus, CaseStatus } from '@/types'
 import Button from '@/components/ui/Button'
 import TabBar from '@/components/customer/TabBar'
@@ -199,6 +199,7 @@ function PageContent() {
           id: res.id, backendId: res.id,
           createdAt: Date.parse(res.createdAt) || ts, updatedAt: Date.parse(res.updatedAt) || ts,
           status: res.status as CaseStatus,
+          revisionRequestedFrom: (res.revisionRequestedFrom as CaseStatus) ?? undefined,
           closeReason: (res.closeReason as Case['closeReason']) ?? undefined,
           customerId: s?.userId ?? '', customerName: s?.name || s?.email || '고객', customerEmail: s?.email ?? '',
           segmentInfo: { entity: res.entityCode ?? undefined, services: res.services } as Case['segmentInfo'],
@@ -330,16 +331,32 @@ function PageContent() {
     uploadDocFile(docId, url, 0, session?.name || session?.email || '고객')
   }
 
-  function handleSubmit() {
+  async function handleSubmit() {
     if (!session || !canSubmit) return
     const actor = { role: 'CUSTOMER' as const, name: session.name || '고객' }
-    const result = isRevision
-      ? resubmitRevision(id!, actor)
-      : transitionStatus(id!, 'INITIAL_SCREENING', actor)
-    if (result.ok) {
-      setSubmitted(true)
-      setTimeout(() => router.push(`/customer/case?id=${id}`), 2000)
+
+    if (isRevision) {
+      // 로컬: 보완요청 해소 + 원래 단계(revisionRequestedFrom) 복원
+      resubmitRevision(id!, actor)
+      // PI-252: 백엔드 C8(resubmit)이 revisionRequestedFrom으로 원래 단계를 정확히 복원 —
+      // 서버 응답 status를 신뢰(로컬 폴백값으로 심사 단계를 건너뛰던 문제 해소).
+      if (token && backendId) {
+        try {
+          const res = await apiResubmitRevision(backendId, token)
+          if (res?.status && storeCase) {
+            useCaseStore.getState().updateCase(storeCase.id, { status: res.status as CaseStatus })
+          }
+        } catch {
+          /* 백엔드 미연결 — 로컬 진행 */
+        }
+      }
+    } else {
+      const result = transitionStatus(id!, 'INITIAL_SCREENING', actor)
+      if (!result.ok) return
     }
+
+    setSubmitted(true)
+    setTimeout(() => router.push(`/customer/case?id=${id}`), 2000)
   }
 
   return (
