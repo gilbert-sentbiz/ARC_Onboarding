@@ -276,7 +276,7 @@ function PageContent() {
             </p>
             <button
               type="button"
-              onClick={() => router.push('/')}
+              onClick={() => router.push('/customer/onboarding')}
               className="flex items-center justify-center gap-2 w-full h-11 rounded-[10px] border text-[14px] font-medium transition-colors"
               style={{ borderColor: 'var(--sb-n200)', color: 'var(--sb-n700)' }}
             >
@@ -300,7 +300,7 @@ function PageContent() {
             </div>
             <button
               type="button"
-              onClick={() => router.push('/')}
+              onClick={() => router.push('/customer/onboarding')}
               className="flex items-center justify-center gap-2 w-full h-11 rounded-[10px] border text-[14px] font-medium transition-colors"
               style={{ borderColor: 'var(--sb-n200)', color: 'var(--sb-n700)' }}
             >

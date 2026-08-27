@@ -211,8 +211,11 @@ export default function OnboardingForm() {
     getMyCase(token)
       .then((mine) => {
         if (cancelled || !mine?.id) return
-        // INQUIRY_RECEIVED(1차 미제출 신규)만 온보딩 계속. 그 외(제출완료·진행중)는 상태 페이지로.
-        if (mine.status && mine.status !== 'INQUIRY_RECEIVED') {
+        // 진행 중 케이스(INQUIRY_RECEIVED=1차 미제출 신규, COMPLETED/CLOSED=종료 제외)만
+        // 상태 페이지로 보내 중복 생성 차단. 종료된 케이스면 새 온보딩 허용(PI-245).
+        const s = mine.status
+        const isActive = s && s !== 'INQUIRY_RECEIVED' && s !== 'COMPLETED' && s !== 'CLOSED'
+        if (isActive) {
           router.replace(`/customer/case?id=${mine.id}`)
         }
       })
