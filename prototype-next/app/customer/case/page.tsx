@@ -50,6 +50,13 @@ const STATUS_BANNER: Partial<Record<CaseStatus, StatusBannerEntry>> = {
     desc: '심사 승인이 완료되었습니다. 운영팀에서 계정 개설을 진행 중이며 곧 안내드립니다.',
   },
 }
+// PI-254: 보완요청이 발생한 단계별 안내 문구 (요청 주체와 표시 일치)
+const REVISION_ORIGIN_DESC: Partial<Record<CaseStatus, string>> = {
+  INITIAL_SCREENING: '영업팀 1차 스크리닝 결과 일부 서류의 보완이 요청되었습니다.',
+  DOCUMENT_SCREENING_REQUIRED: '운영팀 서류 검토 결과 일부 서류의 보완이 요청되었습니다.',
+  APPROVAL_REVIEW_REQUIRED: '컴플라이언스 검토 결과 일부 서류의 보완이 요청되었습니다.',
+}
+
 const CLOSE_REASON_DESC: Record<string, string> = {
   DROPPED: '영업 또는 컴플라이언스 검토 결과 진행이 불가능하다고 판단되었습니다.',
   EXITED: '고객 요청으로 온보딩 프로세스가 종료되었습니다.',
@@ -71,8 +78,10 @@ function milestoneState(ms: CaseStatus, effective: CaseStatus): 'done' | 'active
   return 'pending'
 }
 
-function effectiveStatus(status: CaseStatus, events: CaseEvent[]): CaseStatus {
-  if (status === 'REVISION_REQUESTED') return 'APPROVAL_REVIEW_REQUIRED'
+function effectiveStatus(status: CaseStatus, events: CaseEvent[], revisionFrom?: CaseStatus): CaseStatus {
+  // PI-254: 보완요청 중엔 요청이 발생한 원래 단계(revisionRequestedFrom)를 현재로 표시.
+  // 값이 없으면 안전 폴백(서류 스크리닝) — 심사·승인으로 하드코딩하지 않음.
+  if (status === 'REVISION_REQUESTED') return revisionFrom ?? 'DOCUMENT_SCREENING_REQUIRED'
   if (status === 'CLOSED') {
     const closeEv = [...events].reverse().find(
       (e) => e.eventType === 'CASE_STATUS_CHANGED' && e.payload.newStatus === 'CLOSED'
@@ -142,7 +151,7 @@ function PageContent() {
 
   const isCompleted = c.status === 'COMPLETED'
   const isClosed = c.status === 'CLOSED'
-  const eff = effectiveStatus(c.status, events)
+  const eff = effectiveStatus(c.status, events, c.revisionRequestedFrom)
   const banner = STATUS_BANNER[c.status]
 
   const statusEvents = events.filter((e) => e.eventType === 'CASE_STATUS_CHANGED' || e.eventType === 'CASE_CREATED')
@@ -215,7 +224,7 @@ function PageContent() {
                         {fmtDatetime(ev.createdAt)}
                       </p>
                     )}
-                    {state === 'active' && c.status === 'REVISION_REQUESTED' && m.status === 'APPROVAL_REVIEW_REQUIRED' && (
+                    {state === 'active' && c.status === 'REVISION_REQUESTED' && (
                       <p className="text-[11px] text-amber-600 mt-0.5">서류 보완 요청 중</p>
                     )}
                   </div>
@@ -250,7 +259,7 @@ function PageContent() {
               <div>
                 <p className="text-[14px] font-semibold text-amber-700 mb-0.5">서류 보완이 필요합니다</p>
                 <p className="text-[13px]" style={{ color: 'var(--sb-n700)' }}>
-                  컴플라이언스 검토 결과 일부 서류의 보완이 요청되었습니다. 서류 업로드 화면에서 보완 사유를 확인하고 재제출해주세요.
+                  {(REVISION_ORIGIN_DESC[eff] ?? '검토 결과 일부 서류의 보완이 요청되었습니다.') + ' 서류 업로드 화면에서 보완 사유를 확인하고 재제출해주세요.'}
                 </p>
               </div>
               <button
