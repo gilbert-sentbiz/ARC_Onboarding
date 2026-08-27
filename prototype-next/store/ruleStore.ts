@@ -397,7 +397,7 @@ export const INITIAL_RULESET: RuleSet = {
     {
       id: 'qc_fund_source',
       label: '자금 및 재산의 원천을 선택해주세요 (복수 선택 가능)',
-      inputType: 'select', isRequired: true, classification: 'common',
+      inputType: 'multi', isRequired: true, classification: 'common',
       options: [
         { value: 'business_income',    label: '사업소득' },
         { value: 'employment_pension', label: '근로·연금소득' },
@@ -595,7 +595,7 @@ export const INITIAL_RULESET: RuleSet = {
     {
       id: 'qe_fi_fund_source',
       label: '자금 원천에 해당하는 항목을 모두 선택해주세요',
-      inputType: 'select', isRequired: true, classification: 'entity-own', scope: 'ENTITY_FI', isFixed: true,
+      inputType: 'multi', isRequired: true, classification: 'entity-own', scope: 'ENTITY_FI', isFixed: true,
       options: [
         { value: 'capital',    label: '자본금 투입' },
         { value: 'liquidity',  label: '유동성 투자' },

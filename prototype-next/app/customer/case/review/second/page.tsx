@@ -75,6 +75,10 @@ function renderValue(val: unknown, opts?: Record<string, string>): string {
     return val.map((v) => opts?.[String(v)] ?? String(v)).join(', ')
   }
   const s = String(val)
+  // PI-247: multi 값은 콤마구분 문자열 — 옵션맵이 있으면 각 항목 라벨로 치환
+  if (opts && s.includes(',')) {
+    return s.split(',').filter(Boolean).map((v) => opts[v] ?? v).join(', ')
+  }
   return opts?.[s] ?? s
 }
 

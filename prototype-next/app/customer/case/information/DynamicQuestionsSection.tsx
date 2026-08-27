@@ -118,6 +118,31 @@ function QuestionField({ q, value, error, onChange }: QuestionFieldProps) {
         </div>
       )}
 
+      {/* PI-247: 복수 선택 — 체크박스 그룹. 값은 콤마구분 문자열로 저장(옵션 value는 코드라 콤마 없음). */}
+      {q.inputType === 'multi' && (() => {
+        const selected = value ? value.split(',').filter(Boolean) : []
+        const toggle = (v: string) => {
+          const next = selected.includes(v) ? selected.filter(x => x !== v) : [...selected, v]
+          onChange(next.join(','))
+        }
+        return (
+          <div className="flex flex-col gap-2">
+            {q.options?.map(opt => (
+              <label key={opt.value} className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  value={opt.value}
+                  checked={selected.includes(opt.value)}
+                  onChange={() => toggle(opt.value)}
+                  style={{ accentColor: 'var(--sb-brand)' }}
+                />
+                <span className="text-[14px]" style={{ color: 'var(--sb-n700)' }}>{opt.label}</span>
+              </label>
+            ))}
+          </div>
+        )
+      })()}
+
       {error && <p className="text-[12px] mt-1" style={{ color: 'var(--sb-negative)' }}>{error}</p>}
     </div>
   )
