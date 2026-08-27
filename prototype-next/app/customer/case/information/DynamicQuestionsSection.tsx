@@ -62,8 +62,14 @@ function QuestionField({ q, value, error, onChange }: QuestionFieldProps) {
       {(q.inputType === 'text' || q.inputType === 'number') && !isDateField(q.id) && (
         <input
           type={q.inputType}
+          inputMode={q.inputType === 'number' ? 'decimal' : undefined}
+          min={q.inputType === 'number' ? 0 : undefined}
           value={value}
-          onChange={(e) => onChange(e.target.value)}
+          // PI-255: 숫자 필드는 음수 입력 차단 — 음수 부호 제거(타이핑·붙여넣기·스피너 모두)
+          onChange={(e) => onChange(q.inputType === 'number' ? e.target.value.replace(/-/g, '') : e.target.value)}
+          onKeyDown={q.inputType === 'number'
+            ? (e) => { if (e.key === '-' || e.key === '+' || e.key === 'e' || e.key === 'E') e.preventDefault() }
+            : undefined}
           onBlur={() => { if (URL_IDS.has(baseId(q.id)) && value) onChange(normalizeUrl(value)) }}
           className={`w-full border rounded-[8px] px-3 py-2.5 text-[14px] focus:outline-none`}
           style={error
