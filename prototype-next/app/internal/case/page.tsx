@@ -748,13 +748,23 @@ function CaseDetailContent() {
                             value={docRevisionNote}
                             onChange={(e) => setDocRevisionNote(e.target.value)}
                           />
-                          <button
-                            onClick={() => requestDocRevision(doc.id)}
-                            disabled={!docRevisionNote.trim()}
-                            className="px-3 py-2 rounded-[8px] text-[12px] font-medium bg-orange-500 text-white hover:bg-orange-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                          >
-                            전송
-                          </button>
+                          {(() => {
+                            const canSend = !!docRevisionNote.trim()
+                            return (
+                              <button
+                                onClick={() => requestDocRevision(doc.id)}
+                                disabled={!canSend}
+                                className="px-3 py-2 rounded-[8px] text-[12px] font-semibold transition-colors"
+                                style={
+                                  canSend
+                                    ? { background: 'var(--sb-brand)', color: '#fff', boxShadow: 'var(--shadow-100)', cursor: 'pointer' }
+                                    : { background: 'var(--sb-n200)', color: 'var(--sb-n400)', border: '1px solid var(--sb-n300)', cursor: 'not-allowed' }
+                                }
+                              >
+                                전송
+                              </button>
+                            )
+                          })()}
                           <button
                             onClick={() => { setDocRevisionId(null); setDocRevisionNote('') }}
                             className="px-3 py-2 rounded-[8px] text-[12px] transition-colors"
