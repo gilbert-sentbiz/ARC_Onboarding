@@ -18,11 +18,12 @@ import { useInternalNoteStore } from '@/store/internalNoteStore'
 import { useInternalStaffStore } from '@/store/internalStaffStore'
 import { transitionStatus, changeOwner } from '@/services/caseService'
 import { approveDocument, requestRevision } from '@/services/documentService'
-import { advanceCase, closeCase } from '@/services/api/cases'
+import { advanceCase, closeCase, getInternalCase } from '@/services/api/cases'
 import { approveDocument as apiApproveDocument, requestRevision as apiRequestRevision, listDocuments as apiListDocuments } from '@/services/api/documents'
 import { STATUS_LABELS } from '@/services/stateMachine'
+import { buildLabelMap, buildOptionMap, getLabel, renderOptionValue } from '@/services/questionLabels'
 import { emitNotification } from '@/store/notificationStore'
-import type { CaseStatus, CloseReason, DocumentStatus, UserRole, DocumentFile } from '@/types'
+import type { CaseStatus, CloseReason, DocumentStatus, UserRole, DocumentFile, Case } from '@/types'
 import NotificationBell from '@/components/ui/NotificationBell'
 
 // ── helpers ──────────────────────────────────────────────────────────────────
@@ -95,7 +96,18 @@ const STATUS_BADGE: Record<CaseStatus, { cls: string; style?: React.CSSPropertie
   CLOSED:                        { cls: 'bg-sb-n100 text-sb-n500' },
 }
 
-function IntakeDataDisplay({ data }: { data: Record<string, unknown> }) {
+// PI-250: 항목명(질문 id)·값(옵션 코드)을 한글 라벨로 치환. review/second와 동일 유틸 공유.
+function IntakeDataDisplay({
+  data,
+  labelMap,
+  optionMap,
+}: {
+  data: Record<string, unknown>
+  labelMap?: Record<string, string>
+  optionMap?: Record<string, Record<string, string>>
+}) {
+  const lm = labelMap ?? buildLabelMap()
+  const om = optionMap ?? buildOptionMap()
   return (
     <div className="flex flex-col gap-2">
       {Object.entries(data).map(([key, val]) => {
@@ -106,20 +118,21 @@ function IntakeDataDisplay({ data }: { data: Record<string, unknown> }) {
               <p
                 className="text-[11px] font-semibold uppercase tracking-[0.5px] mb-1"
                 style={{ color: 'var(--sb-n400)' }}
-              >{key}</p>
+              >{getLabel(key, lm)}</p>
               <div
                 className="pl-3 border-l-2"
                 style={{ borderColor: 'var(--sb-n100)' }}
               >
-                <IntakeDataDisplay data={val as Record<string, unknown>} />
+                <IntakeDataDisplay data={val as Record<string, unknown>} labelMap={lm} optionMap={om} />
               </div>
             </div>
           )
         }
-        const display = Array.isArray(val) ? (val as unknown[]).join(', ') : String(val)
+        const opts = om[key] ?? om[key.replace(/_\d+$/, '')]
+        const display = renderOptionValue(val, opts)
         return (
           <div key={key} className="grid grid-cols-[180px_1fr] gap-2 items-start">
-            <span className="text-[12px]" style={{ color: 'var(--sb-n500)' }}>{key}</span>
+            <span className="text-[12px]" style={{ color: 'var(--sb-n500)' }}>{getLabel(key, lm)}</span>
             <span className="text-[13px]" style={{ color: 'var(--sb-n800)' }}>{display || '—'}</span>
           </div>
         )
@@ -180,7 +193,11 @@ function CaseDetailContent() {
   const id = searchParams.get('id') ?? ''
   const router = useRouter()
   const session = useSessionStore((s) => s.session)
-  const c = useCaseStore((s) => (id ? s.cases[id] : null))
+  const token = useSessionStore((s) => s.token)
+  // PI-250: 로컬 store에 local id 직접 또는 backendId 매칭(새 세션/재로그인 시 URL은 backendId)
+  const storeCase = useCaseStore((s) =>
+    id ? (s.cases[id] ?? Object.values(s.cases).find((x) => x.backendId === id) ?? null) : null,
+  )
   const updateCase = useCaseStore((s) => s.updateCase)
   const { getNotes, addNote } = useInternalNoteStore()
   const staff = useInternalStaffStore((s) => s.staff)
@@ -188,9 +205,38 @@ function CaseDetailContent() {
   const documents = useDocumentStore(useShallow((s) => s.getByCase(id)))
   const allFiles = useDocumentFileStore((s) => s.files)
   const allRevisions = useRevisionRequestStore((s) => s.requests)
-  const firstIntake = useIntakeResponseStore((s) => id ? s.getByCase(id, 'first') : null)
-  const secondIntake = useIntakeResponseStore((s) => id ? s.getByCase(id, 'second') : null)
+  const storeFirstIntake = useIntakeResponseStore((s) => id ? s.getByCase(id, 'first') : null)
+  const storeSecondIntake = useIntakeResponseStore((s) => id ? s.getByCase(id, 'second') : null)
   const events = useCaseEventStore(useShallow((s) => id ? s.getByCase(id) : []))
+
+  // PI-250: 새 세션(로컬 store 비어있음)이면 백엔드에서 케이스 하이드레이트(내부 심사자 복귀).
+  // intake(1·2차 답변)는 내부용 조회 엔드포인트가 없어(고객 C7은 내부 토큰 401) 하이드레이트 불가 —
+  // 별도 백엔드 API 필요(후속). store에 intake가 있을 때(대시보드 경유·같은 세션)는 정상 표시.
+  const [hydratedCase, setHydratedCase] = useState<Case | null>(null)
+  useEffect(() => {
+    if (storeCase || !id || !token) return
+    let cancelled = false
+    getInternalCase(id, token)
+      .then((res) => {
+        if (cancelled || !res) return
+        const ts = Date.now()
+        setHydratedCase({
+          id: res.id, backendId: res.id,
+          createdAt: Date.parse(res.createdAt) || ts, updatedAt: Date.parse(res.updatedAt) || ts,
+          status: res.status as CaseStatus,
+          closeReason: (res.closeReason as Case['closeReason']) ?? undefined,
+          customerId: '', customerName: '고객', customerEmail: '',
+          segmentInfo: { entity: res.entityCode ?? undefined, services: res.services } as Case['segmentInfo'],
+          currentOwner: { role: 'SALES', name: res.assigneeStaffId ?? '—' },
+        })
+      })
+      .catch(() => {})
+    return () => { cancelled = true }
+  }, [storeCase, id, token])
+
+  const c = storeCase ?? hydratedCase
+  const firstIntake = storeFirstIntake
+  const secondIntake = storeSecondIntake
 
   const [tab, setTab] = useState<TabKey>('info')
   const [pendingAction, setPendingAction] = useState<ActionDef | null>(null)
@@ -203,8 +249,7 @@ function CaseDetailContent() {
   const [ownerChangeMode, setOwnerChangeMode] = useState(false)
   const [selectedNewOwner, setSelectedNewOwner] = useState('')
 
-  // PI-225 ②: 백엔드 연동용 토큰 + 문서 type→backend docId 매핑(C9)
-  const token = useSessionStore((s) => s.token)
+  // PI-225 ②: 문서 type→backend docId 매핑(C9). token은 상단에서 선언됨.
   const backendId = c?.backendId
   const [backendDocMap, setBackendDocMap] = useState<Record<string, string>>({})
   useEffect(() => {

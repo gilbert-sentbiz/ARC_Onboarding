@@ -7,46 +7,9 @@ import { useSessionStore } from '@/store/sessionStore'
 import { useIntakeResponseStore } from '@/store/intakeResponseStore'
 import { confirmSecondIntake } from '@/services/caseService'
 import { submitSecondIntake } from '@/services/api/cases'
-import { getRuleSet } from '@/store/ruleStore'
-import type { QuestionRule } from '@/types'
+import { buildLabelMap, buildOptionMap, getLabel, renderOptionValue as renderValue } from '@/services/questionLabels'
 import Button from '@/components/ui/Button'
 import { getCountryName } from '@/utils/countryNames'
-
-function buildLabelMap(): Record<string, string> {
-  const rs = getRuleSet()
-  const map: Record<string, string> = {}
-  function walk(qs: QuestionRule[]) {
-    for (const q of qs) {
-      map[q.id] = q.label
-      if (q.children?.length) walk(q.children)
-    }
-  }
-  walk(rs.questionPool)
-  for (const config of rs.segmentQuestionConfigs) {
-    walk(config.ownQuestions)
-  }
-  return map
-}
-
-// PI-237: 질문 id → { 옵션 value → 옵션 label } 맵. 라디오/셀렉트 답변값(예 'no')을
-// 한글 라벨(예 '아니오')로 치환하기 위함.
-function buildOptionMap(): Record<string, Record<string, string>> {
-  const rs = getRuleSet()
-  const map: Record<string, Record<string, string>> = {}
-  function walk(qs: QuestionRule[]) {
-    for (const q of qs) {
-      if (q.options?.length) {
-        map[q.id] = Object.fromEntries(q.options.map((o) => [o.value, o.label]))
-      }
-      if (q.children?.length) walk(q.children)
-    }
-  }
-  walk(rs.questionPool)
-  for (const config of rs.segmentQuestionConfigs) {
-    walk(config.ownQuestions)
-  }
-  return map
-}
 
 const SERVICE_LABELS: Record<string, string> = {
   remittance: '해외 송금',
@@ -57,29 +20,6 @@ const BUSINESS_TYPE_LABELS: Record<string, string> = {
   corporation: '법인 사업자',
   individual: '개인 사업자',
   financial: '금융기관(PG사·PSP·MSB 등)',
-}
-
-function getLabel(key: string, labelMap: Record<string, string>): string {
-  if (labelMap[key]) return labelMap[key]
-  const base = key.replace(/_\d+$/, '')
-  if (base !== key && labelMap[base]) return labelMap[base]
-  return key
-}
-
-// PI-237: opts(옵션 value→label 맵)가 있으면 답변값을 옵션 라벨로 치환.
-function renderValue(val: unknown, opts?: Record<string, string>): string {
-  if (val === null || val === undefined || val === '') return '—'
-  if (typeof val === 'boolean') return val ? '예' : '아니오'
-  if (Array.isArray(val)) {
-    if (!val.length) return '—'
-    return val.map((v) => opts?.[String(v)] ?? String(v)).join(', ')
-  }
-  const s = String(val)
-  // PI-247: multi 값은 콤마구분 문자열 — 옵션맵이 있으면 각 항목 라벨로 치환
-  if (opts && s.includes(',')) {
-    return s.split(',').filter(Boolean).map((v) => opts[v] ?? v).join(', ')
-  }
-  return opts?.[s] ?? s
 }
 
 type FieldProps = { label: string; value: string }
